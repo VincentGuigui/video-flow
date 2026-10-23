@@ -37,8 +37,8 @@ Source of truth for versions: `backend/pyproject.toml` and `backend/uv.lock`. Ve
 |---|---|---|
 | onnx-asr | MIT | ONNX ASR (Parakeet, Whisper ONNX) |
 | scenedetect | BSD-3-Clause | Shot detection |
-| opencv-python-headless | Apache-2.0 | Frame decoding, histograms |
-| imagehash | BSD-2-Clause | Perceptual hashes |
+| opencv-python-headless | Apache-2.0 | Image preprocessing (DINOv2); required by scenedetect |
+| imagehash | BSD-2-Clause | Perceptual hashes (declared but currently unused: pHash is computed in `engines/vision/phash_hist.py` with scipy) |
 | huggingface_hub | Apache-2.0 | Model download with pinned revisions |
 | tokenizers | Apache-2.0 | Tokenisation for ONNX text models |
 

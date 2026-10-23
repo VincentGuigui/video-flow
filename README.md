@@ -2,7 +2,7 @@
 
 Local-first assembly tool for footage shot with many retakes: ingest rushes, transcribe and analyse them, group equivalent takes into beats, compare alternatives side by side, then render with FFmpeg or export to an editor (OpenTimelineIO, FCPXML, EDL, Camtasia).
 
-Status: specification complete (see below), implementation in progress (backend scaffold).
+Status: specification complete (see below), implementation in progress: backend core (project model, FFmpeg/hardware probing, ingest and proxies, resolved timeline, jobs, analysis pipeline, AI engines) is in place; the HTTP API, CLI commands beyond `version`, render, export and the frontend are not yet.
 
 Targets Windows 11 (x64, ARM64) and Linux (x86_64). AI inference runs on NPU, then GPU, then CPU.
 
@@ -26,7 +26,7 @@ The installer sets up uv, Python 3.13, FFmpeg, checks Node/pnpm, detects the har
 ## Run
 
 ```bash
-scripts/run.sh                 # videoflow serve
+scripts/run.sh                 # videoflow serve (not implemented yet)
 scripts/run.sh --help          # any other arguments go to the videoflow CLI
 ```
 (`scripts\run.ps1` on Windows.)
@@ -37,7 +37,7 @@ scripts/run.sh --help          # any other arguments go to the videoflow CLI
 just test | smoke | lint | serve        # or: scripts/dev.sh test | smoke | lint | serve  (scripts\dev.ps1)
 ```
 
-`test` runs the unit tier (CPU, synthetic media, no network); `smoke` runs the tests marked `smoke` (small CPU models, may download).
+`test` runs the unit tier (CPU, synthetic media, no network; tests that need the `ml` extra are skipped without it); `smoke` runs the tests marked `smoke` (small CPU models, downloads them; needs an inference extra such as `cpu`/`smoke`, and `whisper` for the faster-whisper test). Synthetic samples are generated with FFmpeg (needs the `flite` filter) and cached under `VIDEOFLOW_SAMPLES_CACHE`.
 
 ## Documentation
 
