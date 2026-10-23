@@ -216,6 +216,9 @@ class ThresholdProfile(CamelModel):
     query_prefix: str = ""
     """Prefix the model expects on inputs (e5: ``"query: "``)."""
     prefilter_top_k: int = Field(default=10, gt=0)
+    cosine_floor: float = Field(default=0.0, ge=0.0, lt=1.0)
+    """Cosine of unrelated texts for this model; cosines are rescaled from
+    ``[floor, 1]`` to ``[0, 1]`` before being mixed with lexical scores (e5 ~0.8)."""
     theta_text: float = 0.55
     min_coverage: float = 0.5
     partial_coverage: float = 0.8
