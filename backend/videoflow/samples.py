@@ -6,6 +6,7 @@ give the same files. `generator_hash()` keys caches. Entry point: `generate(out_
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import os
@@ -22,7 +23,7 @@ from typing import Any
 
 import numpy as np
 
-from videoflow.media.caps import locate_binaries
+from videoflow.media.caps import NO_WINDOW, locate_binaries
 
 MANIFEST_NAME = "manifest.json"
 MANIFEST_VERSION = 1
@@ -31,7 +32,6 @@ SYNC_LAG_S = 3.217
 GAP_S = 1.0
 VOICE = "kal16"
 
-_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 # Retake scripts: flite only ships English voices, so the French script is read with the
 # same voice (accented pronunciation, but stable timing and plain-text ground truth).
@@ -61,7 +61,7 @@ def generator_hash() -> str:
     try:
         out = subprocess.run(
             [str(locate_binaries().ffmpeg), "-version"],
-            capture_output=True, text=True, check=True, creationflags=_NO_WINDOW,
+            capture_output=True, text=True, check=True, creationflags=NO_WINDOW,
         ).stdout.splitlines()[0]  # fmt: skip
     except (OSError, subprocess.CalledProcessError, FileNotFoundError):
         out = "no-ffmpeg"
@@ -103,10 +103,13 @@ def ensure_samples(cache_root: Path | None = None) -> Path:
 # --------------------------------------------------------------------------- helpers
 
 
-def _run(args: Sequence[str | Path]) -> None:
+_Arg = str | Path | int | float
+
+
+def _run(args: Sequence[_Arg]) -> None:
     exe = str(locate_binaries().ffmpeg)
     cmd = [exe, "-hide_banner", "-loglevel", "error", "-nostdin", "-y", *map(str, args)]
-    proc = subprocess.run(cmd, capture_output=True, text=True, creationflags=_NO_WINDOW)
+    proc = subprocess.run(cmd, capture_output=True, text=True, creationflags=NO_WINDOW)
     if proc.returncode != 0:
         raise RuntimeError(f"ffmpeg failed ({proc.stderr.strip()}): {' '.join(cmd)}")
 
@@ -186,7 +189,7 @@ def _fps_str(f: Fraction) -> str:
 
 
 def _speech_video(out: Path, wav: Path, clip: _Clip, vsrc: str, *, af: str | None = None) -> None:
-    args: list[str | Path] = [
+    args: list[_Arg] = [
         "-f", "lavfi", "-i", f"{vsrc}=size={clip.width}x{clip.height}:rate={_fps_str(clip.fps)}",
         "-i", wav,
     ]  # fmt: skip
@@ -264,7 +267,7 @@ def generate(out_dir: Path, progress: Callable[[str], None] | None = None) -> di
         _write_wav(wav, audio)
         name = f"retake_{lang}.mp4"
         clip = _Clip(name, 640, 360, fps25, frames, 1, note=f"retake script ({lang})")
-        add(clip, lambda c=clip, w=wav: _speech_video(out_dir / c.name, w, c, "testsrc2"))
+        add(clip, functools.partial(_speech_video, out_dir / clip.name, wav, clip, "testsrc2"))
         takes = [u["id"] for u in utts if u["kind"] == "take"]
         manifest["retake_scripts"][lang] = {
             "file": name,
@@ -334,7 +337,7 @@ def generate(out_dir: Path, progress: Callable[[str], None] | None = None) -> di
            pix: str = "yuv420p", venc: list[str] | None = None, vf: str | None = None,
            ) -> Callable[[], None]:  # fmt: skip
         def run() -> None:
-            args: list[str | Path] = ["-f", "lavfi", "-i", vsrc]
+            args: list[_Arg] = ["-f", "lavfi", "-i", vsrc]
             if clip.audio_channels:
                 args += ["-f", "lavfi", "-i", tone(440)]
             if vf:
@@ -412,7 +415,7 @@ def generate(out_dir: Path, progress: Callable[[str], None] | None = None) -> di
     def make_montage() -> None:
         srcs = ["testsrc2=size=640x360:rate=24", "mandelbrot=size=640x360:rate=24",
                 "smptebars=size=640x360:rate=24", shot_a]  # fmt: skip
-        args: list[str | Path] = []
+        args: list[_Arg] = []
         for s in srcs:
             args += ["-f", "lavfi", "-i", s]
         fc = "".join(f"[{i}:v]trim=end_frame={seg},setpts=PTS-STARTPTS[v{i}];" for i in range(4))

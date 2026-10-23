@@ -36,7 +36,9 @@ def _gray_small(frame: FrameArray, size: int) -> np.ndarray:
 def phash_bits(frame: FrameArray) -> np.ndarray:
     """64 boolean hash bits: low-frequency 8x8 DCT block thresholded at its median."""
     dct = dctn(_gray_small(frame, DCT_SIZE), norm="ortho")[:HASH_SIZE, :HASH_SIZE]
-    return (dct > np.median(dct.ravel()[1:])).ravel()  # skip the DC term in the median
+    # Skip the DC term in the median.
+    bits: np.ndarray = (dct > np.median(dct.ravel()[1:])).ravel()
+    return bits
 
 
 def phash(frame: FrameArray) -> int:
@@ -54,7 +56,7 @@ def color_hist(frame: FrameArray) -> np.ndarray:
     parts = []
     for ch in range(3):
         h, _ = np.histogram(f[..., ch], bins=HIST_BINS, range=(0, 256))
-        parts.append(h / max(h.sum(), 1))
+        parts.append(h / max(int(h.sum()), 1))
     return np.concatenate(parts)
 
 

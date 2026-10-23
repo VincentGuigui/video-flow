@@ -52,7 +52,10 @@ def onset_envelope(audio: Float, sr: int, rate: int = ENV_RATE) -> Float:
     flux -= flux.mean()
     std = flux.std()
     # Clip outliers: a single loud click would otherwise correlate with any other click.
-    return np.clip(flux / std, -ENV_CLIP, ENV_CLIP) if std > 0 else flux
+    if std <= 0:
+        return np.asarray(flux, dtype=np.float64)
+    clipped: np.ndarray = np.clip(flux / std, -ENV_CLIP, ENV_CLIP)
+    return clipped
 
 
 def gcc_phat(a: Float, b: Float, *, max_lag: int, beta: float = 1.0) -> tuple[Float, int]:

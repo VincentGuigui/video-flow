@@ -105,3 +105,8 @@ python_version = "3.13"
 strict = true
 plugins = ["pydantic.mypy"]
 files = ["videoflow"]
+
+[[tool.mypy.overrides]]
+# Third-party packages without type information (scipy-stubs not installed).
+module = ["scipy.*", "scenedetect.*", "faster_whisper.*", "ctranslate2.*"]
+ignore_missing_imports = true
