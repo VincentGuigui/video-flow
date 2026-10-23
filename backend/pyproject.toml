@@ -1,0 +1,106 @@
+[project]
+name = "videoflow"
+version = "0.1.0"
+description = "Local-first assembly tool for footage shot with many retakes"
+requires-python = ">=3.13,<3.14"
+license = { text = "MIT" }
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "typer>=0.12",
+    "numpy>=2.1",
+    "scipy>=1.14",
+    "opentimelineio>=0.17",
+    "OpenTimelineIO-Plugins>=0.17",
+    "rapidfuzz>=3.9",
+    "python-ulid>=3.0",
+]
+
+[project.scripts]
+videoflow = "videoflow.cli:app"
+
+# Accelerator extras. The onnxruntime flavours (smoke/cpu, openvino, directml,
+# cuda, qnn) are mutually exclusive: install exactly one per environment.
+# `ml` holds the runtime-independent model tooling and is re-used by each.
+[project.optional-dependencies]
+ml = [
+    "onnx-asr>=0.7",
+    "scenedetect>=0.6.4",
+    "opencv-python-headless>=4.10",
+    "imagehash>=4.3",
+    "huggingface_hub>=0.25",
+    "tokenizers>=0.20",
+]
+smoke = ["videoflow[ml]", "onnxruntime>=1.20"]
+cpu = ["videoflow[ml]", "onnxruntime>=1.20"]
+openvino = [
+    "videoflow[ml]",
+    "openvino>=2025.0",
+    "onnxruntime-openvino>=1.20",
+]
+directml = [
+    "videoflow[ml]",
+    "onnxruntime-directml>=1.20; sys_platform == 'win32'",
+]
+cuda = [
+    "videoflow[ml]",
+    "onnxruntime-gpu>=1.20; (sys_platform == 'win32' or sys_platform == 'linux') and platform_machine != 'aarch64' and platform_machine != 'ARM64'",
+]
+qnn = [
+    "videoflow[ml]",
+    "onnxruntime-qnn>=1.22; sys_platform == 'win32'",
+]
+# CPU/CUDA alternative ASR engine (no NPU path). Compatible with any runtime extra.
+whisper = ["faster-whisper>=1.1"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "hypothesis>=6.110",
+    "httpx>=0.27",
+    "ruff>=0.7",
+    "mypy>=1.12",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["videoflow"]
+
+[tool.uv]
+default-groups = ["dev"]
+conflicts = [
+    [
+        { extra = "smoke" },
+        { extra = "cpu" },
+        { extra = "openvino" },
+        { extra = "directml" },
+        { extra = "cuda" },
+        { extra = "qnn" },
+    ],
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "ASYNC"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-m 'not smoke' -ra"
+markers = [
+    "smoke: downloads CPU models (may need network); run with `-m smoke`",
+]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["videoflow"]
