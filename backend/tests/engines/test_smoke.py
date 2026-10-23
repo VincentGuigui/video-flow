@@ -150,9 +150,9 @@ def test_e5_prefix_changes_the_embedding():
     raw = e5._tok.encode("query: hello world").ids
     assert e5._tok.encode_batch(["query: hello world"])[0].ids == raw
     plain = np.asarray(e5.encode(["hello world"]))
-    # Encoding with the prefix already in the text doubles it, so the vectors must differ.
-    doubled = np.asarray(e5.encode(["query: hello world"]))
-    assert not np.allclose(plain, doubled)
+    # Text already prefixed (analysis.relations.embedding_input) is not prefixed twice.
+    prefixed = np.asarray(e5.encode(["query: hello world"]))
+    assert np.allclose(plain, prefixed, atol=1e-6)
     assert e5.profile.query_prefix == "query: " and e5.profile.model_id == "multilingual-e5-small"
 
 
