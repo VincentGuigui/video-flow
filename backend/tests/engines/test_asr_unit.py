@@ -66,6 +66,7 @@ def test_plan_chunks_cuts_long_spans_at_quiet_points():
 
 
 def test_parakeet_routes_sessions_through_make_session(monkeypatch):
+    pytest.importorskip("onnx_asr")  # `ml` extra
     from onnx_asr.models import nemo
 
     calls = []

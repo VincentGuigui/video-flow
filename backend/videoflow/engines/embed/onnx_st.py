@@ -42,11 +42,11 @@ def mean_pool(hidden: np.ndarray, mask: np.ndarray) -> np.ndarray:
 
 class OnnxTextEmbedder:
     def __init__(self, model_key: str = DEFAULT_MODEL, prefer: Prefer = "auto") -> None:
-        from tokenizers import Tokenizer
-
         spec: ModelSpec = load_manifest().get(model_key)
         if spec.purpose != "text-embed" or spec.dim is None:
             raise ValueError(f"{model_key} is not a text embedder")
+        from tokenizers import Tokenizer  # `ml` extra
+
         files = fetch(model_key)
         onnx_path = next(p for k, p in files.items() if k.endswith(".onnx"))
         tok_path = next(p for k, p in files.items() if k.endswith("tokenizer.json"))

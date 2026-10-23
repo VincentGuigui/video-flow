@@ -66,6 +66,7 @@ def test_unknown_model():
 
 
 def test_fetch_refuses_before_any_download(monkeypatch):
+    pytest.importorskip("huggingface_hub")  # `ml` extra
     called = []
     import huggingface_hub
 
@@ -76,6 +77,7 @@ def test_fetch_refuses_before_any_download(monkeypatch):
 
 
 def test_fetch_maps_hub_gated_error(monkeypatch):
+    pytest.importorskip("huggingface_hub")  # `ml` extra
     import huggingface_hub
     from huggingface_hub.errors import GatedRepoError
 
@@ -88,6 +90,7 @@ def test_fetch_maps_hub_gated_error(monkeypatch):
 
 
 def test_fetch_passes_pinned_revision(monkeypatch, tmp_path):
+    pytest.importorskip("huggingface_hub")  # `ml` extra
     import huggingface_hub
 
     seen = {}

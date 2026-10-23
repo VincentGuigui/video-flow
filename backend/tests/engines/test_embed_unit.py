@@ -47,6 +47,7 @@ class FakeSession:
 
 @pytest.fixture
 def embedder(monkeypatch, tmp_path):
+    pytest.importorskip("tokenizers")  # `ml` extra
     tok = FakeTok()
     sess = FakeSession(["input_ids", "attention_mask", "token_type_ids"])
     monkeypatch.setattr(
