@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import importlib
 import platform
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
@@ -163,14 +164,16 @@ def make_session(
     model_path: str | Path,
     prefer: Prefer = "auto",
     *,
-    warmup: bool = True,
+    warmup: bool | Callable[[Any], None] = True,
     sess_options: Any | None = None,
     chain: list[ProviderChoice] | None = None,
 ) -> ModelSession:
     """Create an InferenceSession on the best provider that creates and warms up cleanly.
 
     Each model walks the chain independently, so one model's unsupported operator does not
-    demote the others. Raises NoProviderError when onnxruntime is absent or nothing works.
+    demote the others. ``warmup`` may be a callable taking the session, for models whose
+    inputs need realistic shapes. Raises NoProviderError when onnxruntime is absent or nothing
+    works.
     """
     ort = _import_ort()
     if ort is None:
@@ -189,7 +192,9 @@ def make_session(
             active = sess.get_providers()
             if not active or active[0] != choice.provider:
                 raise RuntimeError(f"provider not active (got {active})")
-            if warmup:
+            if callable(warmup):
+                warmup(sess)  # model-specific warm-up for inputs zeros cannot satisfy
+            elif warmup:
                 _warmup(sess)
         except Exception as exc:  # noqa: BLE001 - any provider failure means try the next
             attempts.append(SessionAttempt(choice, f"{type(exc).__name__}: {exc}"))
