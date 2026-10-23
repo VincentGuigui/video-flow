@@ -27,6 +27,7 @@ Source of truth for versions: `backend/pyproject.toml` and `backend/uv.lock`. Ve
 | httpx | 0.28 | BSD-3-Clause | API test client |
 | ruff | 0.17 | MIT | Lint and format |
 | mypy | 2.4 | MIT | Type checking |
+| jsonschema | 4.26 | MIT | Validates fixtures against the generated project JSON Schema |
 
 ## Optional extras
 
