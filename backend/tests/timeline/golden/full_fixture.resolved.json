@@ -1,0 +1,416 @@
+{
+  "projectId": "prj_01K884QRM00000000000000001",
+  "revision": 42,
+  "rate": {
+    "num": 30000,
+    "den": 1001
+  },
+  "width": 1920,
+  "height": 1080,
+  "sampleRate": 48000,
+  "duration": 898,
+  "tracks": [
+    {
+      "id": "V1",
+      "kind": "video",
+      "clips": [
+        {
+          "itemId": "clip_01K884QRM0000000000000009D",
+          "track": "V1",
+          "assetId": "ast_01K884QRM00000000000000001",
+          "beatId": "beat_01K884QRM00000000000000069",
+          "segmentId": "seg_01K884QRM00000000000000035",
+          "takeStatus": "selected",
+          "timelineStart": 0,
+          "duration": 176,
+          "sourceInUs": 850000,
+          "sourceOutUs": 6700000,
+          "sourceInFrame": 25,
+          "handleBefore": 0,
+          "handleAfter": 8,
+          "availableBefore": 25,
+          "availableAfter": 1244,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "assetId": "ast_01K884QRM00000000000000001",
+            "sourceInUs": 850000,
+            "gainDb": 0.0,
+            "fadeInFrames": 6,
+            "fadeOutFrames": 0
+          },
+          "fit": "fit",
+          "clamped": false
+        },
+        {
+          "itemId": "clip_01K884QRM0000000000000009E",
+          "track": "V1",
+          "assetId": "ast_01K884QRM00000000000000001",
+          "beatId": "beat_01K884QRM0000000000000006A",
+          "segmentId": "seg_01K884QRM00000000000000036",
+          "takeStatus": "selected",
+          "timelineStart": 176,
+          "duration": 178,
+          "sourceInUs": 12050000,
+          "sourceOutUs": 18000000,
+          "sourceInFrame": 361,
+          "handleBefore": 7,
+          "handleAfter": 0,
+          "availableBefore": 361,
+          "availableAfter": 906,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "assetId": "ast_01K884QRM00000000000000001",
+            "sourceInUs": 12050000,
+            "gainDb": 0.0,
+            "fadeInFrames": 0,
+            "fadeOutFrames": 0
+          },
+          "fit": "fit",
+          "clamped": false
+        },
+        {
+          "itemId": "clip_01K884QRM0000000000000009F",
+          "track": "V1",
+          "assetId": "ast_01K884QRM00000000000000001",
+          "beatId": "beat_01K884QRM0000000000000006A",
+          "segmentId": "seg_01K884QRM00000000000000036",
+          "takeStatus": "selected",
+          "timelineStart": 354,
+          "duration": 261,
+          "sourceInUs": 18000000,
+          "sourceOutUs": 26700000,
+          "sourceInFrame": 539,
+          "handleBefore": 0,
+          "handleAfter": 24,
+          "availableBefore": 539,
+          "availableAfter": 645,
+          "enabled": true,
+          "audio": {
+            "mode": "replaced",
+            "assetId": "ast_01K884QRM00000000000000004",
+            "sourceInUs": 21217000,
+            "gainDb": -2.5,
+            "fadeInFrames": 0,
+            "fadeOutFrames": 3
+          },
+          "fit": "fit",
+          "clamped": false
+        },
+        {
+          "itemId": "clip_01K884QRM0000000000000009G",
+          "track": "V1",
+          "assetId": "ast_01K884QRM00000000000000002",
+          "beatId": "beat_01K884QRM0000000000000006B",
+          "segmentId": "seg_01K884QRM00000000000000039",
+          "takeStatus": "selected",
+          "timelineStart": 615,
+          "duration": 283,
+          "sourceInUs": 20850000,
+          "sourceOutUs": 30300000,
+          "sourceInFrame": 625,
+          "handleBefore": 0,
+          "handleAfter": 0,
+          "availableBefore": 625,
+          "availableAfter": 36,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "assetId": "ast_01K884QRM00000000000000002",
+            "sourceInUs": 20850000,
+            "gainDb": 0.0,
+            "fadeInFrames": 0,
+            "fadeOutFrames": 0
+          },
+          "fit": "fit",
+          "clamped": false
+        }
+      ]
+    },
+    {
+      "id": "A1",
+      "kind": "audio",
+      "clips": [
+        {
+          "itemId": "clip_01K884QRM0000000000000009D",
+          "track": "A1",
+          "assetId": "ast_01K884QRM00000000000000001",
+          "beatId": "beat_01K884QRM00000000000000069",
+          "segmentId": "seg_01K884QRM00000000000000035",
+          "takeStatus": "selected",
+          "timelineStart": 0,
+          "duration": 176,
+          "sourceInUs": 850000,
+          "sourceOutUs": 6700000,
+          "sourceInFrame": 25,
+          "handleBefore": 0,
+          "handleAfter": 8,
+          "availableBefore": 25,
+          "availableAfter": 1244,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "assetId": "ast_01K884QRM00000000000000001",
+            "sourceInUs": 850000,
+            "gainDb": 0.0,
+            "fadeInFrames": 6,
+            "fadeOutFrames": 0
+          },
+          "fit": null,
+          "clamped": false
+        },
+        {
+          "itemId": "clip_01K884QRM0000000000000009E",
+          "track": "A1",
+          "assetId": "ast_01K884QRM00000000000000001",
+          "beatId": "beat_01K884QRM0000000000000006A",
+          "segmentId": "seg_01K884QRM00000000000000036",
+          "takeStatus": "selected",
+          "timelineStart": 176,
+          "duration": 178,
+          "sourceInUs": 12050000,
+          "sourceOutUs": 18000000,
+          "sourceInFrame": 361,
+          "handleBefore": 7,
+          "handleAfter": 0,
+          "availableBefore": 361,
+          "availableAfter": 906,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "assetId": "ast_01K884QRM00000000000000001",
+            "sourceInUs": 12050000,
+            "gainDb": 0.0,
+            "fadeInFrames": 0,
+            "fadeOutFrames": 0
+          },
+          "fit": null,
+          "clamped": false
+        },
+        {
+          "itemId": "clip_01K884QRM0000000000000009F",
+          "track": "A1",
+          "assetId": "ast_01K884QRM00000000000000004",
+          "beatId": "beat_01K884QRM0000000000000006A",
+          "segmentId": "seg_01K884QRM00000000000000036",
+          "takeStatus": "selected",
+          "timelineStart": 354,
+          "duration": 261,
+          "sourceInUs": 21217000,
+          "sourceOutUs": 29917000,
+          "sourceInFrame": 636,
+          "handleBefore": 0,
+          "handleAfter": 24,
+          "availableBefore": 636,
+          "availableAfter": 602,
+          "enabled": true,
+          "audio": {
+            "mode": "replaced",
+            "assetId": "ast_01K884QRM00000000000000004",
+            "sourceInUs": 21217000,
+            "gainDb": -2.5,
+            "fadeInFrames": 0,
+            "fadeOutFrames": 3
+          },
+          "fit": null,
+          "clamped": false
+        },
+        {
+          "itemId": "clip_01K884QRM0000000000000009G",
+          "track": "A1",
+          "assetId": "ast_01K884QRM00000000000000002",
+          "beatId": "beat_01K884QRM0000000000000006B",
+          "segmentId": "seg_01K884QRM00000000000000039",
+          "takeStatus": "selected",
+          "timelineStart": 615,
+          "duration": 283,
+          "sourceInUs": 20850000,
+          "sourceOutUs": 30300000,
+          "sourceInFrame": 625,
+          "handleBefore": 0,
+          "handleAfter": 0,
+          "availableBefore": 625,
+          "availableAfter": 36,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "assetId": "ast_01K884QRM00000000000000002",
+            "sourceInUs": 20850000,
+            "gainDb": 0.0,
+            "fadeInFrames": 0,
+            "fadeOutFrames": 0
+          },
+          "fit": null,
+          "clamped": false
+        }
+      ]
+    },
+    {
+      "id": "V2",
+      "kind": "video",
+      "clips": [
+        {
+          "itemId": "ovl_01K884QRM00000000000000002",
+          "track": "V2",
+          "assetId": "ast_01K884QRM00000000000000003",
+          "beatId": null,
+          "segmentId": null,
+          "takeStatus": null,
+          "timelineStart": 30,
+          "duration": 60,
+          "sourceInUs": 7000000,
+          "sourceOutUs": 9000000,
+          "sourceInFrame": 210,
+          "handleBefore": 0,
+          "handleAfter": 0,
+          "availableBefore": 210,
+          "availableAfter": 90,
+          "enabled": true,
+          "audio": {
+            "mode": "muted",
+            "assetId": null,
+            "sourceInUs": null,
+            "gainDb": 0.0,
+            "fadeInFrames": 0,
+            "fadeOutFrames": 0
+          },
+          "fit": {
+            "x": 0.65,
+            "y": 0.05,
+            "scale": 0.3
+          },
+          "clamped": false
+        },
+        {
+          "itemId": "ovl_01K884QRM00000000000000001",
+          "track": "V2",
+          "assetId": "ast_01K884QRM00000000000000003",
+          "beatId": "beat_01K884QRM0000000000000006A",
+          "segmentId": null,
+          "takeStatus": null,
+          "timelineStart": 266,
+          "duration": 135,
+          "sourceInUs": 2000000,
+          "sourceOutUs": 6500000,
+          "sourceInFrame": 60,
+          "handleBefore": 0,
+          "handleAfter": 0,
+          "availableBefore": 60,
+          "availableAfter": 165,
+          "enabled": true,
+          "audio": {
+            "mode": "muted",
+            "assetId": null,
+            "sourceInUs": null,
+            "gainDb": 0.0,
+            "fadeInFrames": 0,
+            "fadeOutFrames": 0
+          },
+          "fit": "fill",
+          "clamped": false
+        }
+      ]
+    }
+  ],
+  "transitions": [
+    {
+      "transitionId": "tr_01K884QRM000000000000000CH",
+      "afterItemId": "clip_01K884QRM0000000000000009D",
+      "beforeItemId": "clip_01K884QRM0000000000000009E",
+      "type": "dissolve",
+      "state": "active",
+      "alignment": "center",
+      "duration": 15,
+      "cutFrame": 176,
+      "leftFrames": 7,
+      "rightFrames": 8,
+      "audio": "follow",
+      "audioDuration": 15,
+      "params": null
+    },
+    {
+      "transitionId": "tr_01K884QRM000000000000000CJ",
+      "afterItemId": "clip_01K884QRM0000000000000009F",
+      "beforeItemId": "clip_01K884QRM0000000000000009G",
+      "type": "dip_black",
+      "state": "active",
+      "alignment": "start",
+      "duration": 24,
+      "cutFrame": 615,
+      "leftFrames": 0,
+      "rightFrames": 24,
+      "audio": "crossfade",
+      "audioDuration": 12,
+      "params": {
+        "holdFrames": 2
+      }
+    }
+  ],
+  "dormantTransitions": [
+    {
+      "transitionId": "tr_01K884QRM000000000000000CK",
+      "afterItemId": "clip_01K884QRM0000000000000009G",
+      "beforeItemId": "clip_01K884QRM0000000000000009H",
+      "type": "wipe_left",
+      "state": "dormant",
+      "alignment": "end",
+      "duration": 0,
+      "cutFrame": null,
+      "leftFrames": 0,
+      "rightFrames": 0,
+      "audio": "follow",
+      "audioDuration": 0,
+      "params": null
+    }
+  ],
+  "beats": [
+    {
+      "beatId": "beat_01K884QRM00000000000000069",
+      "start": 0,
+      "duration": 176
+    },
+    {
+      "beatId": "beat_01K884QRM0000000000000006A",
+      "start": 176,
+      "duration": 439
+    },
+    {
+      "beatId": "beat_01K884QRM0000000000000006B",
+      "start": 615,
+      "duration": 283
+    }
+  ],
+  "markers": [
+    {
+      "markerId": "mrk_01K884QRM00000000000000003",
+      "frame": 0,
+      "note": "Début",
+      "color": null,
+      "itemId": null
+    },
+    {
+      "markerId": "mrk_01K884QRM00000000000000002",
+      "frame": 326,
+      "note": "Plus beau plan",
+      "color": null,
+      "itemId": "ovl_01K884QRM00000000000000001"
+    },
+    {
+      "markerId": "mrk_01K884QRM00000000000000001",
+      "frame": 414,
+      "note": "Reflet sur la boîte",
+      "color": "#e5484d",
+      "itemId": "clip_01K884QRM0000000000000009F"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "dormant_transition",
+      "message": "transition items are not adjacent on the main line; rendered as a hard cut",
+      "itemId": "clip_01K884QRM0000000000000009G",
+      "transitionId": "tr_01K884QRM000000000000000CK",
+      "beatId": null
+    }
+  ]
+}

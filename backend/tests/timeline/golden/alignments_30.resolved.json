@@ -1,0 +1,327 @@
+{
+  "projectId": "prj_test",
+  "revision": 1,
+  "rate": {
+    "num": 30,
+    "den": 1
+  },
+  "width": 1920,
+  "height": 1080,
+  "sampleRate": 48000,
+  "duration": 450,
+  "tracks": [
+    {
+      "id": "V1",
+      "kind": "video",
+      "clips": [
+        {
+          "itemId": "clip_a",
+          "track": "V1",
+          "assetId": "ast_a",
+          "beatId": "beat_1",
+          "segmentId": null,
+          "takeStatus": null,
+          "timelineStart": 0,
+          "duration": 120,
+          "sourceInUs": 10000000,
+          "sourceOutUs": 14000000,
+          "sourceInFrame": 300,
+          "handleBefore": 0,
+          "handleAfter": 8,
+          "availableBefore": 300,
+          "availableAfter": 1380,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "assetId": "ast_a",
+            "sourceInUs": 10000000,
+            "gainDb": 0.0,
+            "fadeInFrames": 0,
+            "fadeOutFrames": 0
+          },
+          "fit": "fit",
+          "clamped": false
+        },
+        {
+          "itemId": "clip_b",
+          "track": "V1",
+          "assetId": "ast_b",
+          "beatId": "beat_2",
+          "segmentId": null,
+          "takeStatus": null,
+          "timelineStart": 120,
+          "duration": 120,
+          "sourceInUs": 5000000,
+          "sourceOutUs": 9000000,
+          "sourceInFrame": 150,
+          "handleBefore": 7,
+          "handleAfter": 12,
+          "availableBefore": 150,
+          "availableAfter": 1530,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "assetId": "ast_b",
+            "sourceInUs": 5000000,
+            "gainDb": 0.0,
+            "fadeInFrames": 0,
+            "fadeOutFrames": 0
+          },
+          "fit": "fit",
+          "clamped": false
+        },
+        {
+          "itemId": "clip_c",
+          "track": "V1",
+          "assetId": "ast_a",
+          "beatId": "beat_3",
+          "segmentId": null,
+          "takeStatus": null,
+          "timelineStart": 240,
+          "duration": 90,
+          "sourceInUs": 20000000,
+          "sourceOutUs": 23000000,
+          "sourceInFrame": 600,
+          "handleBefore": 0,
+          "handleAfter": 0,
+          "availableBefore": 600,
+          "availableAfter": 1110,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "assetId": "ast_a",
+            "sourceInUs": 20000000,
+            "gainDb": 0.0,
+            "fadeInFrames": 0,
+            "fadeOutFrames": 0
+          },
+          "fit": "fit",
+          "clamped": false
+        },
+        {
+          "itemId": "clip_d",
+          "track": "V1",
+          "assetId": "ast_b",
+          "beatId": "beat_4",
+          "segmentId": null,
+          "takeStatus": null,
+          "timelineStart": 330,
+          "duration": 120,
+          "sourceInUs": 30000000,
+          "sourceOutUs": 34000000,
+          "sourceInFrame": 900,
+          "handleBefore": 12,
+          "handleAfter": 0,
+          "availableBefore": 900,
+          "availableAfter": 780,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "assetId": "ast_b",
+            "sourceInUs": 30000000,
+            "gainDb": 0.0,
+            "fadeInFrames": 0,
+            "fadeOutFrames": 0
+          },
+          "fit": "fit",
+          "clamped": false
+        }
+      ]
+    },
+    {
+      "id": "A1",
+      "kind": "audio",
+      "clips": [
+        {
+          "itemId": "clip_a",
+          "track": "A1",
+          "assetId": "ast_a",
+          "beatId": "beat_1",
+          "segmentId": null,
+          "takeStatus": null,
+          "timelineStart": 0,
+          "duration": 120,
+          "sourceInUs": 10000000,
+          "sourceOutUs": 14000000,
+          "sourceInFrame": 300,
+          "handleBefore": 0,
+          "handleAfter": 8,
+          "availableBefore": 300,
+          "availableAfter": 1380,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "assetId": "ast_a",
+            "sourceInUs": 10000000,
+            "gainDb": 0.0,
+            "fadeInFrames": 0,
+            "fadeOutFrames": 0
+          },
+          "fit": null,
+          "clamped": false
+        },
+        {
+          "itemId": "clip_b",
+          "track": "A1",
+          "assetId": "ast_b",
+          "beatId": "beat_2",
+          "segmentId": null,
+          "takeStatus": null,
+          "timelineStart": 120,
+          "duration": 120,
+          "sourceInUs": 5000000,
+          "sourceOutUs": 9000000,
+          "sourceInFrame": 150,
+          "handleBefore": 7,
+          "handleAfter": 12,
+          "availableBefore": 150,
+          "availableAfter": 1530,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "assetId": "ast_b",
+            "sourceInUs": 5000000,
+            "gainDb": 0.0,
+            "fadeInFrames": 0,
+            "fadeOutFrames": 0
+          },
+          "fit": null,
+          "clamped": false
+        },
+        {
+          "itemId": "clip_c",
+          "track": "A1",
+          "assetId": "ast_a",
+          "beatId": "beat_3",
+          "segmentId": null,
+          "takeStatus": null,
+          "timelineStart": 240,
+          "duration": 90,
+          "sourceInUs": 20000000,
+          "sourceOutUs": 23000000,
+          "sourceInFrame": 600,
+          "handleBefore": 0,
+          "handleAfter": 0,
+          "availableBefore": 600,
+          "availableAfter": 1110,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "assetId": "ast_a",
+            "sourceInUs": 20000000,
+            "gainDb": 0.0,
+            "fadeInFrames": 0,
+            "fadeOutFrames": 0
+          },
+          "fit": null,
+          "clamped": false
+        },
+        {
+          "itemId": "clip_d",
+          "track": "A1",
+          "assetId": "ast_b",
+          "beatId": "beat_4",
+          "segmentId": null,
+          "takeStatus": null,
+          "timelineStart": 330,
+          "duration": 120,
+          "sourceInUs": 30000000,
+          "sourceOutUs": 34000000,
+          "sourceInFrame": 900,
+          "handleBefore": 12,
+          "handleAfter": 0,
+          "availableBefore": 900,
+          "availableAfter": 780,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "assetId": "ast_b",
+            "sourceInUs": 30000000,
+            "gainDb": 0.0,
+            "fadeInFrames": 0,
+            "fadeOutFrames": 0
+          },
+          "fit": null,
+          "clamped": false
+        }
+      ]
+    },
+    {
+      "id": "V2",
+      "kind": "video",
+      "clips": []
+    }
+  ],
+  "transitions": [
+    {
+      "transitionId": "tr_center",
+      "afterItemId": "clip_a",
+      "beforeItemId": "clip_b",
+      "type": "dissolve",
+      "state": "active",
+      "alignment": "center",
+      "duration": 15,
+      "cutFrame": 120,
+      "leftFrames": 7,
+      "rightFrames": 8,
+      "audio": "follow",
+      "audioDuration": 15,
+      "params": null
+    },
+    {
+      "transitionId": "tr_start",
+      "afterItemId": "clip_b",
+      "beforeItemId": "clip_c",
+      "type": "wipe_left",
+      "state": "active",
+      "alignment": "start",
+      "duration": 12,
+      "cutFrame": 240,
+      "leftFrames": 0,
+      "rightFrames": 12,
+      "audio": "follow",
+      "audioDuration": 12,
+      "params": null
+    },
+    {
+      "transitionId": "tr_end",
+      "afterItemId": "clip_c",
+      "beforeItemId": "clip_d",
+      "type": "dip_black",
+      "state": "active",
+      "alignment": "end",
+      "duration": 12,
+      "cutFrame": 330,
+      "leftFrames": 12,
+      "rightFrames": 0,
+      "audio": "follow",
+      "audioDuration": 12,
+      "params": null
+    }
+  ],
+  "dormantTransitions": [],
+  "beats": [
+    {
+      "beatId": "beat_1",
+      "start": 0,
+      "duration": 120
+    },
+    {
+      "beatId": "beat_2",
+      "start": 120,
+      "duration": 120
+    },
+    {
+      "beatId": "beat_3",
+      "start": 240,
+      "duration": 90
+    },
+    {
+      "beatId": "beat_4",
+      "start": 330,
+      "duration": 120
+    }
+  ],
+  "markers": [],
+  "warnings": []
+}
