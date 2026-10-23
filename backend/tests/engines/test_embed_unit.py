@@ -89,7 +89,13 @@ def test_profiles_are_per_model():
     mini = st.threshold_profile("paraphrase-multilingual-minilm-l12-v2")
     assert e5.model_id != mini.model_id
     assert e5.query_prefix == "query: " and mini.query_prefix == ""
-    assert e5.theta_text > mini.theta_text  # e5 cosines are compressed upward
+    assert e5.cosine_floor > mini.cosine_floor  # e5 cosines are compressed upward
+
+
+def test_prefix_is_not_doubled(embedder):
+    emb, tok, _ = embedder
+    emb.encode(["query: x"], role="query")
+    assert tok.seen[-1] == "query: x"
 
 
 def test_rejects_non_text_model():

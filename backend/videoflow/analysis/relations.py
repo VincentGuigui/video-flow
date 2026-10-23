@@ -61,6 +61,17 @@ PROFILES: dict[str, ThresholdProfile] = {
         ThresholdProfile(model_id="fake-bow-384", theta_text=0.55, tau=0.5),
     )
 }
+# Engines report the model-manifest key (engines/manifest.toml) as their model id.
+PROFILES |= {
+    key: PROFILES[repo].model_copy(update={"model_id": key})
+    for key, repo in (
+        ("multilingual-e5-small", "intfloat/multilingual-e5-small"),
+        (
+            "paraphrase-multilingual-minilm-l12-v2",
+            "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        ),
+    )
+}
 """Built-in per-model thresholds (provisional until Phase 0 calibration, 08 §2.2)."""
 
 DEFAULT_PROFILE = ThresholdProfile(model_id="default")
@@ -73,8 +84,13 @@ def profile_for(model_id: str | None) -> ThresholdProfile:
 
 
 def embedding_input(text: str, profile: ThresholdProfile) -> str:
-    """Text as given to the embedder, with the model's prefix (e5: ``"query: "``)."""
-    return f"{profile.query_prefix}{text}"
+    """Text as given to the embedder, with the model's prefix (e5: ``"query: "``).
+
+    Idempotent: the ONNX text engine also applies the manifest prefix, and an already
+    prefixed text is left as is, so the prefix is never doubled.
+    """
+    prefix = profile.query_prefix
+    return text if text.startswith(prefix) else f"{prefix}{text}"
 
 
 def rescale_cosine(cosine: float, profile: ThresholdProfile) -> float:

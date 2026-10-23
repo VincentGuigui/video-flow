@@ -35,6 +35,10 @@ def test_profiles_are_per_model() -> None:
     assert rescale_cosine(0.80, e5) < 0.1
     mini = profile_for("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
     assert rescale_cosine(0.80, mini) > 0.7
+    assert embedding_input("query: bonjour", e5) == "query: bonjour"
+    # engines report manifest keys as model ids
+    assert profile_for("multilingual-e5-small").cosine_floor == e5.cosine_floor
+    assert profile_for("multilingual-e5-small").model_id == "multilingual-e5-small"
     unknown = profile_for("some/new-model")
     assert unknown.model_id == "some/new-model" and unknown.theta_text == 0.55
 

@@ -21,19 +21,17 @@ from videoflow.hw.ai import Prefer, make_session
 DEFAULT_MODEL = "multilingual-e5-small"
 BATCH = 32
 
-# e5 cosines are compressed into roughly [0.7, 1.0], so its text threshold sits much higher
-# than MiniLM's. Starting values; Phase 0 tunes them on real rushes (08 §2.2).
-PROFILES: dict[str, dict[str, float]] = {
-    "multilingual-e5-small": {"theta_text": 0.85, "theta_vis": 0.85},
-    "paraphrase-multilingual-minilm-l12-v2": {"theta_text": 0.55, "theta_vis": 0.85},
-}
-
 
 def threshold_profile(model_key: str) -> ThresholdProfile:
+    """The analysis profile for this model (single source: ``analysis.relations.PROFILES``).
+
+    e5 cosines are compressed into roughly [0.7, 1.0]; the profile's ``cosine_floor`` rescales
+    them before ``theta_text`` applies. The prefix always comes from the manifest.
+    """
+    from videoflow.analysis.relations import profile_for
+
     spec = load_manifest().get(model_key)
-    return ThresholdProfile(
-        model_id=model_key, query_prefix=spec.query_prefix, **PROFILES.get(model_key, {})
-    )
+    return profile_for(model_key).model_copy(update={"query_prefix": spec.query_prefix})
 
 
 def mean_pool(hidden: np.ndarray, mask: np.ndarray) -> np.ndarray:
@@ -76,7 +74,9 @@ class OnnxTextEmbedder:
         prefix = self.prefix(role)
         out = np.zeros((len(texts), self.dim), dtype=np.float32)
         for i in range(0, len(texts), BATCH):
-            enc = self._tok.encode_batch([prefix + t for t in texts[i : i + BATCH]])
+            # Already-prefixed input (analysis.relations.embedding_input) is not prefixed twice.
+            batch = [t if t.startswith(prefix) else prefix + t for t in texts[i : i + BATCH]]
+            enc = self._tok.encode_batch(batch)
             ids = np.array([e.ids for e in enc], dtype=np.int64)
             mask = np.array([e.attention_mask for e in enc], dtype=np.int64)
             feeds: dict[str, np.ndarray] = {"input_ids": ids, "attention_mask": mask}
