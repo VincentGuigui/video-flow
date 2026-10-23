@@ -18,13 +18,13 @@ _XFADE_RE = re.compile(r"^\s+(\w+)\s+-?\d+\s+\.\.F")
 _TABLE_RE = re.compile(r"^\s*[A-Z.|]{3,6}\s+([\w.\-]+)\s")
 
 
+NO_WINDOW: int = getattr(subprocess, "CREATE_NO_WINDOW", 0)  # Windows only
+
+
 def run_sync(
     args: list[str], timeout: float = 20.0, input_bytes: bytes | None = None
 ) -> subprocess.CompletedProcess[bytes]:
     """Run a short command without a console window on Windows. Never raises on failure."""
-    kwargs: dict[str, object] = {}
-    if sys.platform == "win32":
-        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
     try:
         return subprocess.run(  # noqa: S603
             args,
@@ -32,7 +32,7 @@ def run_sync(
             capture_output=True,
             timeout=timeout,
             check=False,
-            **kwargs,  # type: ignore[arg-type]
+            creationflags=NO_WINDOW,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         return subprocess.CompletedProcess(args, 127, b"", str(exc).encode())

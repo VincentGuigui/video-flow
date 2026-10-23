@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import sys
 from collections import deque
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
@@ -13,6 +12,7 @@ from fractions import Fraction
 from pathlib import Path
 
 from videoflow.media.caps import (
+    NO_WINDOW,
     FFmpegCaps,
     get_caps,
     locate_binaries,
@@ -156,17 +156,12 @@ async def run(
     """
     exe = str(ffmpeg) if ffmpeg else str(locate_binaries().ffmpeg)
     cmd = [exe, "-hide_banner", "-nostats", "-progress", "pipe:1", *args]
-    kwargs: dict[str, object] = {}
-    if sys.platform == "win32":
-        import subprocess
-
-        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
     proc = await asyncio.create_subprocess_exec(
         *cmd,
         stdin=asyncio.subprocess.PIPE,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
-        **kwargs,  # type: ignore[arg-type]
+        creationflags=NO_WINDOW,
     )
     assert proc.stdout is not None and proc.stderr is not None
     tail: deque[str] = deque(maxlen=STDERR_TAIL_LINES)
@@ -176,7 +171,7 @@ async def run(
     ]
     waiter = asyncio.create_task(proc.wait())
     cancel_task = asyncio.create_task(cancel.wait()) if cancel else None
-    watch: set[asyncio.Task[object]] = {waiter, *([cancel_task] if cancel_task else [])}  # type: ignore[misc]
+    watch: set[asyncio.Task[object]] = {waiter, *([cancel_task] if cancel_task else [])}
     cancelled = timed_out = False
     try:
         await asyncio.wait(watch, timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
@@ -280,7 +275,7 @@ def _seconds_to_us(text: object) -> int | None:
 
 def _int(text: object) -> int | None:
     try:
-        return int(text)  # type: ignore[call-overload]
+        return int(text)  # type: ignore[call-overload,no-any-return]
     except (TypeError, ValueError):
         return None
 
@@ -391,18 +386,13 @@ def parse_probe(path: Path, data: dict[str, object]) -> ProbeResult:
 async def probe(path: Path | str, ffprobe: Path | str | None = None) -> ProbeResult:
     """Run ffprobe on `path` and return a typed result. Raises ProbeError on failure."""
     exe = str(ffprobe) if ffprobe else str(locate_binaries().ffprobe)
-    kwargs: dict[str, object] = {}
-    if sys.platform == "win32":
-        import subprocess
-
-        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
     proc = await asyncio.create_subprocess_exec(
         exe, "-v", "error", "-print_format", "json", "-show_format", "-show_streams",
         str(path),
         stdin=asyncio.subprocess.DEVNULL,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
-        **kwargs,  # type: ignore[arg-type]
+        creationflags=NO_WINDOW,
     )  # fmt: skip
     out, err = await proc.communicate()
     if proc.returncode != 0:
