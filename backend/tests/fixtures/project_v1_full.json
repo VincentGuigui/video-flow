@@ -1,0 +1,518 @@
+{
+  "schemaVersion": 1,
+  "app": {
+    "writer": "videoflow 0.1.0",
+    "minReader": 1
+  },
+  "id": "prj_01K884QRM00000000000000001",
+  "name": "Unboxing X200",
+  "revision": 42,
+  "pipelineVersion": "2026.10.0",
+  "settings": {
+    "width": 1920,
+    "height": 1080,
+    "frameRate": {
+      "num": 30000,
+      "den": 1001
+    },
+    "sampleRate": 48000,
+    "language": "fr",
+    "loudnessTarget": {
+      "integrated": -14.0,
+      "truePeak": -1.0
+    },
+    "clipPadding": {
+      "beforeUs": 150000,
+      "afterUs": 300000
+    },
+    "defaultTransition": {
+      "type": "dissolve",
+      "durationUs": 500000
+    },
+    "grouping": {
+      "sensitivity": 0.5,
+      "weights": {
+        "completeness": 0.3,
+        "fluency": 0.2
+      }
+    },
+    "llmProvider": "local"
+  },
+  "assets": [
+    {
+      "id": "ast_01K884QRM00000000000000001",
+      "path": "/home/v/Rushes/IMG_0412.MOV",
+      "relPath": "Rushes/IMG_0412.MOV",
+      "contentHash": "xxh3:9c1e4b7a00d2f611",
+      "probe": {
+        "durationUs": 48200000,
+        "video": {
+          "width": 3840,
+          "height": 2160,
+          "rotation": 0,
+          "frameRate": {
+            "num": 30000,
+            "den": 1001
+          },
+          "vfr": true,
+          "hdr": "hlg",
+          "codec": "hevc"
+        },
+        "audioStreams": [
+          {
+            "index": 1,
+            "channels": 2,
+            "sampleRate": 48000,
+            "codec": "aac",
+            "language": null
+          }
+        ],
+        "creationTime": "2026-10-20T14:02:11+02:00",
+        "creationTimeReliable": true
+      }
+    },
+    {
+      "id": "ast_01K884QRM00000000000000002",
+      "path": "C:\\Users\\v\\Rushes\\VID_0007.mp4",
+      "relPath": "Rushes/VID_0007.mp4",
+      "contentHash": "xxh3:51aa09e3c4b8d702",
+      "probe": {
+        "durationUs": 31500000,
+        "video": {
+          "width": 1920,
+          "height": 1080,
+          "rotation": 90,
+          "frameRate": {
+            "num": 30,
+            "den": 1
+          },
+          "vfr": false,
+          "hdr": "none",
+          "codec": "h264"
+        },
+        "audioStreams": [
+          {
+            "index": 1,
+            "channels": 1,
+            "sampleRate": 44100,
+            "codec": "aac",
+            "language": "fra"
+          }
+        ],
+        "creationTime": null,
+        "creationTimeReliable": false
+      }
+    },
+    {
+      "id": "ast_01K884QRM00000000000000003",
+      "path": "/home/v/Rushes/broll_box.mp4",
+      "relPath": null,
+      "contentHash": "xxh3:0f3d7781bb2e4c90",
+      "probe": {
+        "durationUs": 12000000,
+        "video": {
+          "width": 1920,
+          "height": 1080,
+          "rotation": 0,
+          "frameRate": {
+            "num": 24000,
+            "den": 1001
+          },
+          "vfr": false,
+          "hdr": "none",
+          "codec": "h264"
+        },
+        "audioStreams": [],
+        "creationTime": "2026-10-20T14:30:00Z",
+        "creationTimeReliable": true
+      }
+    },
+    {
+      "id": "ast_01K884QRM00000000000000004",
+      "path": "/home/v/Rushes/lav_0412.wav",
+      "relPath": "Rushes/lav_0412.wav",
+      "contentHash": "xxh3:77c2a1d0e5f4b318",
+      "probe": {
+        "durationUs": 50000000,
+        "video": null,
+        "audioStreams": [
+          {
+            "index": 0,
+            "channels": 1,
+            "sampleRate": 48000,
+            "codec": "pcm_s24le",
+            "language": null
+          }
+        ],
+        "creationTime": "2026-10-20T14:02:08+02:00",
+        "creationTimeReliable": true
+      }
+    }
+  ],
+  "syncGroups": [
+    {
+      "id": "sgp_01K884QRM00000000000000001",
+      "label": "Cam A + lav",
+      "members": [
+        {
+          "assetId": "ast_01K884QRM00000000000000001",
+          "offsetUs": 0,
+          "driftPpm": 0.0
+        },
+        {
+          "assetId": "ast_01K884QRM00000000000000004",
+          "offsetUs": -3217000,
+          "driftPpm": 12.5
+        }
+      ]
+    }
+  ],
+  "beats": [
+    {
+      "id": "beat_01K884QRM00000000000000069",
+      "label": "Ouverture",
+      "summary": "Présentation du X200",
+      "role": "intro",
+      "kind": "speech",
+      "included": true,
+      "locked": false,
+      "takes": [
+        {
+          "segmentId": "seg_01K884QRM00000000000000035",
+          "assetId": "ast_01K884QRM00000000000000001",
+          "range": {
+            "startUs": 1000000,
+            "endUs": 6400000
+          },
+          "status": "selected",
+          "needsRelink": false
+        }
+      ],
+      "cut": [
+        {
+          "id": "clip_01K884QRM0000000000000009D",
+          "assetId": "ast_01K884QRM00000000000000001",
+          "segmentId": "seg_01K884QRM00000000000000035",
+          "sourceInUs": 850000,
+          "sourceOutUs": 6700000,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "replacement": null,
+            "gainDb": 0.0,
+            "fadeInUs": 200000,
+            "fadeOutUs": 0
+          },
+          "angleAssetId": null
+        }
+      ]
+    },
+    {
+      "id": "beat_01K884QRM0000000000000006A",
+      "label": "Accessoires dans la boîte",
+      "summary": null,
+      "role": "content",
+      "kind": "speech",
+      "included": true,
+      "locked": true,
+      "takes": [
+        {
+          "segmentId": "seg_01K884QRM00000000000000036",
+          "assetId": "ast_01K884QRM00000000000000001",
+          "range": {
+            "startUs": 12200000,
+            "endUs": 26400000
+          },
+          "status": "selected",
+          "needsRelink": false
+        },
+        {
+          "segmentId": "seg_01K884QRM00000000000000037",
+          "assetId": "ast_01K884QRM00000000000000002",
+          "range": {
+            "startUs": 3100000,
+            "endUs": 19900000
+          },
+          "status": "alternate",
+          "needsRelink": false
+        },
+        {
+          "segmentId": "seg_01K884QRM00000000000000038",
+          "assetId": "ast_01K884QRM00000000000000002",
+          "range": {
+            "startUs": 300000,
+            "endUs": 4400000
+          },
+          "status": "rejected",
+          "needsRelink": true
+        }
+      ],
+      "cut": [
+        {
+          "id": "clip_01K884QRM0000000000000009E",
+          "assetId": "ast_01K884QRM00000000000000001",
+          "segmentId": "seg_01K884QRM00000000000000036",
+          "sourceInUs": 12050000,
+          "sourceOutUs": 18000000,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "replacement": null,
+            "gainDb": 0.0,
+            "fadeInUs": 0,
+            "fadeOutUs": 0
+          },
+          "angleAssetId": "ast_01K884QRM00000000000000001"
+        },
+        {
+          "id": "clip_01K884QRM0000000000000009F",
+          "assetId": "ast_01K884QRM00000000000000001",
+          "segmentId": "seg_01K884QRM00000000000000036",
+          "sourceInUs": 18000000,
+          "sourceOutUs": 26700000,
+          "enabled": true,
+          "audio": {
+            "mode": "replaced",
+            "replacement": {
+              "assetId": "ast_01K884QRM00000000000000004",
+              "sourceInUs": 21217000
+            },
+            "gainDb": -2.5,
+            "fadeInUs": 0,
+            "fadeOutUs": 100000
+          },
+          "angleAssetId": null
+        }
+      ]
+    },
+    {
+      "id": "beat_01K884QRM0000000000000006B",
+      "label": "Démo du chargeur",
+      "summary": null,
+      "role": "content",
+      "kind": "speech",
+      "included": true,
+      "locked": false,
+      "takes": [
+        {
+          "segmentId": "seg_01K884QRM00000000000000039",
+          "assetId": "ast_01K884QRM00000000000000002",
+          "range": {
+            "startUs": 21000000,
+            "endUs": 30000000
+          },
+          "status": "selected",
+          "needsRelink": false
+        },
+        {
+          "segmentId": "seg_01K884QRM0000000000000003A",
+          "assetId": "ast_01K884QRM00000000000000001",
+          "range": {
+            "startUs": 30000000,
+            "endUs": 40000000
+          },
+          "status": "alternate",
+          "needsRelink": false
+        }
+      ],
+      "cut": [
+        {
+          "id": "clip_01K884QRM0000000000000009G",
+          "assetId": "ast_01K884QRM00000000000000002",
+          "segmentId": "seg_01K884QRM00000000000000039",
+          "sourceInUs": 20850000,
+          "sourceOutUs": 30300000,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "replacement": null,
+            "gainDb": 0.0,
+            "fadeInUs": 0,
+            "fadeOutUs": 0
+          },
+          "angleAssetId": null
+        }
+      ]
+    },
+    {
+      "id": "beat_01K884QRM0000000000000006C",
+      "label": "Hors sujet",
+      "summary": null,
+      "role": "off_topic",
+      "kind": "speech",
+      "included": false,
+      "locked": false,
+      "takes": [
+        {
+          "segmentId": "seg_01K884QRM0000000000000003B",
+          "assetId": "ast_01K884QRM00000000000000001",
+          "range": {
+            "startUs": 42000000,
+            "endUs": 45000000
+          },
+          "status": "selected",
+          "needsRelink": false
+        }
+      ],
+      "cut": [
+        {
+          "id": "clip_01K884QRM0000000000000009H",
+          "assetId": "ast_01K884QRM00000000000000001",
+          "segmentId": "seg_01K884QRM0000000000000003B",
+          "sourceInUs": 41850000,
+          "sourceOutUs": 45300000,
+          "enabled": true,
+          "audio": {
+            "mode": "linked",
+            "replacement": null,
+            "gainDb": 0.0,
+            "fadeInUs": 0,
+            "fadeOutUs": 0
+          },
+          "angleAssetId": null
+        }
+      ]
+    }
+  ],
+  "overlays": [
+    {
+      "id": "ovl_01K884QRM00000000000000001",
+      "track": "V2",
+      "assetId": "ast_01K884QRM00000000000000003",
+      "sourceInUs": 2000000,
+      "sourceOutUs": 6500000,
+      "anchor": {
+        "type": "beat",
+        "beatId": "beat_01K884QRM0000000000000006A",
+        "offsetUs": 3000000
+      },
+      "enabled": true,
+      "audio": {
+        "mode": "muted",
+        "gainDb": 0.0
+      },
+      "fit": "fill"
+    },
+    {
+      "id": "ovl_01K884QRM00000000000000002",
+      "track": "V2",
+      "assetId": "ast_01K884QRM00000000000000003",
+      "sourceInUs": 7000000,
+      "sourceOutUs": 9000000,
+      "anchor": {
+        "type": "project",
+        "timeUs": 1000000
+      },
+      "enabled": true,
+      "audio": {
+        "mode": "muted",
+        "gainDb": 0.0
+      },
+      "fit": {
+        "x": 0.65,
+        "y": 0.05,
+        "scale": 0.3
+      }
+    }
+  ],
+  "transitions": [
+    {
+      "id": "tr_01K884QRM000000000000000CH",
+      "afterItemId": "clip_01K884QRM0000000000000009D",
+      "beforeItemId": "clip_01K884QRM0000000000000009E",
+      "type": "dissolve",
+      "durationUs": 500000,
+      "alignment": "center",
+      "audio": "follow",
+      "params": null
+    },
+    {
+      "id": "tr_01K884QRM000000000000000CJ",
+      "afterItemId": "clip_01K884QRM0000000000000009F",
+      "beforeItemId": "clip_01K884QRM0000000000000009G",
+      "type": "dip_black",
+      "durationUs": 800000,
+      "alignment": "start",
+      "audio": {
+        "type": "crossfade",
+        "durationUs": 400000
+      },
+      "params": {
+        "holdFrames": 2
+      }
+    },
+    {
+      "id": "tr_01K884QRM000000000000000CK",
+      "afterItemId": "clip_01K884QRM0000000000000009G",
+      "beforeItemId": "clip_01K884QRM0000000000000009H",
+      "type": "wipe_left",
+      "durationUs": 500000,
+      "alignment": "end",
+      "audio": "cut",
+      "params": null
+    }
+  ],
+  "constraints": [
+    {
+      "id": "cst_01K884QRM00000000000000001",
+      "type": "cannot_link",
+      "a": "seg_01K884QRM00000000000000037",
+      "b": "seg_01K884QRM0000000000000003A",
+      "createdAt": "2026-10-23T10:12:00Z"
+    },
+    {
+      "id": "cst_01K884QRM00000000000000002",
+      "type": "must_link",
+      "a": "seg_01K884QRM00000000000000036",
+      "b": "seg_01K884QRM00000000000000037",
+      "createdAt": "2026-10-23T10:13:30Z"
+    }
+  ],
+  "markers": [
+    {
+      "id": "mrk_01K884QRM00000000000000001",
+      "target": {
+        "type": "item",
+        "itemId": "clip_01K884QRM0000000000000009F"
+      },
+      "timeUs": 20000000,
+      "note": "Reflet sur la boîte",
+      "color": "#e5484d"
+    },
+    {
+      "id": "mrk_01K884QRM00000000000000002",
+      "target": {
+        "type": "asset",
+        "assetId": "ast_01K884QRM00000000000000003"
+      },
+      "timeUs": 4000000,
+      "note": "Plus beau plan",
+      "color": null
+    },
+    {
+      "id": "mrk_01K884QRM00000000000000003",
+      "target": {
+        "type": "timeline"
+      },
+      "timeUs": 0,
+      "note": "Début",
+      "color": null
+    }
+  ],
+  "overrides": {
+    "transcriptEdits": [
+      {
+        "id": "ted_01K884QRM00000000000000001",
+        "assetId": "ast_01K884QRM00000000000000001",
+        "range": {
+          "startUs": 13000000,
+          "endUs": 13600000
+        },
+        "text": "USB-C"
+      }
+    ],
+    "dismissedSegmentIds": [
+      "seg_01K884QRM0000000000000003C"
+    ]
+  }
+}

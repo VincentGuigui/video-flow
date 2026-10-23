@@ -1,0 +1,1431 @@
+{
+  "$defs": {
+    "AlignmentName": {
+      "enum": [
+        "center",
+        "start",
+        "end"
+      ],
+      "type": "string"
+    },
+    "AppStamp": {
+      "additionalProperties": true,
+      "description": "Who wrote the file and the minimum schema version needed to write it back.",
+      "properties": {
+        "minReader": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Minreader",
+          "type": "integer"
+        },
+        "writer": {
+          "title": "Writer",
+          "type": "string"
+        }
+      },
+      "title": "AppStamp",
+      "type": "object"
+    },
+    "Asset": {
+      "additionalProperties": true,
+      "properties": {
+        "contentHash": {
+          "title": "Contenthash",
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "probe": {
+          "$ref": "#/$defs/AssetProbe"
+        },
+        "relPath": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relpath"
+        }
+      },
+      "required": [
+        "id",
+        "path",
+        "contentHash",
+        "probe"
+      ],
+      "title": "Asset",
+      "type": "object"
+    },
+    "AssetMarkerTarget": {
+      "additionalProperties": true,
+      "description": "``time_us`` is source time of the asset.",
+      "properties": {
+        "assetId": {
+          "$ref": "#/$defs/Id"
+        },
+        "type": {
+          "const": "asset",
+          "default": "asset",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "assetId"
+      ],
+      "title": "AssetMarkerTarget",
+      "type": "object"
+    },
+    "AssetProbe": {
+      "additionalProperties": true,
+      "properties": {
+        "audioStreams": {
+          "items": {
+            "$ref": "#/$defs/AudioStreamInfo"
+          },
+          "title": "Audiostreams",
+          "type": "array"
+        },
+        "creationTime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Creationtime"
+        },
+        "creationTimeReliable": {
+          "default": false,
+          "title": "Creationtimereliable",
+          "type": "boolean"
+        },
+        "durationUs": {
+          "minimum": 0,
+          "title": "Durationus",
+          "type": "integer"
+        },
+        "video": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VideoStreamInfo"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "durationUs"
+      ],
+      "title": "AssetProbe",
+      "type": "object"
+    },
+    "AudioModeName": {
+      "enum": [
+        "linked",
+        "replaced",
+        "muted"
+      ],
+      "type": "string"
+    },
+    "AudioReplacement": {
+      "additionalProperties": true,
+      "properties": {
+        "assetId": {
+          "$ref": "#/$defs/Id"
+        },
+        "sourceInUs": {
+          "minimum": 0,
+          "title": "Sourceinus",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "assetId",
+        "sourceInUs"
+      ],
+      "title": "AudioReplacement",
+      "type": "object"
+    },
+    "AudioStreamInfo": {
+      "additionalProperties": true,
+      "properties": {
+        "channels": {
+          "exclusiveMinimum": 0,
+          "title": "Channels",
+          "type": "integer"
+        },
+        "codec": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Codec"
+        },
+        "index": {
+          "minimum": 0,
+          "title": "Index",
+          "type": "integer"
+        },
+        "language": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Language"
+        },
+        "sampleRate": {
+          "exclusiveMinimum": 0,
+          "title": "Samplerate",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "index",
+        "channels",
+        "sampleRate"
+      ],
+      "title": "AudioStreamInfo",
+      "type": "object"
+    },
+    "Beat": {
+      "additionalProperties": true,
+      "properties": {
+        "cut": {
+          "items": {
+            "$ref": "#/$defs/ClipItem"
+          },
+          "title": "Cut",
+          "type": "array"
+        },
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "included": {
+          "default": true,
+          "title": "Included",
+          "type": "boolean"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BeatKindName"
+            },
+            {
+              "minLength": 1,
+              "type": "string"
+            }
+          ],
+          "default": "speech",
+          "title": "Kind"
+        },
+        "label": {
+          "default": "",
+          "title": "Label",
+          "type": "string"
+        },
+        "locked": {
+          "default": false,
+          "title": "Locked",
+          "type": "boolean"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BeatRoleName"
+            },
+            {
+              "minLength": 1,
+              "type": "string"
+            }
+          ],
+          "default": "content",
+          "title": "Role"
+        },
+        "summary": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Summary"
+        },
+        "takes": {
+          "items": {
+            "$ref": "#/$defs/TakeRef"
+          },
+          "title": "Takes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "Beat",
+      "type": "object"
+    },
+    "BeatAnchor": {
+      "additionalProperties": true,
+      "description": "Offset from the anchored beat's visible start on the main line.",
+      "properties": {
+        "beatId": {
+          "$ref": "#/$defs/Id"
+        },
+        "offsetUs": {
+          "$ref": "#/$defs/Micros",
+          "default": 0
+        },
+        "type": {
+          "const": "beat",
+          "default": "beat",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "beatId"
+      ],
+      "title": "BeatAnchor",
+      "type": "object"
+    },
+    "BeatKindName": {
+      "enum": [
+        "speech",
+        "visual"
+      ],
+      "type": "string"
+    },
+    "BeatRoleName": {
+      "enum": [
+        "intro",
+        "content",
+        "transition",
+        "outro",
+        "off_topic"
+      ],
+      "type": "string"
+    },
+    "ClipAudio": {
+      "additionalProperties": true,
+      "properties": {
+        "fadeInUs": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Fadeinus",
+          "type": "integer"
+        },
+        "fadeOutUs": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Fadeoutus",
+          "type": "integer"
+        },
+        "gainDb": {
+          "default": 0.0,
+          "title": "Gaindb",
+          "type": "number"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioModeName"
+            },
+            {
+              "minLength": 1,
+              "type": "string"
+            }
+          ],
+          "default": "linked",
+          "title": "Mode"
+        },
+        "replacement": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioReplacement"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "ClipAudio",
+      "type": "object"
+    },
+    "ClipItem": {
+      "additionalProperties": true,
+      "description": "A main-line (V1 + A1) item: a source range of one asset.",
+      "properties": {
+        "angleAssetId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "assetId": {
+          "$ref": "#/$defs/Id"
+        },
+        "audio": {
+          "$ref": "#/$defs/ClipAudio"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "segmentId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sourceInUs": {
+          "minimum": 0,
+          "title": "Sourceinus",
+          "type": "integer"
+        },
+        "sourceOutUs": {
+          "minimum": 0,
+          "title": "Sourceoutus",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "assetId",
+        "sourceInUs",
+        "sourceOutUs"
+      ],
+      "title": "ClipItem",
+      "type": "object"
+    },
+    "ClipPadding": {
+      "additionalProperties": true,
+      "description": "Padding added around a take's word range when it becomes a cut item.",
+      "properties": {
+        "afterUs": {
+          "default": 300000,
+          "minimum": 0,
+          "title": "Afterus",
+          "type": "integer"
+        },
+        "beforeUs": {
+          "default": 150000,
+          "minimum": 0,
+          "title": "Beforeus",
+          "type": "integer"
+        }
+      },
+      "title": "ClipPadding",
+      "type": "object"
+    },
+    "ConstraintTypeName": {
+      "enum": [
+        "must_link",
+        "cannot_link"
+      ],
+      "type": "string"
+    },
+    "CrossfadeAudio": {
+      "additionalProperties": true,
+      "properties": {
+        "durationUs": {
+          "minimum": 0,
+          "title": "Durationus",
+          "type": "integer"
+        },
+        "type": {
+          "const": "crossfade",
+          "default": "crossfade",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "durationUs"
+      ],
+      "title": "CrossfadeAudio",
+      "type": "object"
+    },
+    "DefaultTransition": {
+      "additionalProperties": true,
+      "properties": {
+        "durationUs": {
+          "default": 500000,
+          "minimum": 0,
+          "title": "Durationus",
+          "type": "integer"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TransitionTypeName"
+            },
+            {
+              "minLength": 1,
+              "type": "string"
+            }
+          ],
+          "default": "dissolve",
+          "title": "Type"
+        }
+      },
+      "title": "DefaultTransition",
+      "type": "object"
+    },
+    "FitRect": {
+      "additionalProperties": true,
+      "properties": {
+        "scale": {
+          "default": 1.0,
+          "exclusiveMinimum": 0.0,
+          "title": "Scale",
+          "type": "number"
+        },
+        "x": {
+          "default": 0.0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "default": 0.0,
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "title": "FitRect",
+      "type": "object"
+    },
+    "GroupingConstraint": {
+      "additionalProperties": true,
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/Id"
+        },
+        "b": {
+          "$ref": "#/$defs/Id"
+        },
+        "createdAt": {
+          "title": "Createdat",
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConstraintTypeName"
+            },
+            {
+              "minLength": 1,
+              "type": "string"
+            }
+          ],
+          "title": "Type"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "a",
+        "b",
+        "createdAt"
+      ],
+      "title": "GroupingConstraint",
+      "type": "object"
+    },
+    "GroupingSettings": {
+      "additionalProperties": true,
+      "properties": {
+        "sensitivity": {
+          "default": 0.5,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Sensitivity",
+          "type": "number"
+        },
+        "weights": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weights"
+        }
+      },
+      "title": "GroupingSettings",
+      "type": "object"
+    },
+    "HdrName": {
+      "enum": [
+        "none",
+        "hlg",
+        "pq"
+      ],
+      "type": "string"
+    },
+    "Id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "ItemMarkerTarget": {
+      "additionalProperties": true,
+      "description": "``time_us`` is source time of the item's asset.",
+      "properties": {
+        "itemId": {
+          "$ref": "#/$defs/Id"
+        },
+        "type": {
+          "const": "item",
+          "default": "item",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "itemId"
+      ],
+      "title": "ItemMarkerTarget",
+      "type": "object"
+    },
+    "LlmProviderName": {
+      "enum": [
+        "none",
+        "local",
+        "anthropic"
+      ],
+      "type": "string"
+    },
+    "LoudnessTarget": {
+      "additionalProperties": true,
+      "properties": {
+        "integrated": {
+          "default": -14.0,
+          "title": "Integrated",
+          "type": "number"
+        },
+        "truePeak": {
+          "default": -1.0,
+          "title": "Truepeak",
+          "type": "number"
+        }
+      },
+      "title": "LoudnessTarget",
+      "type": "object"
+    },
+    "Marker": {
+      "additionalProperties": true,
+      "properties": {
+        "color": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Color"
+        },
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "note": {
+          "default": "",
+          "title": "Note",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/MarkerTarget"
+        },
+        "timeUs": {
+          "minimum": 0,
+          "title": "Timeus",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "target",
+        "timeUs"
+      ],
+      "title": "Marker",
+      "type": "object"
+    },
+    "MarkerTarget": {
+      "discriminator": {
+        "mapping": {
+          "asset": "#/$defs/AssetMarkerTarget",
+          "item": "#/$defs/ItemMarkerTarget",
+          "timeline": "#/$defs/TimelineMarkerTarget"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ItemMarkerTarget"
+        },
+        {
+          "$ref": "#/$defs/AssetMarkerTarget"
+        },
+        {
+          "$ref": "#/$defs/TimelineMarkerTarget"
+        }
+      ]
+    },
+    "Micros": {
+      "type": "integer"
+    },
+    "OverlayAnchor": {
+      "discriminator": {
+        "mapping": {
+          "beat": "#/$defs/BeatAnchor",
+          "project": "#/$defs/ProjectAnchor"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/BeatAnchor"
+        },
+        {
+          "$ref": "#/$defs/ProjectAnchor"
+        }
+      ]
+    },
+    "OverlayAudio": {
+      "additionalProperties": true,
+      "properties": {
+        "gainDb": {
+          "default": 0.0,
+          "title": "Gaindb",
+          "type": "number"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OverlayAudioModeName"
+            },
+            {
+              "minLength": 1,
+              "type": "string"
+            }
+          ],
+          "default": "muted",
+          "title": "Mode"
+        }
+      },
+      "title": "OverlayAudio",
+      "type": "object"
+    },
+    "OverlayAudioModeName": {
+      "enum": [
+        "muted",
+        "mix"
+      ],
+      "type": "string"
+    },
+    "OverlayFit": {
+      "anyOf": [
+        {
+          "enum": [
+            "fill",
+            "fit"
+          ],
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/FitRect"
+        },
+        {
+          "minLength": 1,
+          "type": "string"
+        }
+      ]
+    },
+    "OverlayItem": {
+      "additionalProperties": true,
+      "properties": {
+        "anchor": {
+          "$ref": "#/$defs/OverlayAnchor"
+        },
+        "assetId": {
+          "$ref": "#/$defs/Id"
+        },
+        "audio": {
+          "$ref": "#/$defs/OverlayAudio"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "fit": {
+          "$ref": "#/$defs/OverlayFit",
+          "default": "fill"
+        },
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "sourceInUs": {
+          "minimum": 0,
+          "title": "Sourceinus",
+          "type": "integer"
+        },
+        "sourceOutUs": {
+          "minimum": 0,
+          "title": "Sourceoutus",
+          "type": "integer"
+        },
+        "track": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TrackName"
+            },
+            {
+              "minLength": 1,
+              "type": "string"
+            }
+          ],
+          "default": "V2",
+          "title": "Track"
+        }
+      },
+      "required": [
+        "id",
+        "assetId",
+        "sourceInUs",
+        "sourceOutUs",
+        "anchor"
+      ],
+      "title": "OverlayItem",
+      "type": "object"
+    },
+    "Overrides": {
+      "additionalProperties": true,
+      "description": "User overrides applied on top of the analysis cache (survive re-analysis).",
+      "properties": {
+        "dismissedSegmentIds": {
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "title": "Dismissedsegmentids",
+          "type": "array"
+        },
+        "transcriptEdits": {
+          "items": {
+            "$ref": "#/$defs/TranscriptEdit"
+          },
+          "title": "Transcriptedits",
+          "type": "array"
+        }
+      },
+      "title": "Overrides",
+      "type": "object"
+    },
+    "ProjectAnchor": {
+      "additionalProperties": true,
+      "description": "Absolute timeline time (does not follow ripple edits).",
+      "properties": {
+        "timeUs": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Timeus",
+          "type": "integer"
+        },
+        "type": {
+          "const": "project",
+          "default": "project",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "title": "ProjectAnchor",
+      "type": "object"
+    },
+    "ProjectSettings": {
+      "additionalProperties": true,
+      "properties": {
+        "clipPadding": {
+          "$ref": "#/$defs/ClipPadding"
+        },
+        "defaultTransition": {
+          "$ref": "#/$defs/DefaultTransition"
+        },
+        "frameRate": {
+          "$ref": "#/$defs/Rational"
+        },
+        "grouping": {
+          "$ref": "#/$defs/GroupingSettings"
+        },
+        "height": {
+          "default": 1080,
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "integer"
+        },
+        "language": {
+          "default": "fr",
+          "title": "Language",
+          "type": "string"
+        },
+        "llmProvider": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LlmProviderName"
+            },
+            {
+              "minLength": 1,
+              "type": "string"
+            }
+          ],
+          "default": "none",
+          "title": "Llmprovider"
+        },
+        "loudnessTarget": {
+          "$ref": "#/$defs/LoudnessTarget"
+        },
+        "sampleRate": {
+          "default": 48000,
+          "exclusiveMinimum": 0,
+          "title": "Samplerate",
+          "type": "integer"
+        },
+        "width": {
+          "default": 1920,
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "integer"
+        }
+      },
+      "title": "ProjectSettings",
+      "type": "object"
+    },
+    "Rational": {
+      "additionalProperties": true,
+      "description": "A positive rational rate, e.g. ``Rational(num=30000, den=1001)`` for 29.97 fps.",
+      "properties": {
+        "den": {
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "title": "Den",
+          "type": "integer"
+        },
+        "num": {
+          "exclusiveMinimum": 0,
+          "title": "Num",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "num"
+      ],
+      "title": "Rational",
+      "type": "object"
+    },
+    "SyncGroup": {
+      "additionalProperties": true,
+      "description": "Simultaneous recordings of the same moment (multicam / external audio).",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "members": {
+          "items": {
+            "$ref": "#/$defs/SyncMember"
+          },
+          "title": "Members",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "SyncGroup",
+      "type": "object"
+    },
+    "SyncMember": {
+      "additionalProperties": true,
+      "properties": {
+        "assetId": {
+          "$ref": "#/$defs/Id"
+        },
+        "driftPpm": {
+          "default": 0.0,
+          "title": "Driftppm",
+          "type": "number"
+        },
+        "offsetUs": {
+          "$ref": "#/$defs/Micros",
+          "default": 0
+        }
+      },
+      "required": [
+        "assetId"
+      ],
+      "title": "SyncMember",
+      "type": "object"
+    },
+    "TakeRef": {
+      "additionalProperties": true,
+      "description": "A segment proposed or accepted as a take of a beat. Scores/flags are not stored.",
+      "properties": {
+        "assetId": {
+          "$ref": "#/$defs/Id"
+        },
+        "needsRelink": {
+          "default": false,
+          "title": "Needsrelink",
+          "type": "boolean"
+        },
+        "range": {
+          "$ref": "#/$defs/TimeRange"
+        },
+        "segmentId": {
+          "$ref": "#/$defs/Id"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TakeStatusName"
+            },
+            {
+              "minLength": 1,
+              "type": "string"
+            }
+          ],
+          "default": "alternate",
+          "title": "Status"
+        }
+      },
+      "required": [
+        "segmentId",
+        "assetId",
+        "range"
+      ],
+      "title": "TakeRef",
+      "type": "object"
+    },
+    "TakeStatusName": {
+      "enum": [
+        "selected",
+        "alternate",
+        "rejected"
+      ],
+      "type": "string"
+    },
+    "TimeRange": {
+      "additionalProperties": true,
+      "description": "Half-open range ``[start_us, end_us)`` in microseconds.",
+      "properties": {
+        "endUs": {
+          "$ref": "#/$defs/Micros"
+        },
+        "startUs": {
+          "$ref": "#/$defs/Micros"
+        }
+      },
+      "required": [
+        "startUs",
+        "endUs"
+      ],
+      "title": "TimeRange",
+      "type": "object"
+    },
+    "TimelineMarkerTarget": {
+      "additionalProperties": true,
+      "description": "``time_us`` is timeline time.",
+      "properties": {
+        "type": {
+          "const": "timeline",
+          "default": "timeline",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "title": "TimelineMarkerTarget",
+      "type": "object"
+    },
+    "TrackName": {
+      "enum": [
+        "V2",
+        "A2"
+      ],
+      "type": "string"
+    },
+    "TranscriptEdit": {
+      "additionalProperties": true,
+      "description": "User correction of the transcript words of ``asset_id`` within a source range.",
+      "properties": {
+        "assetId": {
+          "$ref": "#/$defs/Id"
+        },
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "range": {
+          "$ref": "#/$defs/TimeRange"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "assetId",
+        "range",
+        "text"
+      ],
+      "title": "TranscriptEdit",
+      "type": "object"
+    },
+    "Transition": {
+      "additionalProperties": true,
+      "description": "Transition on the main-line cut after ``after_item_id``.\n\nActive only while ``before_item_id`` directly follows ``after_item_id`` on the main\nline; dormant otherwise (kept, compiled as a hard cut with a warning).",
+      "properties": {
+        "afterItemId": {
+          "$ref": "#/$defs/Id"
+        },
+        "alignment": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AlignmentName"
+            },
+            {
+              "minLength": 1,
+              "type": "string"
+            }
+          ],
+          "default": "center",
+          "title": "Alignment"
+        },
+        "audio": {
+          "$ref": "#/$defs/TransitionAudio",
+          "default": "follow"
+        },
+        "beforeItemId": {
+          "$ref": "#/$defs/Id"
+        },
+        "durationUs": {
+          "default": 500000,
+          "minimum": 0,
+          "title": "Durationus",
+          "type": "integer"
+        },
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "params": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Params"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TransitionTypeName"
+            },
+            {
+              "minLength": 1,
+              "type": "string"
+            }
+          ],
+          "default": "dissolve",
+          "title": "Type"
+        }
+      },
+      "required": [
+        "id",
+        "afterItemId",
+        "beforeItemId"
+      ],
+      "title": "Transition",
+      "type": "object"
+    },
+    "TransitionAudio": {
+      "anyOf": [
+        {
+          "enum": [
+            "follow",
+            "cut"
+          ],
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/CrossfadeAudio"
+        },
+        {
+          "minLength": 1,
+          "type": "string"
+        }
+      ]
+    },
+    "TransitionTypeName": {
+      "enum": [
+        "cut",
+        "dissolve",
+        "dip_black",
+        "dip_white",
+        "wipe_left",
+        "wipe_right",
+        "wipe_up",
+        "wipe_down",
+        "slide_left",
+        "slide_right",
+        "slide_up",
+        "slide_down",
+        "smooth_left",
+        "smooth_right",
+        "smooth_up",
+        "smooth_down",
+        "circle_open",
+        "circle_close",
+        "radial",
+        "zoom_in",
+        "pixelize",
+        "noise_dissolve",
+        "custom_expr"
+      ],
+      "type": "string"
+    },
+    "VideoStreamInfo": {
+      "additionalProperties": true,
+      "properties": {
+        "codec": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Codec"
+        },
+        "frameRate": {
+          "$ref": "#/$defs/Rational"
+        },
+        "hdr": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HdrName"
+            },
+            {
+              "minLength": 1,
+              "type": "string"
+            }
+          ],
+          "default": "none",
+          "title": "Hdr"
+        },
+        "height": {
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "integer"
+        },
+        "rotation": {
+          "default": 0,
+          "enum": [
+            0,
+            90,
+            180,
+            270
+          ],
+          "title": "Rotation",
+          "type": "integer"
+        },
+        "vfr": {
+          "default": false,
+          "title": "Vfr",
+          "type": "boolean"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "width",
+        "height",
+        "frameRate"
+      ],
+      "title": "VideoStreamInfo",
+      "type": "object"
+    }
+  },
+  "$id": "https://video-flow.local/schema/project.v1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "app": {
+      "$ref": "#/$defs/AppStamp"
+    },
+    "assets": {
+      "items": {
+        "$ref": "#/$defs/Asset"
+      },
+      "title": "Assets",
+      "type": "array"
+    },
+    "beats": {
+      "items": {
+        "$ref": "#/$defs/Beat"
+      },
+      "title": "Beats",
+      "type": "array"
+    },
+    "constraints": {
+      "items": {
+        "$ref": "#/$defs/GroupingConstraint"
+      },
+      "title": "Constraints",
+      "type": "array"
+    },
+    "id": {
+      "$ref": "#/$defs/Id"
+    },
+    "markers": {
+      "items": {
+        "$ref": "#/$defs/Marker"
+      },
+      "title": "Markers",
+      "type": "array"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "overlays": {
+      "items": {
+        "$ref": "#/$defs/OverlayItem"
+      },
+      "title": "Overlays",
+      "type": "array"
+    },
+    "overrides": {
+      "$ref": "#/$defs/Overrides"
+    },
+    "pipelineVersion": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pipelineversion"
+    },
+    "revision": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "schemaVersion": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Schemaversion",
+      "type": "integer"
+    },
+    "settings": {
+      "$ref": "#/$defs/ProjectSettings"
+    },
+    "syncGroups": {
+      "items": {
+        "$ref": "#/$defs/SyncGroup"
+      },
+      "title": "Syncgroups",
+      "type": "array"
+    },
+    "transitions": {
+      "items": {
+        "$ref": "#/$defs/Transition"
+      },
+      "title": "Transitions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "name"
+  ],
+  "title": "Project",
+  "type": "object"
+}
