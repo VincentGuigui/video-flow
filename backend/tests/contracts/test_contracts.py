@@ -226,7 +226,7 @@ def test_resolved_timeline_round_trip() -> None:
         source_in_us=10_000_000,
         source_out_us=18_000_000,
         source_in_frame=300,
-        handle_after=7,
+        handle_after=8,  # tail handle = right_frames (08 §3)
     )
     tl = ResolvedTimeline(
         project_id="prj",
