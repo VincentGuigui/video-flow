@@ -19,6 +19,7 @@ Date: 2026-10-23. Status: draft for review.
 | 05 | [05-data-model.md](05-data-model.md) | Project bundle, entities, JSON schema, compilation to OTIO, representation of alternates |
 | 06 | [06-render-export.md](06-render-export.md) | FFmpeg render pipeline, transition catalog, encoding presets, export formats and mappings |
 | 07 | [07-roadmap.md](07-roadmap.md) | Phases, exit criteria, risk register, open questions |
+| 08 | [08-review-and-plan.md](08-review-and-plan.md) | Review of choices, verified hypotheses, hardware policy, revised implementation plan (supersedes 01-07 where they conflict) |
 
 Suggested reading order: 01, 02, then 04 and 05 (core of the product), 03 and 06 (implementation), 07.
 
