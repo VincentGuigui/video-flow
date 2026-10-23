@@ -9,12 +9,19 @@ Conventions:
   clip covers ``frames(source_out) - frames(source_in)`` frames; ``timeline_start`` is
   the cumulative sum of the previous clips' frame counts (core/time.py rule).
 * Source ranges stay in microseconds (exact), with the quantised frame bounds alongside.
-* Handles are the extra source frames a transition consumes beyond the visible range:
-  ``center`` takes T/2 from each side (left clip tail, right clip head; odd T gives the
-  extra frame to the right clip's head), ``start`` takes T from the right clip's head,
-  ``end`` takes T from the left clip's tail. Total frames = sum of visible clip frames.
-* A dormant transition (items not adjacent any more) is listed separately and renders
-  as a hard cut; the resolver adds a warning for it.
+* Handles are the extra source frames a transition consumes beyond the visible range
+  (08 §3 corrected semantics). A transition of T frames on the cut at frame ``c`` spans
+  ``[c - left_frames, c + right_frames)``. Before the cut the right clip is shown ahead
+  of its in point (its head handle = ``left_frames``); after the cut the left clip keeps
+  playing past its out point (its tail handle = ``right_frames``). Hence ``center`` takes
+  T // 2 before the cut and T - T // 2 after it (odd T: the extra frame is on the left
+  clip's tail), ``start`` (transition starts at the cut) takes T from the left clip's
+  tail, ``end`` (transition ends at the cut) takes T from the right clip's head.
+  Total frames = sum of visible clip frames = sum(visible + handles) - sum(T).
+* A dormant transition renders as a hard cut and is listed separately with a warning:
+  its items are not adjacent any more, or it does not fit between its clips.
+* When the source lacks media for a handle (``handle_* > available_*``), the render
+  extends the clip with a freeze frame (``freeze_before`` / ``freeze_after``).
 """
 
 from typing import Annotated, Literal
@@ -36,6 +43,19 @@ class ResolvedAudio(CamelModel):
     gain_db: float = 0.0
     fade_in_frames: int = Field(default=0, ge=0)
     fade_out_frames: int = Field(default=0, ge=0)
+
+
+class ResolvedFitRect(CamelModel):
+    """Picture-in-picture placement of an overlay (fractions of the canvas)."""
+
+    x: float = 0.0
+    y: float = 0.0
+    scale: float = Field(default=1.0, gt=0.0)
+
+
+type ResolvedFit = Annotated[
+    Literal["fill", "fit"] | ResolvedFitRect | UnknownValue, Field(union_mode="left_to_right")
+]
 
 
 class ResolvedClip(CamelModel):
@@ -64,13 +84,27 @@ class ResolvedClip(CamelModel):
     available_after: int | None = None
     enabled: bool = True
     audio: ResolvedAudio | None = None
-    fit: Literal["fill", "fit"] | UnknownValue | None = None
+    fit: ResolvedFit | None = None
     clamped: bool = False
     """Overlay position or length was clamped to the main line."""
 
     @property
     def timeline_end(self) -> int:
         return self.timeline_start + self.duration
+
+    @property
+    def freeze_before(self) -> int:
+        """Head handle frames missing from the source (rendered as a freeze frame)."""
+        if self.available_before is None:
+            return 0
+        return max(0, self.handle_before - self.available_before)
+
+    @property
+    def freeze_after(self) -> int:
+        """Tail handle frames missing from the source (rendered as a freeze frame)."""
+        if self.available_after is None:
+            return 0
+        return max(0, self.handle_after - self.available_after)
 
 
 class ResolvedTransition(CamelModel):
@@ -85,9 +119,9 @@ class ResolvedTransition(CamelModel):
     cut_frame: int | None = None
     """Timeline frame of the cut (start of the right clip); None when dormant."""
     left_frames: int = Field(default=0, ge=0)
-    """Frames of the transition before the cut (left clip's tail handle)."""
+    """Frames of the transition before the cut (= the right clip's head handle)."""
     right_frames: int = Field(default=0, ge=0)
-    """Frames after the cut (right clip's head handle)."""
+    """Frames after the cut (= the left clip's tail handle)."""
     audio: Literal["follow", "cut", "crossfade"] | UnknownValue = "follow"
     audio_duration: int = Field(default=0, ge=0)
     params: dict[str, object] | None = None
@@ -114,7 +148,7 @@ class ResolvedMarker(CamelModel):
 class TimelineWarning(CamelModel):
     code: str
     """e.g. ``dormant_transition``, ``insufficient_handles``, ``overlay_clamped``,
-    ``missing_asset``, ``unknown_transition_type``."""
+    ``missing_asset``, ``unknown_transition_type`` (see ``timeline.resolve``)."""
     message: str
     item_id: str | None = None
     transition_id: str | None = None
