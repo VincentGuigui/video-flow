@@ -89,3 +89,16 @@ FFmpeg hardware paths (separate from the Python extras, probed at run time): dec
 | Node.js | 22 | MIT | Frontend build only | Manual (checked by the installer) |
 | pnpm | 9+ | MIT | Frontend build only | Manual or `corepack enable pnpm` |
 | just | any | CC0 | Optional task runner | Optional; `scripts/dev.{sh,ps1}` are equivalents |
+
+## Models (pinned in `backend/videoflow/engines/manifest.toml`)
+
+Each model is pinned to a Hugging Face commit. Gated repositories and licences outside the manifest policy (MIT, Apache-2.0, BSD, CC-BY-4.0, CC0) are refused. Files are cached under `VIDEOFLOW_MODELS_DIR` (default `~/.cache/videoflow/models` on Linux, `%LOCALAPPDATA%\videoflow\models` on Windows).
+
+| Key | Repository | Licence | Size | Used by |
+|---|---|---|---|---|
+| `silero-vad` | onnx-community/silero-vad | MIT | 2 MB | VAD (S3) |
+| `parakeet-tdt-0.6b-v3-int8` | istupakov/parakeet-tdt-0.6b-v3-onnx | CC-BY-4.0 (credit NVIDIA Parakeet TDT 0.6B v3) | 670 MB | ASR (S4), default |
+| `faster-whisper-tiny` | Systran/faster-whisper-tiny | MIT | 75 MB | ASR alternative (`whisper` extra), smoke tier |
+| `multilingual-e5-small` | intfloat/multilingual-e5-small | MIT | 118 MB (int8) | Text embeddings (S10), default |
+| `paraphrase-multilingual-minilm-l12-v2` | sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 | Apache-2.0 | 118 MB (uint8) | Text embeddings, alternative |
+| `dinov2-small` | Xenova/dinov2-small (export of facebook/dinov2-small) | Apache-2.0 | 24 MB (int8) | Visual embeddings (S7), optional |
