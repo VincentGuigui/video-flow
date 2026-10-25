@@ -349,10 +349,12 @@ class EngineWorker:
         proc = g.proc
         if proc.is_alive():
             proc.kill()  # SIGKILL on POSIX, TerminateProcess on Windows
+        # Closing first releases an overlapped Windows pipe read even when the
+        # child was killed before it completed its engine factory.
+        g.conn.close()
         await asyncio.to_thread(proc.join, KILL_JOIN_S)
         if g.reader is not None:
-            await asyncio.to_thread(g.reader.join, KILL_JOIN_S)
-        g.conn.close()
+            await asyncio.to_thread(g.reader.join, .2)
         with contextlib.suppress(ValueError):
             proc.close()
 
