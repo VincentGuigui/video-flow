@@ -53,6 +53,14 @@ def desktop(
     raise typer.Exit(run_desktop(bundle))
 
 
+@app.command("desktop-check", hidden=True)
+def desktop_check(media: Path, output: Path) -> None:
+    """Run native Qt checks in a development or packaged runtime."""
+    from videoflow.desktop.smoke import main as smoke
+
+    raise typer.Exit(smoke(["--media", str(media), "--output", str(output)]))
+
+
 @app.command()
 def serve(
     project: Annotated[Path, typer.Option(help="Project bundle to open or create.")] = Path(

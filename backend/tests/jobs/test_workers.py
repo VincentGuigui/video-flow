@@ -108,7 +108,7 @@ async def test_cancel_during_model_startup_kills_worker_without_restarting():
     task = asyncio.create_task(worker.call("echo", "unused"))
     try:
         deadline = time.monotonic() + 5
-        while not worker.alive and time.monotonic() < deadline:
+        while not worker.alive and time.monotonic() < deadline:  # noqa: ASYNC110 — observe spawned PID
             await asyncio.sleep(0.01)
         assert worker.alive
         await asyncio.sleep(0.1)

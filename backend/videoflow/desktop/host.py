@@ -53,6 +53,7 @@ class Backend:
                 port=port,
                 log_level="warning",
                 timeout_graceful_shutdown=3,
+                timeout_keep_alive=1,
             )
         )
         self.loop: asyncio.AbstractEventLoop | None = None
@@ -300,6 +301,7 @@ def run_desktop(bundle: Bundle, *, port: int = 0, roots: list[Path] | None = Non
     app.setApplicationName("Video-Flow")
     app.setOrganizationName("Video-Flow")
     backend = Backend(bundle, port, roots)
+    app.aboutToQuit.connect(backend.close)
     try:
         backend.start()
         window = EditorWindow(backend, bundle.project.name)

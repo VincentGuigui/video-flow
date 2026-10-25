@@ -12,7 +12,7 @@ Analysis checks the compatible source-adjacent JSON first, then fingerprint-keye
 
 ## Qualification
 
-Windows x64 / Python 3.13 / PySide6 6.12: the development Qt WebEngine smoke test exercises local-file drop outside browser roots, scoped import without original copying, actual video decoding/playback, Space, focused linked splitting, undo, reload persistence and owned-backend shutdown. The tested wheel reports no H.264 support; WebM fallback is required. Run `scripts/desktop_smoke.py --media PATH --output .cache/desktop-qa` with the backend Python to reproduce. The script records its own results and a screenshot. This is a synthetic-media check, not a claim of frame-perfect gapless playback or real-rush analysis accuracy.
+Windows x64 / Python 3.13 / PySide6 6.12: development and standalone Qt WebEngine checks exercise local-file drop outside browser roots, scoped import without original copying, actual video decoding/playback, Space, focused linked splitting, undo, reload persistence and owned-backend shutdown. The standalone check also uses a Unicode/spaces source path. The tested wheel reports no H.264 support; WebM fallback is required. Run `scripts/desktop_smoke.py --media PATH --output .cache/desktop-qa` with the backend Python to reproduce, or `Video-Flow.exe desktop-check MEDIA_PATH OUTPUT_DIRECTORY` for the packaged check. Each records results and a screenshot. The development sample completed in approximately seven seconds, including import/proxy generation; this is a small synthetic-media check, not a multi-gigabyte benchmark or a claim of frame-perfect gapless playback or real-rush analysis accuracy.
 
 Linux x86_64 and Windows ARM64 remain unqualified until the same native, media, driver and packaging tests run on those targets. Windows ARM64 requires confirmation of PySide6/Qt WebEngine wheels, Python compatibility and packaged playback. Do not infer ARM64 support from Windows x64 success. No alternative shell or Python-version change is implied.
 
@@ -24,7 +24,9 @@ Build frontend assets, install the `packaging` dependency group alongside `deskt
 pyinstaller --noconfirm --distpath tools/release --workpath .cache/pyinstaller scripts/desktop.spec
 ```
 
-The one-folder release includes the Python runtime, Qt WebEngine resources and built frontend. End users do not need Node, Vite, uv or a frontend development server. FFmpeg/ffprobe are separately provisioned: put a supported build in `tools/ffmpeg/` beside the executable, or on PATH. Model downloads remain governed by the pinned engine manifest. Signatures, installers, updates and distribution hardening are later release work. Packaging success alone does not qualify playback on another platform.
+The one-folder release includes the Python runtime, Qt WebEngine resources, OTIO adapter data and built frontend. End users do not need Node, Vite, uv or a frontend development server. FFmpeg/ffprobe are separately provisioned: put a supported build in `tools/ffmpeg/` beside the executable, or on PATH. Model downloads remain governed by the pinned engine manifest. Signatures, installers, updates and distribution hardening are later release work. Packaging success alone does not qualify playback on another platform.
+
+The Windows recipe pins the bundled MSVC family to Qt's working runtime and excludes unsuffixed ICU DLLs from unrelated SDKs on PATH. Qt uses Windows' system ICU; accidentally bundling a Poppler/Conda ICU causes a missing-procedure failure even when the development application works. Rebuild only after frontend assets are stable. Packaged OTIO, EDL and paper-edit exports have also been checked; real-model inference/downloads and external-editor interoperability still need dedicated release validation.
 
 ## Licence notices
 
