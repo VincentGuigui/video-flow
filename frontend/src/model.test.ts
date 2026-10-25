@@ -85,6 +85,20 @@ describe("linked editing", () => {
   });
 });
 describe("trim modes", () => {
+  it("extends source through both bottom handles and merges neighboring empty clips", () => {
+    let doc = trim(document(), "v", "out", -10, false, 400);
+    doc = trim(doc, "v", "out", -10, false, 400);
+    expect(doc.clips.filter((c) => c.kind === "gap")).toHaveLength(1);
+    expect(duration(doc.clips.find((c) => c.kind === "gap")!)).toBe(20);
+    doc = trim(doc, "v", "out", 30, false, 400);
+    expect(doc.clips.find((c) => c.id === "v")!.sourceOut).toBe(120);
+    expect(doc.clips.find((c) => c.id === "next")!.start).toBe(110);
+    expect(layout(doc).total).toBe(210);
+    const head = trim(document(), "v", "in", -10, false, 400);
+    expect(head.clips.find((c) => c.id === "v")!.sourceIn).toBe(0);
+    expect(head.clips.find((c) => c.id === "next")!.start).toBe(110);
+    expect(layout(head).total).toBe(210);
+  });
   it("top tail reduces duration and ripples later clips", () => {
     const doc = trim(document(), "v", "out", -20, true, 400);
     expect(layout(doc).total).toBe(180);

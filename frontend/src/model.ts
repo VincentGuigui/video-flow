@@ -159,7 +159,7 @@ export function remove(doc: Document, id: string, ripple: boolean): Document {
   let clips = doc.clips.filter((c) => !ids.has(c.id));
   // An overlapping layer still occupies this time. Only uncovered time ripples away.
   if (!ripple) clips.push(gap(c.start, duration(c), c.layer));
-  return ripple ? pack({ ...doc, clips }) : { ...doc, clips };
+  return ripple ? pack({ ...doc, clips }) : mergeGaps({ ...doc, clips });
 }
 export function move(
   doc: Document,
@@ -214,10 +214,10 @@ export function trim(
             : p,
       );
     } else {
+      let overflow = 0;
+      let headShift = delta;
       if (delta < 0) {
-        const available = c.start;
-        delta = Math.max(delta, -available);
-        // Consume empty space behind the handle. Do not overwrite occupied preceding media.
+        // Fill adjacent empty time first; any extra source extends the assembly.
         const preceding = next.clips.filter(
           (p) =>
             !ids.has(p.id) &&
@@ -230,15 +230,19 @@ export function trim(
           0,
           ...preceding.map((p) => p.start + duration(p)),
         );
-        delta = Math.max(delta, previousEnd - c.start);
+        const available = Math.max(0, c.start - previousEnd);
+        headShift = -Math.min(-delta, available);
+        overflow = -delta + headShift;
       }
       next.clips = next.clips.map((p) =>
         ids.has(p.id)
-          ? { ...p, sourceIn: p.sourceIn + delta, start: p.start + delta }
-          : p,
+          ? { ...p, sourceIn: p.sourceIn + delta, start: p.start + headShift }
+          : overflow && p.start >= end
+            ? { ...p, start: p.start + overflow }
+            : p,
       );
       if (delta > 0) next.clips.push(gap(c.start, delta, c.layer));
-      else consumeGaps(next, c.start + delta, c.start, c.layer);
+      else consumeGaps(next, c.start + headShift, c.start, c.layer);
     }
   } else {
     next.clips = next.clips.map((p) =>
@@ -251,7 +255,7 @@ export function trim(
     if (!ripple) {
       if (delta < 0) next.clips.push(gap(end + delta, -delta, c.layer));
       else {
-        // Extend only into neighboring explicit gaps; clip at the next occupied source.
+        // Consume neighboring empty time, then ripple any extension beyond it.
         const nextStart = Math.min(
           Infinity,
           ...next.clips
@@ -266,16 +270,38 @@ export function trim(
             .map((p) => p.start),
         );
         const bounded = Math.min(delta, nextStart - end);
-        next.clips = next.clips.map((p) =>
-          ids.has(p.id)
-            ? { ...p, sourceOut: p.sourceOut - delta + bounded }
-            : p,
-        );
         consumeGaps(next, end, end + bounded, c.layer);
+        const overflow = delta - bounded;
+        if (overflow)
+          next.clips = next.clips.map((p) =>
+            !ids.has(p.id) && p.start >= end + bounded
+              ? { ...p, start: p.start + overflow }
+              : p,
+          );
       }
     }
   }
-  return ripple ? pack(next) : next;
+  return ripple ? pack(next) : mergeGaps(next);
+}
+function mergeGaps(doc: Document): Document {
+  const others = doc.clips.filter((c) => c.kind !== "gap" || !c.enabled);
+  const gaps = doc.clips
+    .filter((c) => c.kind === "gap" && c.enabled)
+    .toSorted((a, b) => a.layer - b.layer || a.start - b.start);
+  const merged: Clip[] = [];
+  for (const c of gaps) {
+    const last = merged.at(-1);
+    if (
+      last &&
+      last.layer === c.layer &&
+      last.start + duration(last) >= c.start
+    ) {
+      last.sourceOut =
+        Math.max(last.start + duration(last), c.start + duration(c)) -
+        last.start;
+    } else merged.push({ ...c, sourceIn: 0, sourceOut: duration(c) });
+  }
+  return { ...doc, clips: [...others, ...merged] };
 }
 function consumeGaps(doc: Document, a: number, b: number, layer: number) {
   doc.clips = doc.clips.flatMap((c) => {

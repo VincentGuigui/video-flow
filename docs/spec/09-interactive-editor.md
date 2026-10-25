@@ -18,6 +18,8 @@ Space toggles playback at the cursor. Left/right step one frame; Shift steps one
 
 Split at the cursor produces two independent segments; each segment retains its own linked video/audio pair when split while linked. Delete lifts selected content, replacing its occupied range with an explicit empty clip. Backspace removes it and ripples later clips left. Top trim handles ripple the assembly; bottom handles preserve total time by adding/extending neighboring empty clips. Extending requires available source frames. Both trim modes move linked partners together. Undo/redo operate on whole gestures, including linked changes.
 
+On extension, bottom handles consume adjacent empty time first. Extending beyond that empty time is permitted up to the source boundary and ripples the remaining extension, including at the beginning/end of the assembly. Neighboring empty clips merge rather than accumulating separate placeholder blocks.
+
 ## Import and analysis
 
 Files dropped on the flow (or picked with Import) open an analyse/skip choice. Process batch files sequentially; display filename, per-file progress and overall file number/count. Cancel one file or the batch, including subprocess/ML work. Failed files do not stop later imports. Successfully imported files remain after batch cancellation.
