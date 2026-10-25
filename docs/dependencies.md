@@ -13,7 +13,7 @@ Source of truth for versions: `backend/pyproject.toml` and `backend/uv.lock`. Ve
 | numpy | 2.5 | BSD-3-Clause | Audio/embedding arrays |
 | scipy | 1.18 | BSD-3-Clause | Signal processing (GCC-PHAT), clustering |
 | opentimelineio | 0.18 | Apache-2.0 | Timeline model and OTIO/OTIOZ export |
-| OpenTimelineIO-Plugins | 0.18 | Apache-2.0 | Adapters (EDL, FCP XML, ...) |
+| OpenTimelineIO-Plugins | 0.18 | Apache-2.0 | Interchange readers and EDL round-trip validation; CMX output uses our own writer |
 | rapidfuzz | 3.14 | MIT | Fuzzy text matching for retake detection |
 | python-ulid | 4.0 | MIT | Short sortable ids |
 
@@ -83,7 +83,7 @@ FFmpeg hardware paths (separate from the Python extras, probed at run time): dec
 
 | Tool | Version | Licence | Purpose | Provisioning |
 |---|---|---|---|---|
-| FFmpeg / ffprobe | >= 6.1 | LGPL/GPL depending on build | Probe, proxies, render | System package, or pinned static build into `tools/ffmpeg/` (`scripts/install.*`). Override with `VIDEOFLOW_FFMPEG_URL` and `VIDEOFLOW_FFMPEG_SHA256` |
+| FFmpeg / ffprobe | >= 6.1 | LGPL/GPL depending on build | Probe, proxies, render | System package, or pinned static build into `tools/ffmpeg/` (`scripts/install.*`). Windows x64 uses the full 7.1.1 build so `flite` is available for synthetic samples. Override with `VIDEOFLOW_FFMPEG_URL` and `VIDEOFLOW_FFMPEG_SHA256` |
 | uv | >= 0.5 | MIT / Apache-2.0 | Python and environment manager | Installed by `scripts/install.*` |
 | Python | 3.13 | PSF | Backend | `uv python install 3.13` |
 | Node.js | 22 | MIT | Frontend build only | Manual (checked by the installer) |
