@@ -195,7 +195,8 @@ def _speech_video(out: Path, wav: Path, clip: _Clip, vsrc: str, *, af: str | Non
     ]  # fmt: skip
     if af:
         args += ["-af", af]
-    args += ["-frames:v", clip.frames, "-pix_fmt", "yuv420p", *_V264, *_AAC, *_DET, out]
+    args += ["-frames:v", clip.frames, "-t", float(Fraction(clip.frames) / clip.fps),
+             "-pix_fmt", "yuv420p", *_V264, *_AAC, *_DET, out]  # fmt: skip
     _run(args)
 
 
@@ -317,7 +318,8 @@ def generate(out_dir: Path, progress: Callable[[str], None] | None = None) -> di
               "-i", ref_wav,
               "-f", "lavfi", "-i", f"anoisesrc=a=0.004:r={SR}:seed=1:c=pink",
               "-filter_complex", fc, "-map", "0:v", "-map", "[a]", "-ac", 1, "-ar", SR,
-              "-frames:v", b_frames, "-shortest", "-pix_fmt", "yuv420p", *_V264, *_AAC, *_DET,
+              "-frames:v", b_frames, "-t", b_frames / 25,
+              "-pix_fmt", "yuv420p", *_V264, *_AAC, *_DET,
               out_dir / clip_b.name])  # fmt: skip
 
     add(clip_b, make_b)
@@ -345,7 +347,10 @@ def generate(out_dir: Path, progress: Callable[[str], None] | None = None) -> di
             args += ["-frames:v", clip.frames, "-pix_fmt", pix, *(venc or _V264)]
             args += extra_v or []
             if clip.audio_channels:
-                args += ["-ac", clip.audio_channels, *_AAC, "-shortest"]
+                # -frames:v with -shortest can leave a scheduler-dependent audio tail
+                # on FFmpeg 7. Bound output time explicitly, including the VFR sample.
+                duration = clip.duration_s or float(Fraction(clip.frames) / clip.fps)
+                args += ["-ac", clip.audio_channels, *_AAC, "-t", duration]
             else:
                 args += ["-an"]
             _run([*args, *_DET, out_dir / clip.name])
@@ -374,7 +379,10 @@ def generate(out_dir: Path, progress: Callable[[str], None] | None = None) -> di
                   note="HLG, BT.2020, 10-bit"), lambda: None)  # fmt: skip
     tasks[-1] = av(c, "testsrc2=size=1280x720:rate=25", pix="yuv420p10le",
                    extra_v=["-color_primaries", "bt2020", "-color_trc", "arib-std-b67",
-                            "-colorspace", "bt2020nc", "-color_range", "tv"])  # fmt: skip
+                            "-colorspace", "bt2020nc", "-color_range", "tv",
+                            "-x264-params",
+                            "colorprim=bt2020:transfer=arib-std-b67:"
+                            "colormatrix=bt2020nc"])  # fmt: skip
 
     # Silent clip: real audio stream carrying digital silence.
     c = add(_Clip("clip_silent.mp4", 640, 360, fps25, 75, 2, note="video with silent audio"),
@@ -383,7 +391,7 @@ def generate(out_dir: Path, progress: Callable[[str], None] | None = None) -> di
     def make_silent() -> None:
         _run(["-f", "lavfi", "-i", "smptebars=size=640x360:rate=25",
               "-f", "lavfi", "-i", f"anullsrc=channel_layout=stereo:sample_rate={SR}",
-              "-frames:v", 75, "-pix_fmt", "yuv420p", *_V264, *_AAC, "-shortest", *_DET,
+              "-frames:v", 75, "-t", 3, "-pix_fmt", "yuv420p", *_V264, *_AAC, *_DET,
               out_dir / "clip_silent.mp4"])  # fmt: skip
 
     tasks[-1] = make_silent
@@ -427,6 +435,10 @@ def generate(out_dir: Path, progress: Callable[[str], None] | None = None) -> di
                 fc,
                 "-map",
                 "[v]",
+                "-r",
+                "24",
+                "-fps_mode",
+                "cfr",
                 "-frames:v",
                 seg * 4,
                 "-pix_fmt",

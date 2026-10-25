@@ -33,7 +33,8 @@ $IsArm = ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') -or ($env:PROCESSOR_ARCHITEW6
 if ($IsArm) {
     $DefaultUrl = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-winarm64-gpl-7.1.zip'
 } else {
-    $DefaultUrl = 'https://github.com/GyanD/codexffmpeg/releases/download/7.1.1/ffmpeg-7.1.1-essentials_build.zip'
+    # The sample generator needs flite, which is absent from the essentials build.
+    $DefaultUrl = 'https://github.com/GyanD/codexffmpeg/releases/download/7.1.1/ffmpeg-7.1.1-full_build.zip'
 }
 $FfmpegUrl = if ($env:VIDEOFLOW_FFMPEG_URL) { $env:VIDEOFLOW_FFMPEG_URL } else { $DefaultUrl }
 $FfmpegSha256 = $env:VIDEOFLOW_FFMPEG_SHA256
