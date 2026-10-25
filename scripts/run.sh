@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Start the app (`videoflow serve`) or pass any other CLI arguments through.
-#   scripts/run.sh                 -> videoflow serve
+# Start the native desktop app or pass any other CLI arguments through.
+#   scripts/run.sh                 -> videoflow desktop
 #   scripts/run.sh --help          -> videoflow --help
 #   scripts/run.sh analyse DIR     -> videoflow analyse DIR
 set -euo pipefail
@@ -10,6 +10,9 @@ if [ -d "$ROOT/tools/ffmpeg" ]; then
 fi
 cd "$ROOT/backend"
 if [ $# -eq 0 ]; then
-  set -- serve
+  set -- desktop
 fi
-exec uv run videoflow "$@"
+if [ -x "$ROOT/backend/.venv/bin/videoflow" ]; then
+  exec "$ROOT/backend/.venv/bin/videoflow" "$@"
+fi
+exec uv run --extra desktop videoflow "$@"

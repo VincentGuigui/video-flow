@@ -2,14 +2,15 @@
 
 Local-first assembly tool for footage shot with many retakes: ingest rushes, transcribe and analyse them, group equivalent takes into beats, compare alternatives side by side, then render with FFmpeg or export to an editor (OpenTimelineIO, FCPXML, EDL, Camtasia).
 
-Status: implementation in progress. Backend contracts, media services, timeline resolution, jobs, analysis algorithms and AI engines are in place. OTIO/OTIOZ, EDL, SRT and paper-edit exports are available through the CLI. Pipeline orchestration, render, HTTP API and frontend remain to be implemented.
+Status: implementation in progress. The PySide6/Qt WebEngine desktop editor hosts the React workspace: preview, transport timeline, layered clip flow, linked edits, trim modes, undo/redo, native file-reference imports, progress/cancellation and analysis-sidecar reuse. FastAPI serves the authenticated local API and media. OTIO/OTIOZ, EDL, SRT and paper-edit exports are available. Final-video rendering, full analysis calibration and release hardening remain unfinished.
 
-Targets Windows 11 (x64, ARM64) and Linux (x86_64). AI inference runs on NPU, then GPU, then CPU.
+Targets Windows 11 x64 and Linux x86_64; Windows ARM64 requires qualification. Native desktop development playback has been checked on Windows x64. AI inference runs on NPU, then GPU, then CPU.
 
 ## Essentials
 
 - Backend: Python 3.13, FastAPI, managed with [uv](https://docs.astral.sh/uv/) in `backend/` (package `videoflow`).
-- Frontend: React + Vite (Node 22, pnpm), added in later work packages.
+- Desktop: PySide6 + Qt WebEngine; normal launch opens a native application window.
+- Frontend: React + Vite, built with Node >=22.12 and npm. Node is a build-time dependency only.
 - Media: FFmpeg >= 6.1 (system or static build in `tools/ffmpeg/`).
 
 ## Install
@@ -21,15 +22,21 @@ scripts/install.sh            # Linux
 scripts\install.ps1           # Windows
 ```
 
-The installer sets up uv, Python 3.13, FFmpeg, checks Node/pnpm, detects the hardware and runs `uv sync` with the matching extra (`openvino`, `cuda`, `directml`, `qnn` or `cpu`). Flags: `--cpu-only`, `--extra X` (repeatable, e.g. `--extra whisper`), `--no-ffmpeg`, `--no-frontend-check` (PowerShell: `-CpuOnly`, `-Extra X`, `-NoFfmpeg`, `-NoFrontendCheck`). The accelerator extras are mutually exclusive; see [docs/dependencies.md](docs/dependencies.md).
+The installer sets up uv, Python 3.13, FFmpeg, checks Node/pnpm, detects the hardware and runs `uv sync` with the desktop extra and matching inference extra (`openvino`, `cuda`, `directml`, `qnn` or `cpu`). Build the interface once with `npm install` then `npm run build` in `frontend/`. Flags: `--cpu-only`, `--extra X` (repeatable, e.g. `--extra whisper`), `--no-ffmpeg`, `--no-frontend-check` (PowerShell: `-CpuOnly`, `-Extra X`, `-NoFfmpeg`, `-NoFrontendCheck`). The accelerator extras are mutually exclusive; see [docs/dependencies.md](docs/dependencies.md).
 
 ## Run
 
 ```bash
-scripts/run.sh                 # videoflow serve (not implemented yet)
+scripts/run.sh                 # native desktop window
 scripts/run.sh --help          # any other arguments go to the videoflow CLI
 ```
 (`scripts\run.ps1` on Windows.)
+
+Use `videoflow desktop --project PATH.videoflow` to open/create a particular project. Import uses native dialogs and OS file drops: originals stay in place, and derived proxies, thumbnails and waveforms live in the project bundle. Read-only source folders use bundle-cached analysis. Offline sources can be relinked through a native picker without losing edits. `videoflow serve --project PATH.videoflow` is an explicit browser diagnostic option; normal desktop import never uploads or copies original media.
+
+Keyboard: Space play/pause; arrows one frame; Shift+arrows one second; Ctrl+arrows ten seconds; Home/End or Ctrl+Shift+arrows timeline bounds; S split; Delete lift with an empty clip; Backspace ripple delete; Escape leave clip focus; Ctrl+Z undo, Ctrl+Shift+Z redo. Ctrl+wheel zooms around the pointer. Double-click a clip to focus it with two seconds of context; top trim handles ripple, bottom handles preserve time with empty clips. Shift stretches scale/crop; Alt edits symmetrically.
+
+See [desktop runtime and platform checks](docs/desktop-runtime.md) and the authoritative [desktop spec](docs/spec/10-desktop-shell.md).
 
 ## Develop
 

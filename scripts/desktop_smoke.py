@@ -1,0 +1,229 @@
+"""Exercise the real Qt WebEngine window with generated media, without a browser.
+
+Run with backend/.venv/Scripts/python scripts/desktop_smoke.py --media PATH --output .cache/desktop-qa
+Creates a fresh disposable project and a screenshot/report under the output directory.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import socket
+import sys
+import time
+import uuid
+from pathlib import Path
+
+from PySide6.QtCore import QMimeData, QPoint, QPointF, QTimer, QUrl, Qt
+from PySide6.QtGui import QDragEnterEvent, QDropEvent
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import QApplication
+
+from videoflow.desktop.host import Backend, EditorWindow
+from videoflow.project.models import new_project
+from videoflow.project.store import Bundle
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--media", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    media, output = args.media.resolve(), args.output.resolve()
+    output.mkdir(parents=True, exist_ok=True)
+    before = hashlib.sha256(media.read_bytes()).hexdigest()
+    bundle = Bundle.create(
+        output / f"smoke-{uuid.uuid4().hex[:8]}.videoflow",
+        new_project("Desktop playback check"),
+    )
+    with socket.socket() as candidate:
+        candidate.bind(("127.0.0.1", 0))
+        port = candidate.getsockname()[1]
+    app = QApplication(sys.argv[:1])
+    backend = Backend(bundle, port, [bundle.path / "browser-only"])
+    backend.start()
+    window = EditorWindow(backend, "Desktop playback check")
+    window.show()
+    started = time.monotonic()
+    phase = "loading"
+    report = {
+        "platform": sys.platform,
+        "media": str(media),
+        "checks": [],
+        "success": False,
+    }
+    pending = False
+    timer = QTimer()
+    timer.setInterval(200)
+    failures: list[str] = []
+
+    def finish(error: str | None = None) -> None:
+        timer.stop()
+        if error:
+            failures.append(error)
+            report["error"] = error
+        report["elapsedSeconds"] = round(time.monotonic() - started, 2)
+        window.grab().save(str(output / "desktop.png"))
+        window.close()
+        report["backendStopped"] = not backend.thread.is_alive()
+        report["sourceUnchanged"] = (
+            before == hashlib.sha256(media.read_bytes()).hexdigest()
+        )
+        report["noOriginalCopies"] = not (bundle.path / "media").exists()
+        report["success"] = (
+            not failures
+            and report["backendStopped"]
+            and report["sourceUnchanged"]
+            and report["noOriginalCopies"]
+        )
+        (output / "report.json").write_text(
+            json.dumps(report, indent=2), encoding="utf-8"
+        )
+        print(json.dumps(report, indent=2), flush=True)
+        app.quit()
+
+    def js(source: str) -> None:
+        window.page.runJavaScript(source)
+
+    def result(raw: str) -> None:
+        nonlocal phase, pending
+        pending = False
+        try:
+            state = json.loads(raw)
+            if phase == "loading" and state["ready"]:
+                report["codecs"] = state["codecs"]
+                report["checks"].append("Trusted native bridge connected")
+                mime = QMimeData()
+                mime.setUrls([QUrl.fromLocalFile(str(media))])
+                enter = QDragEnterEvent(
+                    QPoint(300, 350),
+                    Qt.DropAction.CopyAction,
+                    mime,
+                    Qt.MouseButton.LeftButton,
+                    Qt.KeyboardModifier.NoModifier,
+                )
+                QApplication.sendEvent(window.view, enter)
+                drop = QDropEvent(
+                    QPointF(300, 350),
+                    Qt.DropAction.CopyAction,
+                    mime,
+                    Qt.MouseButton.LeftButton,
+                    Qt.KeyboardModifier.NoModifier,
+                )
+                QApplication.sendEvent(window.view, drop)
+                phase = "native-selection"
+            elif phase == "native-selection" and state["importChoice"]:
+                report["checks"].append(
+                    "Native local-file drop delivered scoped selection"
+                )
+                js(
+                    "[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Import only')).click();"
+                )
+                js(
+                    "[...document.querySelectorAll('button.primary')].find(b=>b.textContent.includes('Import 1')).click();"
+                )
+                phase = "importing"
+            elif phase == "importing" and state["importDone"]:
+                report["checks"].append(
+                    "Original imported outside browser roots without byte upload"
+                )
+                js(
+                    "[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Back to editor')).click();"
+                )
+                phase = "decoding"
+            elif phase == "decoding" and state["videoReady"]:
+                report["checks"].append("Qt WebEngine decoded the video preview")
+                report["playback"] = state["video"]
+                widget = window.view.focusProxy() or window.view
+                widget.setFocus()
+                QTest.keyClick(widget, Qt.Key.Key_Space)
+                phase = "playing"
+            elif (
+                phase == "playing"
+                and state["timecode"] != "00:00:00:00"
+                and state["videoTime"] > 0.05
+            ):
+                widget = window.view.focusProxy() or window.view
+                QTest.keyClick(widget, Qt.Key.Key_Space)
+                report["checks"].append(
+                    "Space played media and advanced the frame cursor"
+                )
+                js(
+                    "document.querySelector('[data-testid=clip-video]').dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));"
+                )
+                phase = "focused"
+            elif phase == "focused" and state["focused"]:
+                widget = window.view.focusProxy() or window.view
+                QTest.keyClick(
+                    widget, Qt.Key.Key_Right, Qt.KeyboardModifier.ShiftModifier
+                )
+                QTimer.singleShot(150, lambda: QTest.keyClick(widget, Qt.Key.Key_S))
+                phase = "split"
+            elif (
+                phase == "split"
+                and state["videoClips"] == 2
+                and state["audioClips"] == 2
+            ):
+                report["checks"].append(
+                    "Focused edit and linked split produced two AV pairs"
+                )
+                QTest.keyClick(
+                    window.view.focusProxy() or window.view,
+                    Qt.Key.Key_Z,
+                    Qt.KeyboardModifier.ControlModifier,
+                )
+                phase = "undo"
+            elif (
+                phase == "undo"
+                and state["videoClips"] == 1
+                and state["audioClips"] == 1
+            ):
+                report["checks"].append("Undo restored the linked clip pair")
+                window.view.reload()
+                phase = "reloaded"
+            elif (
+                phase == "reloaded"
+                and state["ready"]
+                and state["videoReady"]
+                and state["videoClips"] == 1
+            ):
+                report["checks"].append("Reload preserved original references and edit")
+                finish()
+        except Exception as exc:
+            finish(str(exc))
+
+    def poll() -> None:
+        nonlocal pending
+        if time.monotonic() - started > 60:
+            finish(f"Timed out in phase: {phase}")
+            return
+        if pending:
+            return
+        pending = True
+        window.page.runJavaScript(
+            """JSON.stringify({
+          ready: !!window.videoFlowDesktop && !!document.querySelector('.flow-panel'),
+          codecs: {mp4:document.createElement('video').canPlayType('video/mp4; codecs="avc1.42E01E"'),
+                   webm:document.createElement('video').canPlayType('video/webm; codecs="vp9"')},
+          importChoice:!!document.querySelector('.analysis-option'),
+          importDone:document.body.innerText.includes('Import complete'),
+          videoReady:!!document.querySelector('video')&&document.querySelector('video').readyState>=2,
+          videoTime:document.querySelector('video')?.currentTime||0,
+          video:{width:document.querySelector('video')?.videoWidth, height:document.querySelector('video')?.videoHeight},
+          timecode:document.querySelector('[data-testid=timecode]')?.textContent,
+          focused:!!document.querySelector('.focus-banner'),
+          videoClips:document.querySelectorAll('[data-testid=clip-video]').length,
+          audioClips:document.querySelectorAll('[data-testid=clip-audio]').length
+        })""",
+            result,
+        )
+
+    timer.timeout.connect(poll)
+    timer.start()
+    app.exec()
+    return 0 if report["success"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

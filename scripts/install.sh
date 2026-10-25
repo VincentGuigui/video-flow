@@ -150,7 +150,7 @@ if [ -z "$ACCEL" ]; then
 fi
 log "accelerator extra: $ACCEL"
 
-args=()
+args=(--extra desktop)
 for e in "${EXTRAS[@]}"; do args+=(--extra "$e"); done
 (cd "$ROOT/backend" && uv sync "${args[@]}")
 

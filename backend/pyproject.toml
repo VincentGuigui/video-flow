@@ -53,6 +53,9 @@ qnn = [
 ]
 # CPU/CUDA alternative ASR engine (no NPU path). Compatible with any runtime extra.
 whisper = ["faster-whisper>=1.1"]
+desktop = [
+    "pyside6>=6.8,<7",
+]
 
 [dependency-groups]
 dev = [
@@ -63,6 +66,9 @@ dev = [
     "ruff>=0.7",
     "mypy>=1.12",
     "jsonschema>=4.23",
+]
+packaging = [
+    "pyinstaller>=6.16",
 ]
 
 [build-system]

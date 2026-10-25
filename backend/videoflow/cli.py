@@ -8,18 +8,86 @@ import typer
 
 from videoflow import __version__
 
-app = typer.Typer(no_args_is_help=True, help="Video-Flow command line.")
+app = typer.Typer(invoke_without_command=True, help="Video-Flow desktop editor and headless tools.")
 
 
 @app.callback()
-def main() -> None:
+def main(ctx: typer.Context) -> None:
     """Video-Flow command line."""
+    if ctx.invoked_subcommand is None:
+        desktop()
 
 
 @app.command()
 def version() -> None:
     """Print the Video-Flow version."""
     typer.echo(__version__)
+
+
+@app.command()
+def desktop(
+    project: Annotated[Path | None, typer.Option(help="Project bundle to open or create.")] = None,
+) -> None:
+    """Open the native PySide6/Qt WebEngine application."""
+    import multiprocessing
+    import os
+
+    from videoflow.project.models import new_project
+    from videoflow.project.store import Bundle
+
+    multiprocessing.freeze_support()
+    try:
+        from videoflow.desktop.host import run_desktop
+    except ImportError as exc:
+        typer.echo("Desktop runtime missing. Install with: uv sync --extra desktop", err=True)
+        raise typer.Exit(1) from exc
+    if project is None:
+        root = Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local" / "share"))
+        project = root / "Video-Flow" / "Untitled.videoflow"
+    path = project.resolve()
+    bundle = (
+        Bundle(path)
+        if (path / "project.json").exists()
+        else Bundle.create(path, new_project(path.stem))
+    )
+    raise typer.Exit(run_desktop(bundle))
+
+
+@app.command()
+def serve(
+    project: Annotated[Path, typer.Option(help="Project bundle to open or create.")] = Path(
+        "edit.videoflow"
+    ),
+    port: Annotated[int, typer.Option(min=1024, max=65535)] = 8765,
+    media_root: Annotated[
+        list[Path] | None, typer.Option(help="Allowed local import root; repeatable.")
+    ] = None,
+    open_browser: Annotated[bool, typer.Option(help="Open the editor in the browser.")] = True,
+) -> None:
+    """Start explicit browser/diagnostic mode (normal launch uses the desktop window)."""
+    import secrets
+    import threading
+    import webbrowser
+
+    import uvicorn
+
+    from videoflow.api.app import create_app
+    from videoflow.project.models import new_project
+    from videoflow.project.store import Bundle
+
+    path = project.resolve()
+    bundle = (
+        Bundle(path)
+        if (path / "project.json").exists()
+        else Bundle.create(path, new_project(path.stem))
+    )
+    token = secrets.token_urlsafe(32)
+    url = f"http://127.0.0.1:{port}/?token={token}"
+    typer.echo(f"Video-Flow: {url}")
+    application = create_app(bundle, token=token, port=port, media_roots=media_root)
+    if open_browser:
+        threading.Timer(1.5, lambda: webbrowser.open(url)).start()
+    uvicorn.run(application, host="127.0.0.1", port=port, log_level="info")
 
 
 @app.command("export")

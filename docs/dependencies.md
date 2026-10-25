@@ -31,6 +31,10 @@ Source of truth for versions: `backend/pyproject.toml` and `backend/uv.lock`. Ve
 
 ## Optional extras
 
+`desktop`: PySide6 6.12 (including Qt WebEngine and Shiboken), LGPL-3.0/GPL/commercial terms by component; hosts React and supplies native dialogs, file drops, WebChannel and application lifecycle. Installed by the normal installer. The tested Windows x64 wheel lacks H.264 decoding; generated VP9/Opus playback proxies are selected through runtime codec detection. See [desktop runtime notices](desktop-runtime.md).
+
+The `packaging` dependency group adds PyInstaller 6.22 (GPL-2.0 with the bootloader exception) for one-folder builds; it is not required at runtime. Frontend dependencies are recorded in `frontend/package.json` and `package-lock.json`: React 19, Zustand 5, Lucide, Vite 8, TypeScript 6, Vitest and Prettier (MIT licences; see each package's notices).
+
 `ml` (model tooling, no inference runtime; pulled in by every accelerator extra):
 
 | Package | Licence | Purpose |

@@ -150,7 +150,7 @@ if (-not $accel) {
 }
 Log "accelerator extra: $accel"
 
-$syncArgs = @('sync')
+$syncArgs = @('sync', '--extra', 'desktop')
 foreach ($e in $Extra) { $syncArgs += @('--extra', $e) }
 Push-Location (Join-Path $Root 'backend')
 try {
