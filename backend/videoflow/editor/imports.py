@@ -83,11 +83,19 @@ class Imports:
                 )
                 if result.failures:
                     raise ValueError(result.failures[0].error)
-                if result.duplicates:
-                    job.asset_id = result.duplicates[0].of_asset_id
-                    job.state, job.progress, job.phase = "done", 1, "Already imported"
-                    return
-                asset = result.assets[0]
+                duplicate = bool(result.duplicates)
+                if duplicate:
+                    known_id = result.duplicates[0].of_asset_id
+                    existing = self.bundle.project.asset(known_id or "")
+                    if existing is None:
+                        raise ValueError("Duplicate source could not be matched to an asset")
+                    job.asset_id = existing.id
+                    if not analyse:
+                        job.state, job.progress, job.phase = "done", 1, "Already imported"
+                        return
+                    asset = existing.model_copy(deep=True)
+                else:
+                    asset = result.assets[0]
                 job.progress, job.phase = 0.1, "Preparing playback"
 
                 def progress(p: ffmpeg.Progress) -> None:
@@ -143,7 +151,8 @@ class Imports:
                         location, job.warning = store_analysis(path, analysis, self.bundle)
                         job.analysis_path = str(location)
                 job.progress, job.phase = 0.9, "Adding to flow"
-                job.inverses = self._publish(asset, analysis)
+                if not duplicate:
+                    job.inverses = self._publish(asset, analysis)
                 job.asset_id, job.state, job.progress, job.phase = asset.id, "done", 1, "Ready"
         except asyncio.CancelledError:
             job.state, job.phase = "cancelled", "Cancelled"

@@ -223,6 +223,11 @@ class EngineWorker:
         assert g.ready is not None
         try:
             await asyncio.wait_for(asyncio.shield(g.ready), self.spec.start_timeout_s)
+        except asyncio.CancelledError:
+            # Cancellation can happen while the factory downloads/loads a model,
+            # before call() reaches its running-task cancellation handler.
+            await asyncio.shield(self._kill(g))
+            raise
         except TimeoutError:
             await self._kill(g)
             raise WorkerStartError(f"worker {self.name} did not start in time") from None

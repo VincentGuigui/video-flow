@@ -103,6 +103,28 @@ async def test_factory_failure():
         await w.aclose()
 
 
+async def test_cancel_during_model_startup_kills_worker_without_restarting():
+    worker = EngineWorker("initializing", EngineSpec("tests.jobs.fake_engines:SlowInitEngine"))
+    task = asyncio.create_task(worker.call("echo", "unused"))
+    try:
+        deadline = time.monotonic() + 5
+        while not worker.alive and time.monotonic() < deadline:
+            await asyncio.sleep(0.01)
+        assert worker.alive
+        await asyncio.sleep(0.1)
+        started = time.monotonic()
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert time.monotonic() - started < 1
+        assert not worker.alive and worker.restarts == 0
+        worker.spec = SLEEPY
+        assert await worker.call("echo", "ready") == "ready"
+    finally:
+        task.cancel()
+        await worker.aclose()
+
+
 async def test_pool_routes_by_engine_name():
     pool = WorkerPool({"a": SLEEPY, "b": EngineSpec(SLEEPY.factory, {"tag": "b"})})
     try:

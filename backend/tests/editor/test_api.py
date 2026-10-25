@@ -176,6 +176,27 @@ def test_unrelated_sidecar_is_preserved_instead_of_overwritten(app_bundle, origi
     assert load_analysis(original, "digest", bundle) == analysis
 
 
+def test_reimport_known_source_can_add_analysis_without_duplicate_clips(
+    client, app_bundle, original
+):
+    from videoflow.media.hashing import content_hash_sync
+
+    first = client.post(
+        "/api/native-import", json={"handle": grant(client, original), "analyse": False}
+    )
+    assert await_job(client, first.json()["id"])["state"] == "done"
+    _, bundle = app_bundle
+    analysis = AnalysisFile(source_hash=content_hash_sync(original), summary="Reused", words=[])
+    original.with_suffix(".json").write_text(json.dumps(analysis.dump()), encoding="utf-8")
+    second = client.post(
+        "/api/native-import", json={"handle": grant(client, original), "analyse": True}
+    )
+    job = await_job(client, second.json()["id"])
+    assert job["state"] == "done" and job["cached"]
+    assert len(bundle.project.assets) == 1
+    assert len(document_for(bundle.project).clips) == 1
+
+
 def test_missing_source_offline_and_scoped_relink_retains_edit(
     client, app_bundle, original, tmp_path
 ):

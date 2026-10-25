@@ -35,3 +35,9 @@ class SleepyEngine:
 
     def unpicklable(self) -> Any:
         return lambda: 1
+
+
+class SlowInitEngine(SleepyEngine):
+    def __init__(self) -> None:
+        time.sleep(30)
+        super().__init__()
