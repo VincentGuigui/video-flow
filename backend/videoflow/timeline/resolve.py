@@ -457,6 +457,11 @@ def _markers(ctx: _Context, placed: Iterable[ResolvedClip]) -> list[ResolvedMark
 
 def resolve(project: Project) -> ResolvedTimeline:
     """Resolve the project's decisions into a flat, frame-quantised timeline."""
+    from videoflow.editor.resolve import document_for, resolve_editor
+
+    document = document_for(project)
+    if document is not None:
+        return resolve_editor(project, document)
     ctx = _Context(project)
     video, audio, spans = _main_line(ctx)
     total = sum(c.duration for c in video)

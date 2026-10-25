@@ -1,5 +1,7 @@
 # 08. Architecture review and revised implementation plan
 
+Later accepted revisions: [09](09-interactive-editor.md) updates editing behavior; [10](10-desktop-shell.md) selects PySide6 + Qt WebEngine and native reference-in-place imports. Revision 10 supersedes this document's browser-first and pywebview/Tauri packaging decisions; the historical review and measurements below are retained for context.
+
 Inputs: four evaluation reports (stack, analysis, render, model) on spec draft v0.1 (`docs/spec/00..07`), with experiments under `scratchpad/eval/{stack,analysis,render,otio}`. Container used for the tests: FFmpeg 6.1.1 (flite, loudnorm, xfade, zscale and tonemap are present), Python 3.13.17, Node 22.22, 4 CPUs, no GPU.
 
 ---

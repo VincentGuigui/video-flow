@@ -1,12 +1,14 @@
 # 03. Architecture
 
+Current architecture: [08](08-review-and-plan.md), [09](09-interactive-editor.md) and [10](10-desktop-shell.md) supersede conflicting historical details below, including job storage, Python version and desktop packaging.
+
 ## 1. Overview
 
-Video-Flow is a local web application: a Python backend does all media and ML work and serves a React single-page app on `127.0.0.1`. The user starts it with one command and works in the browser. Packaging as a desktop app is a later, optional step.
+Video-Flow is a desktop application: a PySide6 host embeds the React interface in Qt WebEngine, while the Python backend performs media and ML work and serves the trusted editor origin on loopback. Native drag-and-drop and file dialogs pass local path references to the import service without copying originals. Normal launch opens a native window; browser mode is optional for development/diagnostics. See 10 for the bridge, lifecycle and platform gates.
 
 ```mermaid
 flowchart TB
-  subgraph Browser["Browser (React SPA)"]
+  subgraph Desktop["PySide6 + Qt WebEngine (React SPA)"]
     UI[Views: Prepare / Triage / Edit / Output]
     ST[Editor state store<br/>undo/redo]
     PL[Proxy player<br/>double-buffered video]
@@ -44,7 +46,7 @@ flowchart TB
 
 | ID | Decision | Rationale | Alternatives considered |
 |----|----------|-----------|-------------------------|
-| D-1 | Local web app (backend on localhost + browser UI) | Fastest to build and iterate; no installer for the MVP; the UI stack is the one already used on other projects | Electron (heavy), Tauri now (sidecar complexity before value is proven). Tauri wrapper kept for Phase 3. |
+| D-1 | PySide6 + Qt WebEngine desktop window, React UI and Python backend | Native local-path imports without copying; preserves interactive frontend and processing services | Browser mode remains optional for diagnostics; earlier pywebview/Tauri proposals are superseded by 10. |
 | D-2 | **Python 3.12 backend (FastAPI, Pydantic v2)** | The whole critical ecosystem is Python: OTIO bindings and adapters, faster-whisper / WhisperX / NeMo, sentence-transformers, PySceneDetect, pyaaf2, Camtasia libraries. One runtime only. | Hono/Node orchestrator + Python worker: reuses TypeScript skills but adds a second runtime, IPC and duplicated schemas. Can be revisited if the backend grows a large non-ML surface. |
 | D-3 | React 19 + Vite + TanStack Query + Zustand + shadcn/ui (Radix) | Known stack. TanStack Query for server state, Zustand (with Immer patches) for the latency-sensitive editor state and undo/redo. | Preact (lighter but React Flow and some libs target React) |
 | D-4 | Custom canvas timeline, React Flow (xyflow) for the flow overview | Off-the-shelf timeline components do not support branch lanes and word snapping; canvas keeps 300+ clips smooth | `react-timeline-editor` (too limited), PixiJS (only if canvas 2D proves too slow) |

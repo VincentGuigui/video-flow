@@ -52,7 +52,7 @@ def compile_timeline(
 
     def child(clip: ResolvedClip, kind: str) -> Any:
         asset = assets.get(clip.asset_id)
-        silent = kind == "audio" and (
+        silent = getattr(clip, "kind", "media") == "gap" or kind == "audio" and (
             (clip.audio is not None and clip.audio.mode == "muted")
             or (asset is not None and not asset.probe.has_audio)
         )

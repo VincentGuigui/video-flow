@@ -1,5 +1,7 @@
 # 05. Data model and project format
 
+Current contracts follow revisions [08](08-review-and-plan.md), [09](09-interactive-editor.md) and [10](10-desktop-shell.md). In particular, normal desktop imports reference originals in place; generated caches stay in the bundle and requested analysis JSON sits beside the source, with a bundle-cache fallback for read-only folders. Media collection is explicit, and missing sources retain edits for relinking. Historical schemas/layouts below are superseded where those revisions conflict.
+
 ## 1. Principles
 
 1. **Two layers.** *Analysis* (transcripts, features, relations) is derived, cached and rebuildable. *Decisions* (beats accepted by the user, selections, trims, transitions, order) are authored and precious. They live in different files.

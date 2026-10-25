@@ -22,6 +22,7 @@ from pydantic import ConfigDict, Field, TypeAdapter
 from videoflow.core import ids
 from videoflow.core.base import CamelModel
 from videoflow.core.time import Micros, NonNegativeMicros
+from videoflow.editor.models import EditorDocument
 from videoflow.project.models import (
     Asset,
     AssetMarkerTarget,
@@ -735,6 +736,27 @@ class SetSegmentDismissed(BaseCommand):
 # --------------------------------------------------------------------------- batch
 
 
+class SetEditor(BaseCommand):
+    """Replace an interactive gesture atomically; None restores legacy edit ownership."""
+
+    type: Literal["SetEditor"] = "SetEditor"
+    document: EditorDocument | None
+
+    def _apply(self, p: Project) -> "Command":
+        from videoflow.editor.resolve import document_for, validate_assets
+
+        previous = document_for(p)
+        if self.document is not None:
+            validate_assets(self.document, p)
+        if p.__pydantic_extra__ is None:
+            p.__pydantic_extra__ = {}
+        if self.document is None:
+            p.__pydantic_extra__.pop("editor", None)
+        else:
+            p.__pydantic_extra__["editor"] = self.document.dump()
+        return SetEditor(document=previous)
+
+
 class Batch(BaseCommand):
     """Several commands applied in order as one; its inverse undoes them in reverse."""
 
@@ -788,6 +810,7 @@ type Command = Annotated[
     | PutTranscriptEdit
     | RemoveTranscriptEdit
     | SetSegmentDismissed
+    | SetEditor
     | Batch,
     Field(discriminator="type"),
 ]

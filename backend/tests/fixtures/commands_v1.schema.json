@@ -658,6 +658,9 @@
           "$ref": "#/$defs/SetSegmentDismissed"
         },
         {
+          "$ref": "#/$defs/SetEditor"
+        },
+        {
           "$ref": "#/$defs/Batch"
         }
       ]
@@ -714,6 +717,121 @@
         }
       },
       "title": "DefaultTransition",
+      "type": "object"
+    },
+    "EditorClip": {
+      "additionalProperties": true,
+      "properties": {
+        "assetId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assetid"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "gainDb": {
+          "default": 0,
+          "maximum": 24,
+          "minimum": -60,
+          "title": "Gaindb",
+          "type": "number"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "video",
+            "audio",
+            "gap"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "layer": {
+          "default": 0,
+          "maximum": 999,
+          "minimum": 0,
+          "title": "Layer",
+          "type": "integer"
+        },
+        "linkId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Linkid"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "sourceIn": {
+          "minimum": 0,
+          "title": "Sourcein",
+          "type": "integer"
+        },
+        "sourceOut": {
+          "exclusiveMinimum": 0,
+          "title": "Sourceout",
+          "type": "integer"
+        },
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "transform": {
+          "$ref": "#/$defs/Transform"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "name",
+        "start",
+        "sourceIn",
+        "sourceOut"
+      ],
+      "title": "EditorClip",
+      "type": "object"
+    },
+    "EditorDocument": {
+      "additionalProperties": true,
+      "properties": {
+        "clips": {
+          "items": {
+            "$ref": "#/$defs/EditorClip"
+          },
+          "maxItems": 10000,
+          "title": "Clips",
+          "type": "array"
+        },
+        "version": {
+          "const": 1,
+          "default": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "title": "EditorDocument",
       "type": "object"
     },
     "FitRect": {
@@ -1728,6 +1846,33 @@
       "title": "SetClipAudio",
       "type": "object"
     },
+    "SetEditor": {
+      "additionalProperties": false,
+      "description": "Replace an interactive gesture atomically; None restores legacy edit ownership.",
+      "properties": {
+        "document": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EditorDocument"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": {
+          "const": "SetEditor",
+          "default": "SetEditor",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "document"
+      ],
+      "title": "SetEditor",
+      "type": "object"
+    },
     "SetItemEnabled": {
       "additionalProperties": false,
       "description": "``enabled=False`` is ripple delete: the item leaves the main line, gap closed.",
@@ -2033,6 +2178,63 @@
         "text"
       ],
       "title": "TranscriptEdit",
+      "type": "object"
+    },
+    "Transform": {
+      "additionalProperties": true,
+      "properties": {
+        "cropBottom": {
+          "default": 0,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Cropbottom",
+          "type": "number"
+        },
+        "cropLeft": {
+          "default": 0,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Cropleft",
+          "type": "number"
+        },
+        "cropRight": {
+          "default": 0,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Cropright",
+          "type": "number"
+        },
+        "cropTop": {
+          "default": 0,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Croptop",
+          "type": "number"
+        },
+        "height": {
+          "default": 1080,
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "number"
+        },
+        "width": {
+          "default": 1920,
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "number"
+        },
+        "x": {
+          "default": 0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "default": 0,
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "title": "Transform",
       "type": "object"
     },
     "Transition": {

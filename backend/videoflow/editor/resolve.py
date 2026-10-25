@@ -1,0 +1,131 @@
+"""Resolve the interactive document into the common exporter/render contract."""
+
+from videoflow.core.time import frame_to_us, frames
+from videoflow.editor.models import EditorDocument, layout
+from videoflow.project.models import Project
+from videoflow.timeline.resolved import (
+    ResolvedAudio,
+    ResolvedClip,
+    ResolvedTimeline,
+    ResolvedTrack,
+    TimelineWarning,
+)
+
+
+def document_for(project: Project) -> EditorDocument | None:
+    raw = (project.__pydantic_extra__ or {}).get("editor")
+    return EditorDocument.model_validate(raw) if raw is not None else None
+
+
+def editable_document(project: Project) -> EditorDocument:
+    """Import legacy authored cuts without silently discarding an existing edit."""
+    from videoflow.editor.models import EditorClip, Transform
+    from videoflow.timeline.resolve import resolve
+
+    existing = document_for(project)
+    if existing is not None:
+        return existing
+    timeline = resolve(project)
+    clips = []
+    for track in timeline.tracks:
+        for c in track.clips:
+            asset = project.asset(c.asset_id)
+            kind = "video" if track.kind == "video" else "audio"
+            if asset is None or (
+                kind == "audio"
+                and (not asset.probe.has_audio or (c.audio and c.audio.mode == "muted"))
+            ):
+                continue
+            # Legacy replacement audio is already independent in the resolved tracks.
+            link = None
+            if c.audio and c.audio.mode == "linked" and asset.probe.video and asset.probe.has_audio:
+                link = f"legacy_{c.item_id}"
+            clips.append(
+                EditorClip(
+                    id=f"{c.item_id}_{track.id}",
+                    kind=kind,
+                    asset_id=c.asset_id,
+                    name=asset.path.replace("\\", "/").split("/")[-1],
+                    start=c.timeline_start,
+                    source_in=c.source_in_frame,
+                    source_out=c.source_in_frame + c.duration,
+                    layer=0 if track.id in ("V1", "A1") else 1,
+                    link_id=link,
+                    gain_db=c.audio.gain_db if c.audio else 0,
+                    transform=Transform(width=timeline.width, height=timeline.height),
+                )
+            )
+    return EditorDocument(clips=clips)
+
+
+def validate_assets(document: EditorDocument, project: Project) -> None:
+    for clip in document.clips:
+        if clip.kind == "gap":
+            continue
+        asset = project.asset(clip.asset_id or "")
+        if asset is None:
+            raise ValueError(f"Unknown asset {clip.asset_id}")
+        if clip.source_out > frames(asset.probe.duration_us, project.settings.frame_rate):
+            raise ValueError(f"Clip {clip.name} exceeds its source duration")
+        if clip.kind == "video" and asset.probe.video is None:
+            raise ValueError(f"{clip.name} has no video")
+        if clip.kind == "audio" and not asset.probe.has_audio:
+            raise ValueError(f"{clip.name} has no audio")
+
+
+def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeline:
+    settings = project.settings
+    rate = settings.frame_rate
+    clips, duration = layout(document)
+    tracks: list[ResolvedTrack] = []
+    warnings: list[TimelineWarning] = []
+    for kind in ("audio", "video"):
+        layers = sorted({c.layer for c in clips if c.kind == kind or c.kind == "gap"})
+        for index, layer in enumerate(layers):
+            track_id = ("A" if kind == "audio" else "V") + str(index + 1)
+            resolved = []
+            for clip in sorted(clips, key=lambda c: (c.start, c.id)):
+                if clip.layer != layer or clip.kind not in (kind, "gap"):
+                    continue
+                asset = project.asset(clip.asset_id or "")
+                source_duration = frames(asset.probe.duration_us, rate) if asset else clip.duration
+                resolved.append(
+                    ResolvedClip(
+                        item_id=clip.id,
+                        track=track_id,
+                        asset_id=clip.asset_id or "__gap__",
+                        timeline_start=clip.start,
+                        duration=clip.duration,
+                        source_in_frame=clip.source_in,
+                        source_in_us=frame_to_us(clip.source_in, rate),
+                        source_out_us=frame_to_us(clip.source_out, rate),
+                        available_before=clip.source_in,
+                        available_after=max(0, source_duration - clip.source_out),
+                        audio=ResolvedAudio(
+                            mode="muted" if clip.kind != "audio" else "linked",
+                            asset_id=clip.asset_id,
+                            gain_db=clip.gain_db,
+                        ),
+                        kind="gap" if clip.kind == "gap" else "media",
+                        transform=clip.transform.dump(),
+                        layer=clip.layer,
+                    )
+                )
+            tracks.append(ResolvedTrack(id=track_id, kind=kind, clips=resolved))
+    if any(c.kind == "video" for c in clips):
+        warnings.append(
+            TimelineWarning(
+                code="editor_transforms", message="Spatial transforms are metadata in OTIO exports."
+            )
+        )
+    return ResolvedTimeline(
+        project_id=project.id,
+        revision=project.revision,
+        rate=rate,
+        width=settings.width,
+        height=settings.height,
+        sample_rate=settings.sample_rate,
+        duration=duration,
+        tracks=tracks,
+        warnings=warnings,
+    )

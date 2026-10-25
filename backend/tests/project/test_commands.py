@@ -7,6 +7,7 @@ from hypothesis import strategies as st
 from tests.project.conftest import load_fixture_dict
 from videoflow.core import ids
 from videoflow.core.time import TimeRange
+from videoflow.editor.models import EditorDocument
 from videoflow.project.commands import (
     COMMAND_TYPES,
     AddAsset,
@@ -37,6 +38,7 @@ from videoflow.project.commands import (
     RenameProject,
     SetBeatIncluded,
     SetClipAudio,
+    SetEditor,
     SetItemEnabled,
     SetSegmentDismissed,
     SetSettings,
@@ -105,6 +107,7 @@ def _with(p: Project, cmd: Command) -> Project:
 
 
 SAMPLES: dict[str, Sample] = {
+    "SetEditor": lambda p: (p, SetEditor(document=EditorDocument())),
     "RenameProject": lambda p: (p, RenameProject(name="Renamed")),
     "SetSettings": lambda p: (
         p,

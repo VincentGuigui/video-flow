@@ -1,5 +1,7 @@
 # 07. Roadmap, risks and open questions
 
+Roadmap amendment (2026-10-25): [10-desktop-shell.md](10-desktop-shell.md) makes the PySide6/Qt WebEngine host and native path-based imports part of the editor foundation. They are no longer optional Phase 3 work. Release/installer hardening remains a later milestone; Windows ARM64 requires the qualification gate in 10.
+
 ## 1. Phases
 
 ### Phase 0: analysis spike (1 week)
@@ -40,7 +42,7 @@ Exit criteria: the acceptance scenarios of 02 §8 pass on a real project; a 40-r
 - FCP7 XML, FCPXML auditions, AAF.
 - OTIO re-import (round trip).
 - Interop test matrix: Resolve, Premiere, Final Cut Pro, Kdenlive, Camtasia (Windows and macOS).
-- French UI; optional desktop packaging (Tauri shell with the Python backend as sidecar).
+- French UI; release packaging and installer hardening for the PySide6/Qt WebEngine desktop app (the host and native imports are delivered in the editor foundation; see 10).
 
 ### Later ideas
 - Natural-language shot search and automatic B-roll suggestions (match transcript nouns to visual-text embeddings).
