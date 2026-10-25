@@ -23,12 +23,17 @@ import itertools
 import multiprocessing
 import os
 import signal
+import sys
 import threading
 import traceback
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field
-from multiprocessing.connection import Connection
 from typing import Any
+
+if sys.platform == "win32":
+    from multiprocessing.connection import PipeConnection as Connection
+else:
+    from multiprocessing.connection import Connection
 
 DEFAULT_START_TIMEOUT_S = 120.0
 STOP_GRACE_S = 2.0
