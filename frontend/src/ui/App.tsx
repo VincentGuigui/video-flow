@@ -53,6 +53,7 @@ import { Preview } from "./Preview";
 import { Flow } from "./Flow";
 import { Transport } from "./Transport";
 import { Transcript } from "./Transcript";
+import { currentWindow, togglePlay } from "../playback";
 import { ImportDialog } from "./Imports";
 import { native, type NativeFile, type NativeSelection } from "../desktop";
 
@@ -146,22 +147,15 @@ export function App() {
     if (!playing) return;
     let id = 0;
     const initial = performance.now(),
-      initialFrame = frame;
+      initialFrame = frame,
+      window = currentWindow();
     const tick = (now: number) => {
       const s = useEditor.getState(),
-        r = layout(s.document),
-        fpsValue = s.project ? fps(s.project.settings) : 30,
-        clip = r.clips.find((c) => c.id === s.focus);
-      const end = clip
-        ? Math.min(
-            r.total,
-            clip.start + duration(clip) + Math.round(fpsValue * 2),
-          )
-        : r.total;
+        fpsValue = s.project ? fps(s.project.settings) : 30;
       const next =
         initialFrame + Math.floor(((now - initial) / 1000) * fpsValue);
-      if (next >= end) {
-        s.set({ frame: Math.max(0, end - 1), playing: false });
+      if (next >= window.end) {
+        s.set({ frame: window.start, playing: false });
         return;
       }
       s.set({ frame: next });
@@ -169,9 +163,10 @@ export function App() {
     };
     id = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(id);
-    // The playback clock starts once per play action; seeking stops playback.
+    // The playback clock and window are fixed per play action; seeking stops playback.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing]);
+  useEffect(() => set({ range: null, rangeHandle: null }), [focus]);
   useEffect(() => {
     const r = layout(document);
     if (frame >= r.total) set({ frame: Math.max(0, r.total - 1) });
@@ -204,10 +199,7 @@ export function App() {
       const ctrl = e.ctrlKey || e.metaKey;
       if (e.code === "Space") {
         e.preventDefault();
-        s.set({
-          playing: !s.playing && end > 0,
-          frame: s.frame >= end - 1 ? start : s.frame,
-        });
+        togglePlay();
         return;
       }
       const step = keyboardStep(e.key, e.shiftKey, ctrl, rate);
@@ -229,7 +221,8 @@ export function App() {
       }
       if (e.key === "Escape") {
         e.preventDefault();
-        s.set({ selected: null, focus: null });
+        if (s.rangeHandle) s.set({ rangeHandle: null });
+        else s.set({ selected: null, focus: null });
       }
       if (ctrl && e.key.toLowerCase() === "z") {
         e.preventDefault();

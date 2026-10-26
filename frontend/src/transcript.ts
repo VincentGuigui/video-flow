@@ -11,7 +11,13 @@ export interface Topic {
   title: string;
   sentences: Sentence[];
 }
+export interface Word {
+  text: string;
+  startUs: number;
+  endUs: number;
+}
 export interface Analysis {
+  words?: Word[];
   summary: string;
   keywords: string[];
   topics?: Topic[];

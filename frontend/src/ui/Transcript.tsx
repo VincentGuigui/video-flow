@@ -1,33 +1,42 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { fps, timecode, type Clip } from "../model";
-import { api, useEditor } from "../store";
+import { useEditor } from "../store";
 import {
   assemblyFrame,
   assemblyRange,
   sourceFrame,
-  type Analysis,
+  type Word,
 } from "../transcript";
+import { useAnalysis } from "./useAnalysis";
 
 export function Transcript({ clip }: { clip: Clip }) {
   const { project, document, set } = useEditor();
   const rate = project ? fps(project.settings) : 30;
-  const [analysis, setAnalysis] = useState<Analysis | null | undefined>();
+  const analysis = useAnalysis(clip.assetId);
   const [open, setOpen] = useState<number | null>(null);
+  const [anchor, setAnchor] = useState<Word | null>(null);
   useEffect(() => {
-    setAnalysis(undefined);
     setOpen(null);
-    if (!clip.assetId) return setAnalysis(null);
-    let live = true;
-    api<Analysis | null>(`/analysis/${clip.assetId}`)
-      .then((a) => live && setAnalysis(a))
-      .catch(() => live && setAnalysis(null));
-    return () => {
-      live = false;
-    };
-  }, [clip.assetId]);
-  // The highlight belongs to this panel; leave nothing behind on clip change.
-  useEffect(() => () => set({ highlight: null }), [clip.id]);
+    setAnchor(null);
+  }, [clip.id]);
+
+  // Transcript selections drive the timeline range; times outside the clip are ignored.
+  function select(startUs: number, endUs: number) {
+    const range = assemblyRange(document, clip.id, startUs, endUs, rate);
+    if (range) set({ range, rangeHandle: null, playing: false });
+  }
+  function pickWord(word: Word, extend: boolean) {
+    if (extend && anchor) {
+      select(
+        Math.min(anchor.startUs, word.startUs),
+        Math.max(anchor.endUs, word.endUs),
+      );
+    } else {
+      setAnchor(word);
+      select(word.startUs, word.endUs);
+    }
+  }
 
   function Time({ us }: { us: number }) {
     const frame = assemblyFrame(document, clip.id, us, rate);
@@ -63,7 +72,8 @@ export function Transcript({ clip }: { clip: Clip }) {
         </p>
       </div>
     );
-  const topics = analysis.topics ?? [];
+  const topics = analysis.topics ?? [],
+    words = analysis.words ?? [];
   return (
     <div className="inspector-content transcript-panel">
       <span className="overline">SUMMARY</span>
@@ -85,17 +95,8 @@ export function Transcript({ clip }: { clip: Clip }) {
                     aria-expanded={expanded}
                     onClick={() => {
                       setOpen(expanded ? null : index);
-                      set({
-                        highlight: expanded
-                          ? null
-                          : assemblyRange(
-                              document,
-                              clip.id,
-                              topic.startUs,
-                              topic.endUs,
-                              rate,
-                            ),
-                      });
+                      if (expanded) set({ range: null, rangeHandle: null });
+                      else select(topic.startUs, topic.endUs);
                     }}
                   >
                     {expanded ? (
@@ -112,18 +113,41 @@ export function Transcript({ clip }: { clip: Clip }) {
                   </div>
                   {expanded && (
                     <ol className="topic-lines">
-                      {topic.sentences.map((line, i) => (
-                        <li key={i}>
-                          <Time us={line.startUs} />
-                          <span>{line.text}</span>
-                        </li>
-                      ))}
+                      {topic.sentences.map((line, i) => {
+                        const spoken = words.filter(
+                          (w) =>
+                            w.startUs >= line.startUs && w.endUs <= line.endUs,
+                        );
+                        return (
+                          <li key={i}>
+                            <Time us={line.startUs} />
+                            <span>
+                              {spoken.length
+                                ? spoken.map((w, j) => (
+                                    <span
+                                      key={j}
+                                      className={`word ${anchor === w ? "anchor" : ""}`}
+                                      title="Click: set the range to this word. Shift+click: extend it."
+                                      onClick={(e) => pickWord(w, e.shiftKey)}
+                                    >
+                                      {w.text}{" "}
+                                    </span>
+                                  ))
+                                : line.text}
+                            </span>
+                          </li>
+                        );
+                      })}
                     </ol>
                   )}
                 </li>
               );
             })}
           </ul>
+          <p className="muted transcript-hint">
+            Click a word to set the timeline range, Shift+click to extend it,
+            then use Trim clip to range in the Clip tab.
+          </p>
         </div>
       )}
     </div>

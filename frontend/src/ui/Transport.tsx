@@ -25,10 +25,13 @@ import {
   TIMELINE_ORIGIN as origin,
 } from "../timeline";
 import { useEditor } from "../store";
+import { currentRange, togglePlay } from "../playback";
+import { moveHandle, type Handle } from "../range";
 
 export function Transport() {
-  const { project, document, frame, highlight, playing, focus, set } =
+  const { project, document, frame, playing, focus, rangeHandle, set } =
     useEditor();
+  const range = currentRange();
   const root = useRef<HTMLDivElement>(null);
   const { scale, scroll, width, set: setTimeline } = useTimeline();
   const previousFocus = useRef<string | null | undefined>(undefined);
@@ -86,8 +89,26 @@ export function Transport() {
       playing: false,
     });
   }
+  function grab(handle: Handle, event: ReactPointerEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    const node = root.current;
+    if (!node) return;
+    set({ rangeHandle: handle, playing: false });
+    const position = (x: number) =>
+      (x - node.getBoundingClientRect().left + node.scrollLeft - origin) /
+      scale;
+    const motion = (e: PointerEvent) =>
+      set({
+        range: moveHandle(currentRange(), handle, position(e.clientX), total),
+      });
+    const end = () => window.removeEventListener("pointermove", motion);
+    window.addEventListener("pointermove", motion);
+    window.addEventListener("pointerup", end, { once: true });
+  }
   function scrub(event: ReactPointerEvent) {
     event.preventDefault();
+    if (rangeHandle) set({ rangeHandle: null });
     const node = root.current;
     if (!node) return;
     const position = (x: number) =>
@@ -207,16 +228,27 @@ export function Transport() {
                 />
               ))}
           </div>
-          {highlight && (
+          <div
+            className="overview-range"
+            data-testid="timeline-range"
+            style={{
+              left: origin + range.start * scale,
+              width: Math.max(1, (range.end - range.start) * scale),
+            }}
+          />
+          {(["start", "end"] as const).map((handle) => (
             <div
-              className="overview-highlight"
-              data-testid="timeline-highlight"
-              style={{
-                left: origin + highlight.start * scale,
-                width: Math.max(2, (highlight.end - highlight.start) * scale),
-              }}
+              key={handle}
+              role="slider"
+              aria-label={`Range ${handle}`}
+              aria-valuenow={range[handle]}
+              title={`Range ${handle} ${timecode(range[handle], rate)}. Drag to move; select and press Space to play around it.`}
+              data-testid={`range-${handle}`}
+              className={`range-handle ${handle} ${rangeHandle === handle ? "selected" : ""}`}
+              style={{ left: origin + range[handle] * scale }}
+              onPointerDown={(e) => grab(handle, e)}
             />
-          )}
+          ))}
           <div
             className="overview-playhead"
             style={{ left: origin + frame * scale }}
@@ -252,12 +284,7 @@ export function Transport() {
             className="play-button"
             aria-label={playing ? "Pause" : "Play"}
             disabled={!total}
-            onClick={() =>
-              set({
-                playing: !playing,
-                frame: frame >= end - 1 ? start : frame,
-              })
-            }
+            onClick={togglePlay}
           >
             {playing ? (
               <Pause size={18} />
@@ -288,7 +315,7 @@ export function Transport() {
           </button>
         </div>
         <span className="transport-space">
-          <kbd>Space</kbd> to play / pause <i /> Drag the cursor to scrub
+          <kbd>Space</kbd> plays the range <i /> Drag the cursor to scrub
         </span>
       </div>
     </section>

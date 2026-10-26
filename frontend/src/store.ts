@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { clone, type Document, type Project, type Settings } from "./model";
+import type { Handle, Range } from "./range";
 type Command = Record<string, unknown>;
 export async function api<T>(
   path: string,
@@ -27,7 +28,9 @@ interface State {
   selected: string | null;
   focus: string | null;
   frame: number;
-  highlight: { start: number; end: number } | null;
+  // null follows the default range (focused clip ± 2 s, else the whole edit).
+  range: Range | null;
+  rangeHandle: Handle | null;
   playing: boolean;
   busy: boolean;
   error: string;
@@ -54,7 +57,8 @@ export const useEditor = create<State>((set, get) => ({
   selected: null,
   focus: null,
   frame: 0,
-  highlight: null,
+  range: null,
+  rangeHandle: null,
   playing: false,
   busy: false,
   error: "",
@@ -76,7 +80,8 @@ export const useEditor = create<State>((set, get) => ({
               selected: null,
               focus: null,
               frame: 0,
-              highlight: null,
+              range: null,
+              rangeHandle: null,
               playing: false,
               history: [],
               future: [],
