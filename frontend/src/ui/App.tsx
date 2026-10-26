@@ -283,13 +283,10 @@ export function App() {
             <Film size={19} />
           </span>
           video<span className="brand-flow">flow</span>
-          <span className="beta-badge">LOCAL</span>
+
         </a>
         <div className="header-divider" />
-        <div className="project-title">
-          <FolderOpen size={14} />
-          <span>{project?.name ?? "Opening project…"}</span>
-        </div>
+
         <span className={`save-status ${busy ? "saving" : ""}`}>
           <span className="status-dot" />
           {busy ? "Saving…" : "All changes saved"}
