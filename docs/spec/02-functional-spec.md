@@ -96,7 +96,7 @@ Priority: **P0** = MVP, **P1** = shortly after MVP, **P2** = later.
 
 | ID | Requirement | Prio |
 |----|-------------|------|
-| CMP-01 | Open a beat: one player per take (2 to 4 visible, scroll for more) plus each take's transcript. | P0 |
+| CMP-01 | Open a beat: one player per take (2 to 4 visible, scroll for more) plus each take's transcript. | P0 (implemented for stacked clips, see 16) |
 | CMP-02 | Synchronised playback from a common anchor (aligned word), with per-take solo audio. | P0 |
 | CMP-03 | Highlight divergences between takes (words present in one take only, fillers, hesitations). | P0 |
 | CMP-04 | "Pick" button per take; keyboard shortcuts 1 to 9 to pick. | P0 |

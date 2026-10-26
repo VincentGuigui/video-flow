@@ -52,6 +52,10 @@ The standalone desktop build is in `releases/Video-Flow/Video-Flow.exe`. Keep th
 
 Analysed imports get a short summary and topic sections (start/end time and a title of up to five words). Select a clip and open the Transcript tab in the properties panel: click a topic to expand its transcript and set the timeline range to it; click a word (Shift+click to extend) to set the range; click any timecode to move the cursor there. In the Clip tab, Trim clip to range keeps only the range and moves later clips earlier; Auto-trim silence trims to the first and last spoken words.
 
+## Compare takes
+
+Import stacks similar retakes on parallel lanes. Select one and click Compare takes in clip properties: the takes play side by side, synced on their first common word, with words said in only one take highlighted. Pick a take with its button or keys 1–9; it is enabled and the other takes are disabled.
+
 ## Settings and local models
 
 Use Settings in the editor header to select transcription and summary engines, manage model downloads and set import/export defaults. Models always live in the application `models/` subdirectory; `VIDEOFLOW_MODELS_DIR` points there. Missing weights require an explicit download action. Compatible analysis JSON is reused first. Deterministic summaries need no generative model; optional Qwen summaries run locally on CPU. Development installs offering both optional engines use `uv sync --extra desktop --extra cpu --extra whisper --extra qwen` in `backend/`.
