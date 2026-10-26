@@ -1,4 +1,12 @@
-import { duration, layout, pack, trim, type Document } from "./model";
+import {
+  duration,
+  layout,
+  pack,
+  remove,
+  split,
+  trim,
+  type Document,
+} from "./model";
 
 export interface Range {
   start: number;
@@ -83,6 +91,35 @@ export function trimToRange(
   if (head) next = trim(next, id, "in", head, true, Infinity);
   if (tail) next = trim(next, id, "out", -tail, true, Infinity);
   return next;
+}
+
+// Cut the part of a clip (and its linked partner) inside `range` out of the edit,
+// rippling later clips earlier. Null when the range does not cut into the clip's
+// middle; a range touching an edge is a trim (see trimToRange).
+export function deleteRange(
+  doc: Document,
+  id: string,
+  range: Range,
+): Document | null {
+  let next = pack(doc);
+  const clip = layout(next).clips.find((c) => c.id === id);
+  if (!clip) return null;
+  const start = Math.max(range.start, clip.start),
+    end = Math.min(range.end, clip.start + duration(clip));
+  if (end <= start) return null;
+  if (start === clip.start && end === clip.start + duration(clip)) return null;
+  if (start === clip.start || end === clip.start + duration(clip))
+    return trimToRange(next, id, {
+      start: start === clip.start ? end : clip.start,
+      end: start === clip.start ? clip.start + duration(clip) : start,
+    });
+  next = split(next, id, start);
+  const middle = next.clips.find(
+    (c) => c.start === start && c.kind === clip.kind && c.layer === clip.layer,
+  );
+  if (!middle) return null;
+  next = split(next, middle.id, end);
+  return remove(next, middle.id, true);
 }
 
 export interface TimedWord {

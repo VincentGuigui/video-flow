@@ -13,9 +13,10 @@ This revision supplements 09, 12 and 14.
 
 - In the Transcript tab, clicking a topic sets the range to that topic; collapsing it resets the range to its default. Clicking a word sets the range to that word; Shift+click extends it from the last clicked word. Times outside the clip's trimmed range are ignored. The user can then adjust the markers on the timeline.
 - **Trim clip to range** (Clip tab) keeps only the part of the selected clip inside the range. Its linked audio is trimmed with it, and later clips on every lane move earlier by the removed time (ripple). It is disabled when the range does not shorten the clip. One undo step; the range then returns to its default.
+- **Delete range** (Clip tab) cuts the part of the selected clip inside the range out of the edit: the clip is split at both range bounds, the middle piece and its linked audio are removed, and later clips move earlier (ripple). A range touching the clip's start or end acts as a trim; a range covering the whole clip, or missing it, disables the button. One undo step; the range then returns to its default.
 
 ## Auto-trim silence
 
 - **Auto-trim silence** (Clip tab) trims the selected clip to its first and last spoken words, keeping the project clip padding (default 0.15 s before, 0.30 s after), with ripple and linked audio as above. It only shortens, never extends. It needs a transcript and is disabled when there is no speech or nothing to remove. It applies to the selected clip only.
 
-Validation: frontend tests cover the default range, the window around a marker, playback start, marker ordering, trim to range with linked audio and ripple, auto-trim padding and no-speech. A browser check on a served project confirmed marker drag and selection, playback around a marker with return to the window start, word selection, trim, undo and auto-trim.
+Validation: frontend tests cover the default range, the window around a marker, playback start, marker ordering, trim to range with linked audio and ripple, delete range (middle cut, edge trim, refusals), auto-trim padding and no-speech. A browser check on a served project confirmed marker drag and selection, playback around a marker with return to the window start, word selection, trim, undo and auto-trim.

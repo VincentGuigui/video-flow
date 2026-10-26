@@ -8,6 +8,7 @@ import {
 } from "./model";
 import {
   autoTrim,
+  deleteRange,
   defaultRange,
   moveHandle,
   playStart,
@@ -104,5 +105,27 @@ describe("auto-trim", () => {
   });
   it("does nothing without speech", () => {
     expect(autoTrim(doc(), "v", [], 25)).toBeNull();
+  });
+});
+
+describe("delete range", () => {
+  it("cuts the middle of a clip and its audio, rippling later clips", () => {
+    const next = deleteRange(doc(), "v", { start: 30, end: 50 })!;
+    const videos = next.clips
+      .filter((p) => p.kind === "video" && p.id !== "next")
+      .map((p) => [p.start, p.sourceIn, p.sourceOut]);
+    expect(videos.toSorted((a, b) => a[0] - b[0])).toEqual([
+      [0, 0, 30],
+      [30, 50, 100],
+    ]);
+    expect(next.clips.filter((p) => p.kind === "audio")).toHaveLength(2);
+    expect(next.clips.every((p) => p.kind !== "gap")).toBe(true);
+    expect(layout(next).total).toBe(180);
+  });
+  it("trims when the range touches an edge and refuses the whole clip", () => {
+    const head = deleteRange(doc(), "v", { start: 0, end: 30 })!;
+    expect(head.clips.find((p) => p.id === "v")!.sourceIn).toBe(30);
+    expect(deleteRange(doc(), "v", { start: 0, end: 100 })).toBeNull();
+    expect(deleteRange(doc(), "v", { start: 150, end: 160 })).toBeNull();
   });
 });

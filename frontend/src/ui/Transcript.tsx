@@ -146,7 +146,7 @@ export function Transcript({ clip }: { clip: Clip }) {
           </ul>
           <p className="muted transcript-hint">
             Click a word to set the timeline range, Shift+click to extend it,
-            then use Trim clip to range in the Clip tab.
+            then use Trim clip to range or Delete range in the Clip tab.
           </p>
         </div>
       )}

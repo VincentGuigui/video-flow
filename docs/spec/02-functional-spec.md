@@ -112,7 +112,7 @@ Priority: **P0** = MVP, **P1** = shortly after MVP, **P2** = later.
 | TL-03 | Blade (split at playhead), ripple delete, lift. | P0 |
 | TL-04 | Roll edit (move a cut point between two clips) and slip (change source range, keep duration). | P1 |
 | TL-05 | Auto-trim silence of the selected clip to the project clip padding (default 0.15 s before first word, 0.30 s after last word), with ripple (see 15). | P0 |
-| TL-06 | Transcript editing: select words in the transcript panel to set the timeline range, then trim the clip to it (see 15). | P1 |
+| TL-06 | Transcript editing: select words in the transcript panel to set the timeline range, then trim the clip to it or delete it (see 15). | P1 |
 | TL-07 | Unlink audio and video of a clip; replace the audio with the audio of another take of the same beat (aligned automatically); restore the clip's original audio (see 13). | P1 |
 | TL-08 | J/L cuts (audio leads or lags video). | P2 |
 | TL-09 | Clip volume and fade in/out handles. Silencing a clip uses its enable checkbox; there is no separate mute (see 13). | P0 |

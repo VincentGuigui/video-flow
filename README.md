@@ -50,7 +50,7 @@ The standalone desktop build is in `releases/Video-Flow/Video-Flow.exe`. Keep th
 
 ## Transcript and topics
 
-Analysed imports get a short summary and topic sections (start/end time and a title of up to five words). Select a clip and open the Transcript tab in the properties panel: click a topic to expand its transcript and set the timeline range to it; click a word (Shift+click to extend) to set the range; click any timecode to move the cursor there. In the Clip tab, Trim clip to range keeps only the range and moves later clips earlier; Auto-trim silence trims to the first and last spoken words.
+Analysed imports get a short summary and topic sections (start/end time and a title of up to five words). Select a clip and open the Transcript tab in the properties panel: click a topic to expand its transcript and set the timeline range to it; click a word (Shift+click to extend) to set the range; click any timecode to move the cursor there. In the Clip tab, Trim clip to range keeps only the range and Delete range cuts it out, both moving later clips earlier; Auto-trim silence trims to the first and last spoken words.
 
 ## Compare takes
 

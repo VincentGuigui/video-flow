@@ -26,7 +26,7 @@ Initial draft: 2026-10-23. Latest accepted architecture revision: 2026-10-25. Re
 | 12 | [12-unified-timeline.md](12-unified-timeline.md) | Unified timeline axis, linking separate clips, audio trimming with retained time, live properties |
 | 13 | [13-audio-tracks.md](13-audio-tracks.md) | Audio of video clips: no mute (enable box), detach, restore original audio |
 | 14 | [14-transcript-panel.md](14-transcript-panel.md) | Import summary and titled topic sections; Transcript panel with cursor seek and timeline highlight |
-| 15 | [15-range-and-trim.md](15-range-and-trim.md) | Timeline range selector and range playback, transcript-driven Trim clip to range, Auto-trim silence |
+| 15 | [15-range-and-trim.md](15-range-and-trim.md) | Timeline range selector and range playback, transcript-driven Trim clip to range and Delete range, Auto-trim silence |
 | 16 | [16-compare-takes.md](16-compare-takes.md) | Compare takes: stacked retakes side by side, synced on a common word, divergent words, pick with 1–9 |
 
 Suggested reading order: 16, 15, 14, 13, 12, 11, 10, 09 and 08 for current decisions, then 02, 04 and 05 for product behavior and data, 03 and 06 for implementation, and 07 for historical roadmap context.

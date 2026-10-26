@@ -57,7 +57,7 @@ import { Compare } from "./Compare";
 import { stackedTakes } from "../compare";
 import { useAnalysis } from "./useAnalysis";
 import { currentRange, currentWindow, togglePlay } from "../playback";
-import { autoTrim, trimToRange } from "../range";
+import { autoTrim, deleteRange, trimToRange } from "../range";
 import { ImportDialog } from "./Imports";
 import { native, type NativeFile, type NativeSelection } from "../desktop";
 
@@ -671,6 +671,9 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
   const rangeTrim = clip
     ? trimToRange(document, clip.id, currentRange())
     : null;
+  const rangeDelete = clip
+    ? deleteRange(document, clip.id, currentRange())
+    : null;
   const padding = project?.settings.clipPadding as
     { beforeUs: number; afterUs: number } | undefined;
   const silenceTrim =
@@ -886,6 +889,19 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
               >
                 <Scissors size={14} />
                 Trim clip to range
+              </button>
+              <button
+                className="button delete-range-action"
+                disabled={busy || !rangeDelete}
+                title="Cut the part of the clip inside the timeline range; later clips move earlier"
+                onClick={() => {
+                  if (!rangeDelete) return;
+                  void save(rangeDelete);
+                  useEditor.getState().set({ range: null, rangeHandle: null });
+                }}
+              >
+                <Scissors size={14} />
+                Delete range
               </button>
               <button
                 className="button auto-trim-action"
