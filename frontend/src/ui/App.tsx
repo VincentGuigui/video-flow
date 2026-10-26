@@ -23,6 +23,7 @@ import {
   Download,
 } from "lucide-react";
 import {
+  canRestoreAudio,
   clone,
   detach,
   fitPicture,
@@ -36,6 +37,7 @@ import {
   pack,
   remove,
   resize,
+  restoreAudio,
   split,
   timecode,
   type Clip,
@@ -661,8 +663,9 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
   const [tab, setTab] = useState("Clip");
   const rate = project ? fps(project.settings) : 30;
   const candidates = clip ? linkCandidates(pack(document), clip.id) : [];
-  const video = project?.assets.find((a) => a.id === clip?.assetId)?.probe
-    .video;
+  const asset = project?.assets.find((a) => a.id === clip?.assetId);
+  const video = asset?.probe.video;
+  const restorable = clip ? canRestoreAudio(document, clip.id, asset) : false;
   const fitMode =
     clip && video && project
       ? nextFitMode(clip, video, project.settings)
@@ -830,6 +833,16 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
             >
               <Link2 size={14} />
               Detach audio & video
+            </button>
+          )}
+          {restorable && (
+            <button
+              className="button restore-audio-action"
+              disabled={busy}
+              onClick={() => void save(restoreAudio(pack(document), clip.id))}
+            >
+              <Volume2 size={14} />
+              Restore original audio
             </button>
           )}
           <div className="inspector-tip">

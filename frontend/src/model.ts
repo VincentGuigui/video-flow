@@ -257,6 +257,50 @@ export function detach(doc: Document, id: string): Document {
     clips: doc.clips.map((c) => (ids.has(c.id) ? { ...c, linkId: null } : c)),
   };
 }
+// A video clip can get its own source audio back unless it is already linked to it.
+export function canRestoreAudio(
+  doc: Document,
+  id: string,
+  asset?: Asset,
+): boolean {
+  const clip = doc.clips.find((c) => c.id === id);
+  if (!clip || clip.kind !== "video" || !asset?.probe.audioStreams.length)
+    return false;
+  return !partners(doc, id).some(
+    (p) =>
+      p.kind === "audio" &&
+      p.assetId === clip.assetId &&
+      p.sourceIn === clip.sourceIn &&
+      p.sourceOut === clip.sourceOut,
+  );
+}
+// Re-create the video's original audio, linked and aligned. Other audio clips are
+// left in place; a different audio linked to the video becomes independent.
+export function restoreAudio(doc: Document, id: string): Document {
+  const video = doc.clips.find((c) => c.id === id);
+  if (!video || video.kind !== "video") return doc;
+  const linkId = uid();
+  const audio: Clip = {
+    id: uid(),
+    kind: "audio",
+    assetId: video.assetId,
+    name: video.name,
+    start: video.start,
+    sourceIn: video.sourceIn,
+    sourceOut: video.sourceOut,
+    layer: video.layer,
+    enabled: true,
+    linkId,
+    gainDb: 0,
+    transform: defaultTransform(),
+  };
+  const next = detach(doc, id);
+  next.clips = [
+    ...next.clips.map((c) => (c.id === id ? { ...c, linkId } : c)),
+    audio,
+  ];
+  return move(next, id, video.start, video.layer);
+}
 function gap(start: number, length: number, layer: number): Clip {
   return {
     id: uid(),

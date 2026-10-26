@@ -113,9 +113,9 @@ Priority: **P0** = MVP, **P1** = shortly after MVP, **P2** = later.
 | TL-04 | Roll edit (move a cut point between two clips) and slip (change source range, keep duration). | P1 |
 | TL-05 | Auto-tighten: trim leading/trailing silence of all main-line clips to configurable padding (default 0.15 s before first word, 0.30 s after last word). | P0 |
 | TL-06 | Transcript editing: select words in the transcript panel to set in/out or delete a range. | P1 |
-| TL-07 | Unlink audio and video of a clip; replace the audio with the audio of another take of the same beat (aligned automatically). | P1 |
+| TL-07 | Unlink audio and video of a clip; replace the audio with the audio of another take of the same beat (aligned automatically); restore the clip's original audio (see 13). | P1 |
 | TL-08 | J/L cuts (audio leads or lags video). | P2 |
-| TL-09 | Clip volume, mute, fade in/out handles. | P0 |
+| TL-09 | Clip volume and fade in/out handles. Silencing a clip uses its enable checkbox; there is no separate mute (see 13). | P0 |
 | TL-10 | Markers with notes on timeline and on assets. | P1 |
 | TL-11 | Title cards and lower thirds from text templates (rendered by FFmpeg `drawtext`). | P2 |
 | TL-12 | Zoom levels from whole project to frame level; timecode display (HH:MM:SS:FF at project rate). | P0 |

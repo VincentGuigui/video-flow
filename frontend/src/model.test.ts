@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
+  canRestoreAudio,
   linkClips,
+  restoreAudio,
   linkCandidates,
   trimAudio,
   pack,
@@ -75,6 +77,31 @@ describe("linked editing", () => {
     expect(doc.clips.find((c) => c.id === "a")!.start).toBe(20);
     expect(doc.clips.find((c) => c.id === "a")!.layer).toBe(2);
     expect(partners(doc, "a")).toHaveLength(1);
+  });
+  it("restores the original audio alongside a moved detached audio", () => {
+    const moved = move(detach(document(), "v"), "a", 20, 2);
+    const asset = {
+      id: "x",
+      path: "x.mov",
+      probe: {
+        durationUs: 1,
+        video: { width: 1, height: 1 },
+        audioStreams: [{}],
+      },
+    };
+    expect(canRestoreAudio(document(), "v", asset)).toBe(false);
+    expect(canRestoreAudio(moved, "v", asset)).toBe(true);
+    expect(canRestoreAudio(moved, "a", asset)).toBe(false);
+    const doc = restoreAudio(moved, "v");
+    const pair = partners(doc, "v");
+    expect(pair).toHaveLength(2);
+    const audio = pair.find((c) => c.kind === "audio")!;
+    expect(audio.id).not.toBe("a");
+    expect([audio.start, audio.sourceIn, audio.sourceOut]).toEqual([
+      0, 10, 110,
+    ]);
+    expect(doc.clips.find((c) => c.id === "a")!.start).toBe(20);
+    expect(canRestoreAudio(doc, "v", asset)).toBe(false);
   });
   it("lift preserves time using an explicit empty clip", () => {
     const doc = remove(document(), "v", false);
