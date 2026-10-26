@@ -202,3 +202,12 @@ it("compacts thousands of disjoint intervals with exact boundary positions", () 
   expect(result.position(-1)).toBe(0);
   expect(result.position(10000000)).toBe(result.total);
 });
+
+it("restores landscape transforms after portrait and retains subsequent edits", () => {
+  const settings = {width:1920,height:1080,frameRate:{num:30,den:1}};
+  const initial = document();
+  const portrait = resize(initial,settings,1080,1920);
+  expect(resize(portrait,{...settings,width:1080,height:1920},1920,1080).clips[0].transform).toEqual(initial.clips[0].transform);
+  portrait.clips[0].transform.x += 30;
+  expect(resize(portrait,{...settings,width:1080,height:1920},1920,1080).clips[0].transform.x).not.toBe(0);
+});

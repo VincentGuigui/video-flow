@@ -21,6 +21,7 @@ export interface Clip {
   linkId: string | null;
   gainDb: number;
   transform: Transform;
+  resizeReference?: { width: number; height: number; transform: Transform };
 }
 export interface Document {
   version: 1;
@@ -359,23 +360,22 @@ export function resize(
   width: number,
   height: number,
 ): Document {
-  const scale = Math.min(width / old.width, height / old.height),
-    dx = (width - old.width * scale) / 2,
-    dy = (height - old.height * scale) / 2;
-  return {
-    ...doc,
-    clips: doc.clips.map((c) => ({
-      ...c,
-      transform: {
-        ...c.transform,
-        x: c.transform.x * scale + dx,
-        y: c.transform.y * scale + dy,
-        width: c.transform.width * scale,
-        height: c.transform.height * scale,
-      },
-    })),
+  const map = (t: Transform, w: number, h: number, nw: number, nh: number) => {
+    const f = Math.min(nw / w, nh / h);
+    return { ...t, x: t.x * f + (nw - w * f) / 2,
+      y: t.y * f + (nh - h * f) / 2, width: t.width * f, height: t.height * f };
   };
+  return { ...doc, clips: doc.clips.map(c => {
+    let ref = c.resizeReference;
+    if (ref) {
+      const expected = map(ref.transform, ref.width, ref.height, old.width, old.height);
+      if ((Object.keys(expected) as (keyof Transform)[]).some(k => Math.abs(expected[k] - c.transform[k]) > 0.00001)) ref = undefined;
+    }
+    ref ??= {width: old.width, height: old.height, transform: clone(c.transform)};
+    return {...c, resizeReference: ref, transform: map(ref.transform, ref.width, ref.height, width, height)};
+  }) };
 }
+
 export const timecode = (f: number, rate: number) => {
   const n = Math.max(1, Math.round(rate));
   const ff = Math.max(0, Math.round(f));

@@ -40,6 +40,12 @@ class Transform(CamelModel):
         return self
 
 
+class ResizeReference(CamelModel):
+    width: int = Field(gt=0)
+    height: int = Field(gt=0)
+    transform: Transform
+
+
 class EditorClip(CamelModel):
     id: str = Field(min_length=1)
     kind: Literal["video", "audio", "gap"]
@@ -53,6 +59,7 @@ class EditorClip(CamelModel):
     link_id: str | None = None
     gain_db: float = Field(default=0, ge=-60, le=24)
     transform: Transform = Field(default_factory=Transform)
+    resize_reference: ResizeReference | None = None
 
     @model_validator(mode="after")
     def valid(self) -> "EditorClip":
