@@ -13,7 +13,6 @@ import {
   Scissors,
   Trash2,
   ChevronsLeft,
-  Plus,
   Layers,
   MousePointer2,
   ZoomIn,
@@ -40,7 +39,7 @@ import {
 import { useEditor } from "../store";
 import { Waveform } from "./Waveform";
 
-export function Flow({ onImport }: { onImport: () => void }) {
+export function Flow() {
   const state = useEditor(),
     { project, document, selected, focus, frame, set, save, busy } = state;
   const scroll = useRef<HTMLDivElement>(null),
@@ -572,10 +571,7 @@ export function Flow({ onImport }: { onImport: () => void }) {
                   <br />
                   compare takes, and find your flow.
                 </p>
-                <button className="primary" onClick={onImport}>
-                  <Plus size={15} />
-                  Import clips
-                </button>
+
               </div>
             </div>
           )}

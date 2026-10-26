@@ -312,7 +312,7 @@ export function App() {
           <span className="action-divider" />
           <button className="button import-button" onClick={openImport}>
             <Plus size={15} />
-            Import clips
+            Import media
           </button>
           <button
             className="primary"
@@ -330,13 +330,7 @@ export function App() {
         <aside className="media-library">
           <div className="library-heading">
             <span>PROJECT MEDIA</span>
-            <button
-              className="icon-button"
-              title="Import media"
-              onClick={openImport}
-            >
-              <Plus size={15} />
-            </button>
+
           </div>
           <div className="library-list">
             {project?.assets.map((asset) => (
@@ -404,16 +398,11 @@ export function App() {
                   <br />
                   for your footage.
                 </p>
-                <button className="text-button" onClick={openImport}>
-                  Add media <Plus size={12} />
-                </button>
+
               </div>
             )}
           </div>
-          <button className="local-import" onClick={openImport}>
-            <FolderOpen size={15} />
-            {native() ? "Browse original files" : "Import local path"}
-          </button>
+
           <button className="shortcuts-button" onClick={() => setHelp(true)}>
             <HelpCircle size={14} />
             Keyboard shortcuts<kbd>?</kbd>
@@ -463,7 +452,7 @@ export function App() {
             <Inspector clip={selectedClip} />
           </div>
           <Transport />
-          <Flow onImport={openImport} />
+          <Flow />
         </main>
       </div>
       <footer className="app-footer">
