@@ -1,0 +1,15 @@
+# 11. Editor refinements and local AI settings — 2026-10-26
+
+This revision supplements 09 and 10. The native desktop architecture remains authoritative.
+
+- Keep one Import media button. Remove panel numbers, local/workspace slogans, the project-folder header label and the assembly/focused status label. The logo opens a project home with Open, Rename, Delete and New. Project deletion moves the scoped bundle to a recoverable `.trash/`; originals stay in place.
+- Keep automatic persistence and add Save immediately before Export. Untitled Save prompts for a name; the adjacent dropdown offers Save as, which creates and opens a new project identity, copying decisions and derived analysis/features while retaining source references. Home lists project bundles in the application's project directory.
+- Resolution adaptation retains a reference canvas/transform so landscape → portrait → landscape restores the original size. Spatial edits invalidate the previous reference on the next adaptation.
+- Remove curved flow connectors. Show green vertical boundary-alignment guides only during clip movement or trimming. Focus fits both timelines to the clip with up to two seconds of preceding/following context. Shift+wheel scrolls horizontally; Ctrl+wheel retains pointer-centered timeline zoom.
+- Share a 12px legend/supporting-label constant. Fit media-library thumbnails within 160×90 with a 16:9 frame. Remove preview dimensions/fps and always show Drag the cursor to scrub.
+- Show scale/crop tools in focused clip mode. Alternate Scale to fit / Scale to fill with corresponding icons. A background selector immediately follows scale/crop: color picker, transparent, or the current video blurred and scaled to fill. Store backgrounds per clip; apply them in preview and rendering.
+- Export includes Save as MP4 video with quality, loudness normalization, progress and cancellation, followed by a native save dialog for the validated file. Status-bar minus/percentage/plus controls change Qt WebEngine page zoom independently of timeline zoom; the percentage resets to 100%.
+- Model weights always reside inside the application `models/` subdirectory; `VIDEOFLOW_MODELS_DIR` always points there. Settings enumerates pinned model versions with Missing / Obsolete / Up to date states and per-model Download / Update / Cancel actions. No implicit downloads. Missing models prompt on analysis-oriented startup and pause uncached analysed imports for approval; compatible sidecars remain reusable without downloading.
+- Offer deterministic or local Qwen summaries/keywords, Parakeet/Whisper ASR, speech device preference and import/export defaults. Choosing Qwen reveals its model and requests an explicit download when absent. Preferences persist in application-local settings.json.
+
+Validation covers rotation and resolution round trips, exact render timing and layers, all three backgrounds, project copies and scoped deletion, model states and consent/cancellation. Native Qt smoke covers playback, focus/split/undo, zoom, home, blurred preview, MP4 and project copying. Platform qualification gates from 10 remain in force.

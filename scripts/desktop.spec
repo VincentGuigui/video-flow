@@ -15,9 +15,11 @@ a = Analysis(
         (str(root / "docs" / "desktop-runtime.md"), "notices"),
     ] + collect_data_files("opentimelineio") + copy_metadata("opentimelineio"),
     hiddenimports=["videoflow.editor.analysis", "videoflow.engines.asr.parakeet_onnx",
-                   "videoflow.engines.vad.silero_onnx", "opentimelineio.adapters.otio_json",
+                   "videoflow.engines.vad.silero_onnx", "videoflow.engines.downloads",
+                   "videoflow.engines.summary", "transformers.models.qwen2.modeling_qwen2",
+                   "transformers.models.qwen2.tokenization_qwen2_fast", "opentimelineio.adapters.otio_json",
                    "opentimelineio.adapters.otioz", "opentimelineio.adapters.file_bundle_utils"],
-    hookspath=[], runtime_hooks=[], excludes=["torch", "tkinter"], noarchive=False,
+    hookspath=[], runtime_hooks=[], excludes=["tkinter"], noarchive=False,
 )
 # Pin the MSVC family to the working Qt wheel. Ambient PATH entries can otherwise
 # inject a newer, mismatched runtime (for example an unrelated image-codec SDK).

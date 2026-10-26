@@ -13,10 +13,12 @@ from videoflow.core.time import frames
 from videoflow.editor.analysis import AnalysisFile, describe, load_analysis, similar, store_analysis
 from videoflow.editor.models import EditorClip, EditorDocument, layout
 from videoflow.editor.resolve import editable_document, fit_transform
+from videoflow.engines.downloads import missing_models
 from videoflow.jobs.workers import EngineSpec, WorkerPool
 from videoflow.media import ffmpeg
 from videoflow.media.ingest import ingest_files
 from videoflow.media.proxy import build_proxy
+from videoflow.preferences import Preferences, load_preferences
 from videoflow.project.commands import AddAsset, SetEditor
 from videoflow.project.models import Asset
 from videoflow.project.store import Bundle
@@ -25,7 +27,7 @@ from videoflow.project.store import Bundle
 class ImportJob(CamelModel):
     id: str
     filename: str
-    state: Literal["queued", "running", "done", "cancelled", "failed"] = "queued"
+    state: Literal["queued", "running", "waiting-models", "done", "cancelled", "failed"] = "queued"
     progress: float = Field(default=0, ge=0, le=1)
     phase: str = "Waiting"
     error: str | None = None
@@ -33,19 +35,33 @@ class ImportJob(CamelModel):
     cached: bool = False
     analysis_path: str | None = None
     warning: str | None = None
+    models_needed: list[str] = Field(default_factory=list)
     inverses: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class Imports:
-    def __init__(self, bundle: Bundle) -> None:
+    def __init__(
+        self,
+        bundle: Bundle,
+        *,
+        preferences: Preferences | None = None,
+        require_models: bool = False,
+    ) -> None:
         self.bundle = bundle
+        self.preferences = preferences or load_preferences()
+        self.require_models = require_models
         self.jobs: dict[str, ImportJob] = {}
         self.tasks: dict[str, asyncio.Task[None]] = {}
         self.lock = asyncio.Lock()
         self.workers = WorkerPool(
             {
                 "transcriber": EngineSpec(
-                    "videoflow.editor.analysis:Transcriber", start_timeout_s=900
+                    "videoflow.editor.analysis:Transcriber",
+                    start_timeout_s=900,
+                    kwargs={
+                        "asr_engine": self.preferences.asr_engine,
+                        "prefer": self.preferences.ai_device,
+                    },
                 )
             }
         )
@@ -114,6 +130,16 @@ class Imports:
                     job.cached = analysis is not None
                     if analysis is None:
                         if asset.probe.has_audio:
+                            while self.require_models and (
+                                needed := await asyncio.to_thread(missing_models, self.preferences)
+                            ):
+                                job.state, job.phase = (
+                                    "waiting-models",
+                                    "Download missing models in Settings, or cancel import",
+                                )
+                                job.models_needed = needed
+                                await asyncio.sleep(0.35)
+                            job.state, job.models_needed = "running", []
                             job.phase = (
                                 "Loading speech models / transcribing; "
                                 "first run may download models"
@@ -144,6 +170,17 @@ class Imports:
                                     self.bundle.project.settings.language,
                                 )
                                 analysis = describe(transcript, asset.content_hash)
+                                if self.preferences.summary_engine == "qwen" and transcript.words:
+                                    job.phase, job.progress = "Summarizing with local Qwen", 0.8
+                                    analysis.summary, analysis.keywords = await self.workers.call(
+                                        "transcriber",
+                                        "summarize",
+                                        " ".join(w.text for w in transcript.words),
+                                    )
+                                    analysis.summary_engine = "qwen2.5-0.5b-instruct"
+                                    analysis.summary_scope = (
+                                        "First/last 1400 tokens when over 2800 tokens"
+                                    )
                             finally:
                                 pcm.unlink(missing_ok=True)
                         else:

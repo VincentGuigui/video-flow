@@ -24,12 +24,14 @@ from videoflow.editor.analysis import AnalysisFile, load_analysis
 from videoflow.editor.imports import Imports
 from videoflow.editor.playback import PlaybackProxies
 from videoflow.editor.resolve import editable_document
+from videoflow.engines.downloads import ModelDownloads
 from videoflow.exporters.service import export_project
 from videoflow.media import ffmpeg
 from videoflow.media.hashing import content_hash
 from videoflow.media.ingest import MEDIA_EXTENSIONS
 from videoflow.media.peaks import compute_peaks, read_peaks
 from videoflow.media.proxy import build_proxy
+from videoflow.preferences import Preferences, load_preferences, save_preferences
 from videoflow.project.commands import Command, RelinkAsset
 from videoflow.project.library import ProjectLibrary
 from videoflow.project.store import Bundle, ProjectStoreError, StaleRevisionError
@@ -95,7 +97,9 @@ def create_app(
     allow_uploads: bool = False,
 ) -> FastAPI:
     library = ProjectLibrary(bundle.path.parent)
-    imports = Imports(bundle)
+    preferences = load_preferences()
+    downloads = ModelDownloads()
+    imports = Imports(bundle, preferences=preferences, require_models=True)
     renders = Renders(bundle)
     playbacks = PlaybackProxies(bundle)
     roots = [p.resolve() for p in (media_roots or [bundle.path.parent])]
@@ -128,6 +132,7 @@ def create_app(
         yield
         await imports.close()
         await renders.close()
+        await downloads.close()
 
     app = FastAPI(title="Video-Flow local editor", lifespan=lifespan)
     app.state.imports = imports
@@ -155,6 +160,43 @@ def create_app(
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["X-Content-Type-Options"] = "nosniff"
         return response
+
+    @app.get("/api/settings")
+    async def settings() -> Any:
+        return {
+            "preferences": preferences.dump(),
+            **await asyncio.to_thread(downloads.status, preferences),
+        }
+
+    @app.put("/api/settings")
+    async def update_settings(payload: Preferences) -> Any:
+        nonlocal preferences, imports
+        async with mutation_lock:
+            if any(
+                j.state in ("queued", "running", "waiting-models") for j in imports.jobs.values()
+            ):
+                raise HTTPException(409, "Finish or cancel imports before changing engines")
+            await asyncio.to_thread(save_preferences, payload)
+            await imports.close()
+            preferences = payload
+            imports = Imports(bundle, preferences=preferences, require_models=True)
+            app.state.imports = imports
+            return {
+                "preferences": preferences.dump(),
+                **await asyncio.to_thread(downloads.status, preferences),
+            }
+
+    @app.post("/api/models/{key}/download")
+    async def download_model(key: str) -> Any:
+        try:
+            return downloads.submit(key)
+        except (KeyError, ValueError) as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @app.post("/api/models/{key}/cancel")
+    async def cancel_model(key: str) -> Any:
+        await downloads.cancel(key)
+        return {"ok": True}
 
     @app.get("/api/project")
     async def project() -> dict[str, Any]:
@@ -189,14 +231,18 @@ def create_app(
 
     async def switch_project(target: Bundle) -> None:
         nonlocal bundle, imports, playbacks, grants, renders
-        if any(j.state in ("queued", "running") for j in imports.jobs.values()):
+        if any(j.state in ("queued", "running", "waiting-models") for j in imports.jobs.values()):
             raise HTTPException(409, "Finish or cancel imports before switching projects")
         if renders.active:
             raise HTTPException(409, "Finish or cancel renders before switching projects")
         await renders.close()
         await imports.close()
         renders = Renders(target)
-        bundle, imports, playbacks = target, Imports(target), PlaybackProxies(target)
+        bundle, imports, playbacks = (
+            target,
+            Imports(target, preferences=preferences, require_models=True),
+            PlaybackProxies(target),
+        )
         app.state.imports = imports
         grants = SelectionGrants()
         trusted_assets.clear()
@@ -211,7 +257,9 @@ def create_app(
     @app.post("/api/projects/action")
     async def project_action(payload: ProjectAction) -> Any:
         async with mutation_lock:
-            if any(j.state in ("queued", "running") for j in imports.jobs.values()):
+            if any(
+                j.state in ("queued", "running", "waiting-models") for j in imports.jobs.values()
+            ):
                 raise HTTPException(409, "Finish or cancel imports before managing projects")
             try:
                 if renders.active:
@@ -244,7 +292,10 @@ def create_app(
                 if payload.save_copy:
                     if renders.active:
                         raise HTTPException(409, "Finish or cancel renders before Save as")
-                    if any(j.state in ("queued", "running") for j in imports.jobs.values()):
+                    if any(
+                        j.state in ("queued", "running", "waiting-models")
+                        for j in imports.jobs.values()
+                    ):
                         raise HTTPException(409, "Finish or cancel imports before Save as")
                     target = await asyncio.to_thread(
                         library.create, payload.name or "Untitled copy", bundle

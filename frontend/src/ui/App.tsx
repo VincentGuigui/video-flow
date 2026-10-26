@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  Settings as SettingsIcon,
   ArrowUpRight,
   Check,
   ChevronDown,
@@ -34,6 +35,7 @@ import {
   type Clip,
 } from "../model";
 import { api, updateClip, useEditor } from "../store";
+import { Settings, type SettingsData } from "./Settings";
 import { InterfaceZoom } from "./InterfaceZoom";
 import { RenderPanel } from "./RenderPanel";
 import { Home } from "./Home";
@@ -76,6 +78,8 @@ export function App() {
     } = state;
   const [importFiles, setImportFiles] = useState<NativeFile[] | null>(null),
     [home, setHome] = useState(false),
+    [settings, setSettings] = useState(false),
+    [modelPrompt, setModelPrompt] = useState(false),
     [help, setHelp] = useState(false),
     [drag, setDrag] = useState(false),
     [output, setOutput] = useState(false),
@@ -88,7 +92,18 @@ export function App() {
     focused = resolved.clips.find((c) => c.id === focus);
   useEffect(() => {
     void load();
-  }, [load]);
+    void api<SettingsData>("/settings")
+      .then((data) => {
+        if (
+          data.preferences.analyseImports &&
+          data.models.some((m) => m.required && m.state !== "up-to-date")
+        ) {
+          setModelPrompt(true);
+          setSettings(true);
+        }
+      })
+      .catch((e) => set({ error: String(e) }));
+  }, [load, set]);
   useEffect(() => {
     const selection = (event: Event) => {
       const detail = (event as CustomEvent<NativeSelection>).detail;
@@ -156,6 +171,7 @@ export function App() {
       const target = e.target as HTMLElement;
       if (
         target.closest('input,textarea,select,[contenteditable="true"]') ||
+        settings ||
         home ||
         importFiles ||
         help ||
@@ -232,7 +248,7 @@ export function App() {
     }
     window.addEventListener("keydown", keyboard);
     return () => window.removeEventListener("keydown", keyboard);
-  }, [home, importFiles, help, output]);
+  }, [settings, home, importFiles, help, output]);
   function openImport() {
     if (native()) {
       if (window.videoFlowDesktop) window.videoFlowDesktop.pickFiles();
@@ -280,12 +296,20 @@ export function App() {
       }}
     >
       <header className="app-header">
-        <a className="brand" href="#home" aria-label="Video-Flow" onClick={e=>{e.preventDefault();set({playing:false});setHome(true);}}>
+        <a
+          className="brand"
+          href="#home"
+          aria-label="Video-Flow"
+          onClick={(e) => {
+            e.preventDefault();
+            set({ playing: false });
+            setHome(true);
+          }}
+        >
           <span className="brand-mark">
             <Film size={19} />
           </span>
           video<span className="brand-flow">flow</span>
-
         </a>
         <div className="header-divider" />
 
@@ -294,6 +318,17 @@ export function App() {
           {busy ? "Saving…" : "All changes saved"}
         </span>
         <div className="header-actions">
+          <button
+            className="icon-button"
+            aria-label="Settings"
+            title="Settings"
+            onClick={() => {
+              setModelPrompt(false);
+              setSettings(true);
+            }}
+          >
+            <SettingsIcon size={18} />
+          </button>
           <button
             className="icon-button"
             aria-label="Undo"
@@ -330,12 +365,11 @@ export function App() {
           </button>
         </div>
       </header>
-      {home && <Home onClose={()=>setHome(false)} />}
-      <div className="workspace" style={home ? {display:"none"} : undefined}>
+      {home && <Home onClose={() => setHome(false)} />}
+      <div className="workspace" style={home ? { display: "none" } : undefined}>
         <aside className="media-library">
           <div className="library-heading">
             <span>PROJECT MEDIA</span>
-
           </div>
           <div className="library-list">
             {project?.assets.map((asset) => (
@@ -403,7 +437,6 @@ export function App() {
                   <br />
                   for your footage.
                 </p>
-
               </div>
             )}
           </div>
@@ -496,6 +529,9 @@ export function App() {
           selections={importFiles}
           onClose={() => setImportFiles(null)}
         />
+      )}
+      {settings && (
+        <Settings requested={modelPrompt} onClose={() => setSettings(false)} />
       )}
       {help && (
         <div className="modal-backdrop" onClick={() => setHelp(false)}>
@@ -602,7 +638,8 @@ export function App() {
             )}
             <p className="export-note">
               Gain, fades and spatial transforms are metadata in OTIO. Other
-              editors may ignore them. Use MP4 video to render the visible edit and audio.
+              editors may ignore them. Use MP4 video to render the visible edit
+              and audio.
             </p>
           </section>
         </div>

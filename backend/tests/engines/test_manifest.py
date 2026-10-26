@@ -105,9 +105,12 @@ def test_fetch_passes_pinned_revision(monkeypatch, tmp_path):
     assert out == {"a.onnx": tmp_path / "a.onnx"}
 
 
-def test_models_dir_override(monkeypatch, tmp_path):
-    monkeypatch.setenv("VIDEOFLOW_MODELS_DIR", str(tmp_path))
-    assert mf.models_dir() == tmp_path
+def test_models_dir_is_always_application_models(monkeypatch, tmp_path):
+    from videoflow import runtime
+    monkeypatch.setattr(runtime, "application_dir", lambda: tmp_path)
+    monkeypatch.setenv("VIDEOFLOW_MODELS_DIR", "ignored-external-directory")
+    assert mf.models_dir() == tmp_path / "models"
+    assert __import__("os").environ["VIDEOFLOW_MODELS_DIR"] == str(tmp_path / "models")
 
 
 def test_all_onnx_sessions_go_through_make_session():

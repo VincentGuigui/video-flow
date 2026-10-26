@@ -36,3 +36,7 @@ frontend/dist/
 Thumbs.db
 .idea/
 .vscode/
+
+# Application-local AI weights and preferences
+/models/
+/settings.json

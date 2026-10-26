@@ -53,6 +53,7 @@ qnn = [
 ]
 # CPU/CUDA alternative ASR engine (no NPU path). Compatible with any runtime extra.
 whisper = ["faster-whisper>=1.1"]
+qwen = ["torch>=2.6", "transformers>=4.45,<5", "safetensors>=0.4"]
 desktop = [
     "pyside6>=6.8,<7",
 ]

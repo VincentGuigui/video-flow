@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import os
 import re
-import sys
 import tomllib
 from functools import cache
 from pathlib import Path
@@ -70,21 +68,17 @@ def load_manifest(path: Path = MANIFEST_PATH) -> Manifest:
 
 
 def models_dir() -> Path:
-    """Model cache root (``VIDEOFLOW_MODELS_DIR`` overrides the per-user default)."""
-    env = os.environ.get("VIDEOFLOW_MODELS_DIR")
-    if env:
-        return Path(env)
-    if sys.platform == "win32":
-        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
-    else:
-        base = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
-    return base / "videoflow" / "models"
+    """Always the models subdirectory of this application."""
+    from videoflow.runtime import model_directory
+
+    return model_directory()
 
 
 def fetch(key: str, manifest: Manifest | None = None) -> dict[str, Path]:
     """Download (or reuse) the pinned files of model ``key``; returns ``{file: local path}``."""
     man = manifest or load_manifest()
     spec = man.get(key)  # refuses gated / unpinned / non-permissive before any network call
+    models_dir()
     from huggingface_hub import hf_hub_download
     from huggingface_hub.errors import GatedRepoError
 

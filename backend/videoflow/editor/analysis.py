@@ -23,6 +23,8 @@ class AnalysisFile(CamelModel):
     summary: str = ""
     keywords: list[str] = Field(default_factory=list)
     language: str | None = None
+    summary_engine: str = "deterministic"
+    summary_scope: str = "full transcript"
 
 
 def sidecar_path(source: Path) -> Path:
@@ -115,9 +117,17 @@ def similar(a: AnalysisFile, b: AnalysisFile) -> bool:
 class Transcriber:
     """Factory lives at module scope so multiprocessing spawn can import it."""
 
-    def __init__(self) -> None:
-        self.vad = create("vad")
-        self.asr = create("asr")
+    def __init__(self, asr_engine: str = "parakeet", prefer: str = "auto") -> None:
+        self.vad = create("vad", prefer=prefer)
+        self.asr = create("asr", asr_engine, prefer=prefer)
+        self.summary = None
+
+    def summarize(self, text: str) -> tuple[str, list[str]]:
+        if self.summary is None:
+            from videoflow.engines.summary import QwenSummary
+
+            self.summary = QwenSummary()
+        return self.summary.describe(text)
 
     def transcribe(self, pcm: bytes, language: str) -> Transcript:
         audio = np.frombuffer(pcm, dtype="<f4").copy()

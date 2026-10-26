@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FileVideo,
   X,
@@ -8,6 +8,7 @@ import {
   ArrowRight,
   Square,
 } from "lucide-react";
+import { Settings, type SettingsData } from "./Settings";
 import { api, useEditor } from "../store";
 import { type NativeFile } from "../desktop";
 
@@ -40,6 +41,7 @@ export function ImportDialog({
 }) {
   const { load, roots, set } = useEditor();
   const [analyse, setAnalyse] = useState(true),
+    [showModels, setShowModels] = useState(false),
     [path, setPath] = useState(""),
     [items, setItems] = useState<Item[]>([]),
     [running, setRunning] = useState(false),
@@ -48,6 +50,12 @@ export function ImportDialog({
   const stopped = useRef(false),
     skip = useRef(false),
     active = useRef<string | null>(null);
+  useEffect(() => {
+    void api<SettingsData>("/settings")
+      .then((data) => setAnalyse(data.preferences.analyseImports))
+      .catch((e) => setError(String(e)));
+  }, []);
+  const prompted = useRef(false);
   function update(index: number, values: Partial<Item>) {
     setItems((old) =>
       old.map((item, i) => (i === index ? { ...item, ...values } : item)),
@@ -91,6 +99,10 @@ export function ImportDialog({
             await pause(350);
             const jobs = await api<Job[]>("/jobs");
             current = jobs.find((j) => j.id === job.id)!;
+            if (current.state === "waiting-models" && !prompted.current) {
+              prompted.current = true;
+              setShowModels(true);
+            }
             update(i, {
               id: job.id,
               state: current.state,
@@ -209,7 +221,9 @@ export function ImportDialog({
                   Reuse existing JSON, or transcribe and create a summary and
                   keywords. Matching clips become parallel choices.
                 </p>
-                <small>First analysis may download local speech models.</small>
+                <small>
+                  Missing models require your approval before downloading.
+                </small>
               </div>
             </button>
             <button
@@ -280,13 +294,21 @@ export function ImportDialog({
                   <div className="import-item-body">
                     <strong>{item.name}</strong>
                     <small>{item.phase}</small>
-                    {item.state === "running" && (
+                    {item.state === "waiting-models" && (
+                      <button
+                        className="button"
+                        onClick={() => setShowModels(true)}
+                      >
+                        Download missing models…
+                      </button>
+                    )}
+                    {["running", "waiting-models"].includes(item.state) && (
                       <div className="progress-track small">
                         <i style={{ width: `${item.progress * 100}%` }} />
                       </div>
                     )}
                   </div>
-                  {item.state === "running" && (
+                  {["running", "waiting-models"].includes(item.state) && (
                     <button
                       className="icon-button"
                       title="Cancel this file"
@@ -320,6 +342,9 @@ export function ImportDialog({
           </>
         )}
       </section>
+      {showModels && (
+        <Settings requested onClose={() => setShowModels(false)} />
+      )}
     </div>
   );
 }

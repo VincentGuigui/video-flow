@@ -18,13 +18,13 @@ Linux x86_64 and Windows ARM64 remain unqualified until the same native, media, 
 
 ## Packaging
 
-Build frontend assets, install the `packaging` dependency group alongside `desktop` and the selected inference extra, then run:
+Build frontend assets, install the `packaging` dependency group alongside `desktop` and the selected inference extra, plus `whisper` and `qwen` when those engines are offered, then run:
 
 ```text
 pyinstaller --noconfirm --distpath tools/release --workpath .cache/pyinstaller scripts/desktop.spec
 ```
 
-The one-folder release includes the Python runtime, Qt WebEngine resources, OTIO adapter data and built frontend. End users do not need Node, Vite, uv or a frontend development server. FFmpeg/ffprobe are separately provisioned: put a supported build in `tools/ffmpeg/` beside the executable, or on PATH. Model downloads remain governed by the pinned engine manifest. Signatures, installers, updates and distribution hardening are later release work. Packaging success alone does not qualify playback on another platform.
+The one-folder release includes the Python runtime, Qt WebEngine resources, OTIO adapter data and built frontend. End users do not need Node, Vite, uv or a frontend development server. FFmpeg/ffprobe are separately provisioned: put a supported build in `tools/ffmpeg/` beside the executable, or on PATH. Model downloads remain governed by the pinned engine manifest. Weights always live in `models/` beside the executable (repository `models/` in development); `VIDEOFLOW_MODELS_DIR` is set to that directory, and external overrides are ignored. Settings lists missing, obsolete and up-to-date models, with explicit download/update and cancellation. No model download begins merely by opening the editor. Signatures, installers, updates and distribution hardening are later release work. Packaging success alone does not qualify playback on another platform.
 
 The Windows recipe pins the bundled MSVC family to Qt's working runtime and excludes unsuffixed ICU DLLs from unrelated SDKs on PATH. Qt uses Windows' system ICU; accidentally bundling a Poppler/Conda ICU causes a missing-procedure failure even when the development application works. Rebuild only after frontend assets are stable. Packaged OTIO, EDL and paper-edit exports have also been checked; real-model inference/downloads and external-editor interoperability still need dedicated release validation.
 
@@ -35,3 +35,13 @@ The Windows recipe pins the bundled MSVC family to Qt's working runtime and excl
 - React, Vite, Zustand and Lucide: MIT; retain package licence notices in releases.
 - FFmpeg licensing depends on the selected external build (the full GPL build includes GPL components). It is not silently embedded by this recipe.
 - AI model licences and attribution remain in `docs/dependencies.md` and `engines/manifest.toml`; models are not included in the application bundle by default.
+
+## Settings and AI engines
+
+The settings panel offers Parakeet or Whisper tiny transcription, a preferred speech device, deterministic or Qwen summaries/keywords, import-analysis defaults and render-quality/audio-normalization defaults. Application preferences persist in `settings.json` beside the executable (repository root in development). The selected installation directory must be writable; failed writes/downloads are reported rather than redirected into AppData.
+
+Model status compares cached files against the immutable revisions shipped in the app manifest. Obsolete means another revision is installed, not that a live Hub search found a newer release. Update obtains the supported revision. Download workers are cancellable; incomplete downloads remain resumable and never count as installed. Opening Settings or choosing an engine does not approve a download. Analysed imports reuse compatible sidecars first, then pause for download approval if required weights are absent. Import-only remains available.
+
+Qwen uses [Qwen2.5-0.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct) through local Transformers/PyTorch CPU inference in the owned worker. It loads pinned local safetensors without remote code or network inference. Summary input is limited to the first and last 1400 tokens for transcripts over 2800 tokens; the analysis JSON records that scope. Invalid generated JSON is reported as an analysis failure. Existing compatible sidecars retain their original summaries. Speech acceleration preferences apply to ASR/VAD; Qwen currently uses CPU.
+
+The expanded native check (`--features`) additionally exercises real Qt zoom, the project home screen, decoded blurred backgrounds, MP4 rendering and Save as. MP4 uses original media and validates frame count, dimensions, rational frame rate and audio duration before publishing. Transparent clip backgrounds reveal lower layers, or black in the final H.264 MP4. Legacy transition/fade rendering remains unsupported and fails explicitly rather than silently dropping effects.
