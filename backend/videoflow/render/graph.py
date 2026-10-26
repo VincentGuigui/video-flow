@@ -109,14 +109,41 @@ def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
                     "zscale=t=bt709:m=bt709:r=tv,"
                 )
                 warnings.append(f"{clip.name}: {hdr.upper()} tone-mapped to SDR BT.709")
-            # fps precedes trim: stored source frame indices use the project rate.
-            video.append(
+            # Trim once so foreground and backdrop share exactly the same source frames.
+            prepare = (
                 f"[{index}:v:0]fps={fps}:round=near,"
                 f"trim=start_frame={clip.source_in}:end_frame={clip.source_out},"
                 f"setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop={clip.duration},"
-                f"trim=end_frame={clip.duration},{tone}scale={w}:{h},setsar=1,format=rgba,"
+                f"trim=end_frame={clip.duration},{tone}setsar=1,format=rgba"
+            )
+            timing = f"settb=AVTB,setpts=PTS+{clip.start}*{rate.den}/{rate.num}/TB"
+            enable = f"gte(n,{clip.start})*lt(n,{clip.start + clip.duration})"
+            if clip.background.mode == "blur":
+                video.append(prepare + f",split=2[fg{index}][bg{index}]")
+                # Match preview: cover the viewport with an extra 8% overscan before blur.
+                bw, bh = max(2, round(out_w * 1.08)), max(2, round(out_h * 1.08))
+                video.append(
+                    f"[bg{index}]scale={bw}:{bh}:force_original_aspect_ratio=increase,"
+                    f"crop={out_w}:{out_h},gblur=sigma={20 * sx},{timing}[back{index}]"
+                )
+            else:
+                video.append(prepare + f"[fg{index}]")
+                if clip.background.mode == "color":
+                    color = clip.background.color.replace("#", "0x")
+                    video.append(
+                        f"color=c={color}:s={out_w}x{out_h}:r={fps},format=rgba,"
+                        f"trim=end_frame={clip.duration},{timing}[back{index}]"
+                    )
+            if clip.background.mode != "transparent":
+                video.append(
+                    f"[v{video_count}][back{index}]overlay=eof_action=pass:"
+                    f"repeatlast=0:format=rgb:enable='{enable}'[v{video_count + 1}]"
+                )
+                video_count += 1
+            video.append(
+                f"[fg{index}]scale={w}:{h},"
                 f"crop={crop_w}:{crop_h}:{crop_x}:{crop_y}:exact=1,"
-                f"settb=AVTB,setpts=PTS+{clip.start}*{rate.den}/{rate.num}/TB[p{index}]"
+                f"{timing}[p{index}]"
             )
             video.append(
                 f"[v{video_count}][p{index}]overlay=x={x}:y={y}:"

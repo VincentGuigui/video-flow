@@ -21,6 +21,7 @@ export interface Clip {
   linkId: string | null;
   gainDb: number;
   transform: Transform;
+  background?: { mode: "transparent" | "color" | "blur"; color: string };
   resizeReference?: { width: number; height: number; transform: Transform };
 }
 export interface Document {
@@ -354,11 +355,25 @@ function consumeGaps(doc: Document, a: number, b: number, layer: number) {
     return parts;
   });
 }
-export function fitPicture(video: NonNullable<Asset["probe"]["video"]>, settings: Settings, fill=false): Transform {
+export function fitPicture(
+  video: NonNullable<Asset["probe"]["video"]>,
+  settings: Settings,
+  fill = false,
+): Transform {
   const rotated = video.rotation === 90 || video.rotation === 270;
-  const w = rotated ? video.height : video.width, h = rotated ? video.width : video.height;
-  const factor = (fill ? Math.max : Math.min)(settings.width/w,settings.height/h);
-  return {...defaultTransform(),x:(settings.width-w*factor)/2,y:(settings.height-h*factor)/2,width:w*factor,height:h*factor};
+  const w = rotated ? video.height : video.width,
+    h = rotated ? video.width : video.height;
+  const factor = (fill ? Math.max : Math.min)(
+    settings.width / w,
+    settings.height / h,
+  );
+  return {
+    ...defaultTransform(),
+    x: (settings.width - w * factor) / 2,
+    y: (settings.height - h * factor) / 2,
+    width: w * factor,
+    height: h * factor,
+  };
 }
 
 export function resize(
@@ -369,18 +384,45 @@ export function resize(
 ): Document {
   const map = (t: Transform, w: number, h: number, nw: number, nh: number) => {
     const f = Math.min(nw / w, nh / h);
-    return { ...t, x: t.x * f + (nw - w * f) / 2,
-      y: t.y * f + (nh - h * f) / 2, width: t.width * f, height: t.height * f };
+    return {
+      ...t,
+      x: t.x * f + (nw - w * f) / 2,
+      y: t.y * f + (nh - h * f) / 2,
+      width: t.width * f,
+      height: t.height * f,
+    };
   };
-  return { ...doc, clips: doc.clips.map(c => {
-    let ref = c.resizeReference;
-    if (ref) {
-      const expected = map(ref.transform, ref.width, ref.height, old.width, old.height);
-      if ((Object.keys(expected) as (keyof Transform)[]).some(k => Math.abs(expected[k] - c.transform[k]) > 0.00001)) ref = undefined;
-    }
-    ref ??= {width: old.width, height: old.height, transform: clone(c.transform)};
-    return {...c, resizeReference: ref, transform: map(ref.transform, ref.width, ref.height, width, height)};
-  }) };
+  return {
+    ...doc,
+    clips: doc.clips.map((c) => {
+      let ref = c.resizeReference;
+      if (ref) {
+        const expected = map(
+          ref.transform,
+          ref.width,
+          ref.height,
+          old.width,
+          old.height,
+        );
+        if (
+          (Object.keys(expected) as (keyof Transform)[]).some(
+            (k) => Math.abs(expected[k] - c.transform[k]) > 0.00001,
+          )
+        )
+          ref = undefined;
+      }
+      ref ??= {
+        width: old.width,
+        height: old.height,
+        transform: clone(c.transform),
+      };
+      return {
+        ...c,
+        resizeReference: ref,
+        transform: map(ref.transform, ref.width, ref.height, width, height),
+      };
+    }),
+  };
 }
 
 export const timecode = (f: number, rate: number) => {

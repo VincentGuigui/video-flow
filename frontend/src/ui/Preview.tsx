@@ -15,6 +15,7 @@ import {
   type Transform,
 } from "../model";
 import { useEditor } from "../store";
+import { BackgroundSelector } from "./BackgroundSelector";
 import { mediaUrl } from "../desktop";
 
 function Media({
@@ -22,13 +23,16 @@ function Media({
   frame,
   rate,
   playing,
+  backdrop = false,
 }: {
   clip: Clip;
   frame: number;
   rate: number;
   playing: boolean;
+  backdrop?: boolean;
 }) {
   const ref = useRef<HTMLVideoElement & HTMLAudioElement>(null);
+  const settings = useEditor((s) => s.project?.settings);
   useEffect(() => {
     const media = ref.current;
     if (!media) return;
@@ -55,28 +59,61 @@ function Media({
     return <audio ref={ref} src={mediaUrl(clip.assetId)} preload="auto" />;
   const t = clip.transform;
   return (
-    <video
-      ref={ref}
-      muted
-      playsInline
-      preload="auto"
-      src={mediaUrl(clip.assetId)}
-      style={{
-        position: "absolute",
-        left: t.x,
-        top: t.y,
-        width: t.width,
-        height: t.height,
-        objectFit: "fill",
-        clipPath: `inset(${t.cropTop * 100}% ${t.cropRight * 100}% ${t.cropBottom * 100}% ${t.cropLeft * 100}%)`,
-      }}
-    />
+    <>
+      {!backdrop && clip.background?.mode === "color" && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: clip.background.color,
+          }}
+        />
+      )}
+      {!backdrop && clip.background?.mode === "blur" && (
+        <Media
+          clip={clip}
+          frame={frame}
+          rate={rate}
+          playing={playing}
+          backdrop
+        />
+      )}
+      <video
+        ref={ref}
+        muted
+        playsInline
+        preload="auto"
+        src={mediaUrl(clip.assetId)}
+        style={{
+          position: "absolute",
+          left: backdrop ? 0 : t.x,
+          top: backdrop ? 0 : t.y,
+          width: backdrop ? settings?.width : t.width,
+          height: backdrop ? settings?.height : t.height,
+          objectFit: backdrop ? "cover" : "fill",
+          filter: backdrop ? "blur(20px)" : undefined,
+          transform: backdrop ? "scale(1.08)" : undefined,
+          clipPath: backdrop
+            ? undefined
+            : `inset(${t.cropTop * 100}% ${t.cropRight * 100}% ${t.cropBottom * 100}% ${t.cropLeft * 100}%)`,
+        }}
+      />
+    </>
   );
 }
 
 export function Preview() {
-  const { project, document, selected, focus, frame, playing, save, set, busy } =
-    useEditor();
+  const {
+    project,
+    document,
+    selected,
+    focus,
+    frame,
+    playing,
+    save,
+    set,
+    busy,
+  } = useEditor();
   const host = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 800, height: 400 });
   const [mode, setMode] = useState<"scale" | "crop">("scale");
@@ -92,7 +129,7 @@ export function Preview() {
     );
     observer.observe(host.current);
     return () => observer.disconnect();
-  }, []);
+  }, [project?.id]);
   if (!project) return null;
   const { width, height } = project.settings,
     rate = fps(project.settings),
@@ -111,9 +148,15 @@ export function Preview() {
   const selection = resolved.clips.find(
     (c) => c.id === selected && c.kind === "video" && !!focus,
   );
-  const sourceVideo = project.assets.find(a=>a.id===selection?.assetId)?.probe.video;
-  const fitted = sourceVideo ? fitPicture(sourceVideo,project.settings) : null;
-  const nextFill = !!selection && !!fitted && (Object.keys(fitted) as (keyof Transform)[]).every(k=>Math.abs(fitted[k]-selection.transform[k])<.01);
+  const sourceVideo = project.assets.find((a) => a.id === selection?.assetId)
+    ?.probe.video;
+  const fitted = sourceVideo ? fitPicture(sourceVideo, project.settings) : null;
+  const nextFill =
+    !!selection &&
+    !!fitted &&
+    (Object.keys(fitted) as (keyof Transform)[]).every(
+      (k) => Math.abs(fitted[k] - selection.transform[k]) < 0.01,
+    );
   const scale = Math.max(
     0.01,
     Math.min((size.width - 90) / width, (size.height - 36) / height),
@@ -287,9 +330,7 @@ export function Preview() {
   return (
     <section className="preview-panel">
       <div className="panel-title">
-        <span>
-           Preview & editor
-        </span>
+        <span>Preview & editor</span>
         <span className="muted">
           {visible.some((c) => c.kind === "video")
             ? "Composite view"
@@ -381,30 +422,34 @@ export function Preview() {
             </div>
           )}
         </div>
-
       </div>
       <div className="preview-tools">
-        {focus && <div className="segmented">
-          <button
-            title="Scale & move"
-            className={mode === "scale" ? "active" : ""}
-            onClick={() => setMode("scale")}
-          >
-            <Maximize2 size={14} />
-            Scale
-          </button>
-          <button
-            title="Crop picture"
-            className={mode === "crop" ? "active" : ""}
-            onClick={() => setMode("crop")}
-          >
-            <Crop size={14} />
-            Crop
-          </button>
-        </div>}
-        {focus && <span className="hint">
-          <Move size={12} /> Drag to position · Shift stretch · Alt symmetric
-        </span>}
+        {focus && (
+          <div className="segmented">
+            <button
+              title="Scale & move"
+              className={mode === "scale" ? "active" : ""}
+              onClick={() => setMode("scale")}
+            >
+              <Maximize2 size={14} />
+              Scale
+            </button>
+            <button
+              title="Crop picture"
+              className={mode === "crop" ? "active" : ""}
+              onClick={() => setMode("crop")}
+            >
+              <Crop size={14} />
+              Crop
+            </button>
+          </div>
+        )}
+        {selection && <BackgroundSelector clip={selection} disabled={busy} />}
+        {focus && (
+          <span className="hint">
+            <Move size={12} /> Drag to position · Shift stretch · Alt symmetric
+          </span>
+        )}
         {selection && (
           <button
             className="button"
@@ -414,12 +459,16 @@ export function Preview() {
                 c = doc.clips.find((c) => c.id === selection.id)!,
                 asset = project.assets.find((a) => a.id === c.assetId);
               if (asset?.probe.video) {
-                c.transform = fitPicture(asset.probe.video,project.settings,nextFill);
+                c.transform = fitPicture(
+                  asset.probe.video,
+                  project.settings,
+                  nextFill,
+                );
                 void save(doc);
               }
             }}
           >
-            {nextFill ? <Maximize2 size={14}/> : <Minimize2 size={14}/>}
+            {nextFill ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
             {nextFill ? "Scale to fill" : "Scale to fit"}
           </button>
         )}

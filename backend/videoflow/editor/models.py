@@ -40,6 +40,11 @@ class Transform(CamelModel):
         return self
 
 
+class Background(CamelModel):
+    mode: Literal["transparent", "color", "blur"] = "transparent"
+    color: str = Field(default="#000000", pattern=r"^#[0-9a-fA-F]{6}$")
+
+
 class ResizeReference(CamelModel):
     width: int = Field(gt=0)
     height: int = Field(gt=0)
@@ -60,6 +65,7 @@ class EditorClip(CamelModel):
     gain_db: float = Field(default=0, ge=-60, le=24)
     transform: Transform = Field(default_factory=Transform)
     resize_reference: ResizeReference | None = None
+    background: Background = Field(default_factory=Background)
 
     @model_validator(mode="after")
     def valid(self) -> "EditorClip":

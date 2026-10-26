@@ -128,6 +128,25 @@ async def pixels(path, frame, folder, rate=25):
     return np.frombuffer(target.read_bytes(), dtype=np.uint8).reshape(90, 160, 3)
 
 
+@pytest.mark.parametrize("mode, expected", [("color", 1), ("blur", 2), ("transparent", 0)])
+async def test_clip_background_color_blur_and_transparent_layers(edit, tmp_path, mode, expected):
+    from videoflow.editor.models import Background
+    from videoflow.editor.resolve import editable_document
+
+    document = editable_document(edit.project)
+    overlay = next(c for c in document.clips if c.id == "blue")
+    overlay.background = Background(mode=mode, color="#00ff00")
+    project, _ = SetEditor(document=document).apply(edit.project)
+    output = await render_project(project, edit, hw="cpu", normalize=False)
+    frame = await pixels(output.path, 10, tmp_path)
+    # Outside the foreground crop: backdrop color/blur or the red lower layer.
+    pixel = frame[45, 10]
+    assert pixel[expected] > 180, pixel
+    assert frame[45, 90, 2] > 180  # foreground remains blue
+    previous = await pixels(output.path, 9, tmp_path)
+    assert previous[45, 10, 0] > 180  # background obeys the clip's time range
+
+
 async def test_render_originals_layer_crop_gap_and_exact_frames(edit, tmp_path):
     before = edit.project.dump()
     output = await render_project(edit.project, edit, hw="cpu", normalize=False)
@@ -210,3 +229,4 @@ def test_digital_silence_skips_invalid_loudnorm_filter():
     assert measurement('{"input_i":"-inf", "input_tp":"-inf"}') is None
     with pytest.raises(ValueError, match="measurements"):
         measurement("no JSON")
+
