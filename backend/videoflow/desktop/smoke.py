@@ -92,6 +92,9 @@ def main(argv: list[str] | None = None) -> int:
             return
         try:
             state = json.loads(raw)
+            if state.get("settingsOpen"):
+                js("document.querySelector('[aria-label=\"Close settings\"]')?.click()")
+                return
             if phase == "loading" and state["ready"]:
                 js("document.querySelector('[aria-label=\"Close settings\"]')?.click()")
                 report["codecs"] = state["codecs"]
@@ -170,6 +173,66 @@ def main(argv: list[str] | None = None) -> int:
                 phase = "undo"
             elif phase == "undo" and state["videoClips"] == 1 and state["audioClips"] == 1:
                 report["checks"].append("Undo restored the linked clip pair")
+                if args.features:
+                    js(
+                        "document.querySelector('[data-testid=clip-video]')"
+                        ".dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));"
+                    )
+                    phase = "properties"
+                else:
+                    window.view.reload()
+                    phase = "reloaded"
+            elif phase == "properties" and state["focused"]:
+                if not state["singleTimeline"] or not state["sourceRangeClosed"]:
+                    raise ValueError("Timeline or properties layout regressed")
+                js(
+                    "const input=document.querySelector('[aria-label=\"Clip x\"]');"
+                    "Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'35');"
+                    "input.dispatchEvent(new Event('input',{bubbles:true}));"
+                )
+                phase = "live-properties"
+            elif phase == "live-properties" and state["previewX"] == "35px" and not state["saving"]:
+                js("document.querySelector('.detach-action').click()")
+                phase = "unlinked"
+            elif phase == "unlinked" and state["linkOptions"] > 1 and not state["saving"]:
+                js(
+                    "const select=document.querySelector('[aria-label=\"Link clip\"]');"
+                    "select.value=select.options[1].value;"
+                    "select.dispatchEvent(new Event('change',{bubbles:true}));"
+                )
+                phase = "relinked"
+            elif phase == "relinked" and state["chains"] == 1 and not state["linkOptions"]:
+                report["checks"].append(
+                    "One assembly axis, collapsed source range, live properties and AV relinking"
+                )
+                js(
+                    "document.querySelector('[data-testid=clip-audio]')"
+                    ".dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));"
+                )
+                phase = "audio-trim"
+            elif phase == "audio-trim" and state["audioTrimHandles"] == 2 and not state["saving"]:
+                js(
+                    "const handle=document.querySelector('[aria-label=\"out audio trim\"]');"
+                    "const bounds=handle.getBoundingClientRect();"
+                    "handle.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,"
+                    "clientX:bounds.x,clientY:bounds.y}));"
+                    "window.dispatchEvent(new PointerEvent('pointermove',"
+                    "{clientX:bounds.x-30,clientY:bounds.y}));"
+                    "window.dispatchEvent(new PointerEvent('pointerup',"
+                    "{clientX:bounds.x-30,clientY:bounds.y}));"
+                )
+                phase = "audio-trimmed"
+            elif phase == "audio-trimmed" and any(
+                c.get("heldRange")
+                for c in (bundle.project.model_extra or {}).get("editor", {}).get("clips", [])
+            ):
+                if any(
+                    c.get("kind") == "gap" for c in bundle.project.model_extra["editor"]["clips"]
+                ):
+                    raise ValueError("Audio trim inserted a fake gap")
+                report["checks"].append(
+                    "Standard audio handles retain time without fake silence clips"
+                )
                 window.view.reload()
                 phase = "reloaded"
             elif (
@@ -179,6 +242,7 @@ def main(argv: list[str] | None = None) -> int:
                 and state["videoClips"] == 1
             ):
                 report["checks"].append("Reload preserved original references and edit")
+                js("document.querySelector('[aria-label=\"Close settings\"]')?.click()")
                 if args.features:
                     if not state["previewFits"]:
                         raise ValueError("Preview canvas overflows its available viewport")
@@ -254,6 +318,8 @@ def main(argv: list[str] | None = None) -> int:
         pending = True
         window.page.runJavaScript(
             """JSON.stringify({
+          settingsOpen:!!document.querySelector('[aria-label="Close settings"]'),
+          saving:!!document.querySelector('.save-status.saving'),
           ready: !!window.videoFlowDesktop && !!document.querySelector('.flow-panel'),
           codecs: {mp4:document.createElement('video').canPlayType(
                         'video/mp4; codecs="avc1.42E01E"'),
@@ -265,12 +331,20 @@ def main(argv: list[str] | None = None) -> int:
           video:{width:document.querySelector('video')?.videoWidth,
                  height:document.querySelector('video')?.videoHeight},
           timecode:document.querySelector('[data-testid=timecode]')?.textContent,
-          focused:!!document.querySelector('.focus-banner'),
+          focused:!!document.querySelector('.exit-focus'),
           videoClips:document.querySelectorAll('[data-testid=clip-video]').length,
           audioClips:document.querySelectorAll('[data-testid=clip-audio]').length,
           previewFits:(()=>{const v=document.querySelector('.viewport')?.getBoundingClientRect();
             const p=document.querySelector('.preview-body')?.getBoundingClientRect();
             return !!v&&!!p&&v.height<=p.height+1&&v.width<=p.width+1;})(),
+          singleTimeline:!document.querySelector(
+            '.flow-ruler,.flow-playhead,.flow-panel .zoom-controls')
+            &&!!document.querySelector('.transport-heading .zoom-controls'),
+          sourceRangeClosed:!!document.querySelector('.source-range:not([open])'),
+          previewX:document.querySelector('.output-canvas video')?.style.left,
+          linkOptions:document.querySelector('[aria-label="Link clip"]')?.options.length||0,
+          chains:document.querySelectorAll('.chain-button').length,
+          audioTrimHandles:document.querySelectorAll('.audio-trim-handle').length,
           homeProjects:document.querySelectorAll('.home-page article').length,
           blurred:[...document.querySelectorAll('video')].some(v=>
             v.style.filter.includes('blur')&&v.readyState>=2),

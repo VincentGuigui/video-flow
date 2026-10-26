@@ -44,3 +44,5 @@ Suggested reading order: 10, 09 and 08 for current decisions, then 02, 04 and 05
 - Keep `README.md` up to date with the essentials; extend `docs/` as the project grows.
 
 Latest accepted revisions: [10 — Desktop shell](10-desktop-shell.md) and [11 — Editor refinements and local AI settings](11-editor-refinements.md). They supersede conflicting earlier decisions.
+
+[12 — Unified timeline and focused editing](12-unified-timeline.md) supersedes earlier two-timeline and audio-trim details.
