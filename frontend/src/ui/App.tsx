@@ -34,6 +34,7 @@ import {
   type Clip,
 } from "../model";
 import { api, updateClip, useEditor } from "../store";
+import { Home } from "./Home";
 import { ProjectSave } from "./ProjectSave";
 import { Preview } from "./Preview";
 import { Flow } from "./Flow";
@@ -72,6 +73,7 @@ export function App() {
       error,
     } = state;
   const [importFiles, setImportFiles] = useState<NativeFile[] | null>(null),
+    [home, setHome] = useState(false),
     [help, setHelp] = useState(false),
     [drag, setDrag] = useState(false),
     [output, setOutput] = useState(false),
@@ -152,6 +154,7 @@ export function App() {
       const target = e.target as HTMLElement;
       if (
         target.closest('input,textarea,select,[contenteditable="true"]') ||
+        home ||
         importFiles ||
         help ||
         output
@@ -227,7 +230,7 @@ export function App() {
     }
     window.addEventListener("keydown", keyboard);
     return () => window.removeEventListener("keydown", keyboard);
-  }, [importFiles, help, output]);
+  }, [home, importFiles, help, output]);
   function openImport() {
     if (native()) {
       if (window.videoFlowDesktop) window.videoFlowDesktop.pickFiles();
@@ -275,7 +278,7 @@ export function App() {
       }}
     >
       <header className="app-header">
-        <a className="brand" href="/" aria-label="Video-Flow">
+        <a className="brand" href="#home" aria-label="Video-Flow" onClick={e=>{e.preventDefault();set({playing:false});setHome(true);}}>
           <span className="brand-mark">
             <Film size={19} />
           </span>
@@ -328,7 +331,8 @@ export function App() {
           </button>
         </div>
       </header>
-      <div className="workspace">
+      {home && <Home onClose={()=>setHome(false)} />}
+      <div className="workspace" style={home ? {display:"none"} : undefined}>
         <aside className="media-library">
           <div className="library-heading">
             <span>PROJECT MEDIA</span>

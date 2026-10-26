@@ -46,6 +46,12 @@ class OutputRequest(CamelModel):
     formats: list[str] = Field(default_factory=lambda: ["otio"])
 
 
+class ProjectAction(CamelModel):
+    kind: Literal["new", "open", "rename", "delete"]
+    id: str | None = None
+    name: str = "Untitled"
+
+
 class ProjectSave(CamelModel):
     name: str | None = None
     copy: bool = False
@@ -176,6 +182,31 @@ def create_app(
         trusted_assets.update({a.id: a.dump() for a in target.project.assets})
         trusted_paths.clear()
         trusted_paths.update({a.id: {a.path} for a in target.project.assets})
+
+    @app.get("/api/projects")
+    async def projects() -> Any:
+        return await asyncio.to_thread(library.entries)
+
+    @app.post("/api/projects/action")
+    async def project_action(payload: ProjectAction) -> Any:
+        async with mutation_lock:
+            if any(j.state in ("queued", "running") for j in imports.jobs.values()):
+                raise HTTPException(409, "Finish or cancel imports before managing projects")
+            try:
+                if payload.kind == "new":
+                    await switch_project(await asyncio.to_thread(library.create, payload.name))
+                elif payload.kind == "open":
+                    await switch_project(await asyncio.to_thread(library.find, payload.id or ""))
+                elif payload.kind == "rename":
+                    target = bundle if payload.id == bundle.project.id else library.find(payload.id or "")
+                    library.rename(target, payload.name)
+                else:
+                    if payload.id == bundle.project.id:
+                        await switch_project(await asyncio.to_thread(library.create, "Untitled"))
+                    await asyncio.to_thread(library.delete, payload.id or "")
+            except (ValueError, OSError, ProjectStoreError) as exc:
+                raise HTTPException(422, str(exc)) from exc
+            return {"ok": True}
 
     @app.post("/api/project/save")
     async def save_project(payload: ProjectSave) -> Any:
