@@ -1864,3 +1864,9 @@ kbd {
 .project-list article {display:flex;align-items:center;gap:14px;background:white;padding:20px;border:1px solid var(--line);border-radius:10px;}
 .project-list article>div {flex:1;}
 .project-list h2 {font-size:18px;margin:0 0 6px;}
+
+.render-options {display:flex;align-items:center;gap:16px;padding:8px 0;}
+.render-options label {display:flex;align-items:center;gap:6px;margin:0;}
+.output-result progress {width:100%;margin:10px 0;}
+.output-result p {overflow-wrap:anywhere;}
+.output-modal {max-height:90vh;overflow:auto;}

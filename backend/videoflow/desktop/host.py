@@ -100,6 +100,19 @@ class Backend:
             result: dict[str, Any] = json.load(response)
             return result
 
+    def save_render(self, identifier: str, path: str) -> None:
+        request = urllib.request.Request(
+            self.origin + "/api/desktop/render-save",
+            data=json.dumps({"id": identifier, "path": path}).encode(),
+            headers={
+                "Content-Type": "application/json",
+                "Cookie": f"videoflow={self.token}",
+                "X-VideoFlow-Desktop": self.secret,
+            },
+        )
+        with urllib.request.urlopen(request, timeout=120) as response:
+            response.read()
+
     def close(self) -> None:
         self.server.should_exit = True
         if self.thread.is_alive():
@@ -167,6 +180,19 @@ class NativeBridge(QObject):
 
     def trusted(self) -> bool:
         return trusted_url(self.view.url(), self.backend.origin)
+
+    @Slot(str)
+    def saveRenderedVideo(self, identifier: str) -> None:
+        if not self.trusted():
+            return
+        path, _ = QFileDialog.getSaveFileName(
+            self.window, "Save MP4 video", "video.mp4", "MP4 video (*.mp4)"
+        )
+        if path:
+            try:
+                self.backend.save_render(identifier, path)
+            except (OSError, ValueError) as exc:
+                self.failed.emit(str(exc))
 
     @Slot()
     def pickFiles(self) -> None:
@@ -264,7 +290,8 @@ class EditorWindow(QMainWindow):
 window.__videoflowDesktop = true;
 new QWebChannel(qt.webChannelTransport, function(channel) {
   const host = channel.objects.desktop;
-  window.videoFlowDesktop = {pickFiles: () => host.pickFiles(), relink: id => host.relink(id)};
+  window.videoFlowDesktop = {pickFiles: () => host.pickFiles(),
+    relink: id => host.relink(id), saveRenderedVideo: id => host.saveRenderedVideo(id)};
   host.filesSelected.connect(value => window.dispatchEvent(
     new CustomEvent('videoflow-selection', {detail: JSON.parse(value)})));
   host.failed.connect(message => window.dispatchEvent(

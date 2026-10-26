@@ -11,6 +11,7 @@ declare global {
     __videoflowDesktop?: boolean;
     videoFlowDesktop?: {
       pickFiles: () => void;
+      saveRenderedVideo: (id: string) => void;
       relink: (assetId: string) => void;
     };
   }

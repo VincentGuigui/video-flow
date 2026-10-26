@@ -48,9 +48,14 @@ class ProjectLibrary:
         path = self.root / f"{slug}-{uuid.uuid4().hex[:12]}.videoflow"
         project = new_project(name)
         if source is not None:
-            project = source.project.model_copy(deep=True, update={
-                "id": project.id, "name": name, "revision": 0,
-            })
+            project = source.project.model_copy(
+                deep=True,
+                update={
+                    "id": project.id,
+                    "name": name,
+                    "revision": 0,
+                },
+            )
             # Reference originals by their existing absolute paths, never duplicate media.
             for asset in project.assets:
                 asset.rel_path = None

@@ -34,6 +34,7 @@ import {
   type Clip,
 } from "../model";
 import { api, updateClip, useEditor } from "../store";
+import { RenderPanel } from "./RenderPanel";
 import { Home } from "./Home";
 import { ProjectSave } from "./ProjectSave";
 import { Preview } from "./Preview";
@@ -559,6 +560,7 @@ export function App() {
             <p className="muted">
               Exports are saved in this project's exports folder.
             </p>
+            <RenderPanel />
             {[
               [
                 "OTIO timeline",
@@ -598,8 +600,7 @@ export function App() {
             )}
             <p className="export-note">
               Gain, fades and spatial transforms are metadata in OTIO. Other
-              editors may ignore them. Layered video rendering is a separate
-              upcoming step.
+              editors may ignore them. Use MP4 video to render the visible edit and audio.
             </p>
           </section>
         </div>

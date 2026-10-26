@@ -67,6 +67,69 @@ def await_job(client, job_id):
     raise AssertionError("Import did not finish")
 
 
+def test_save_copy_home_and_scoped_projects(client, app_bundle):
+    _, original = app_bundle
+    identifier = original.project.id
+    response = client.post("/api/project/save", json={"baseRevision": 0, "name": "First"})
+    assert response.status_code == 200, response.text
+    assert original.project.name == "First"
+    assert client.post("/api/project/save", json={"baseRevision": 0}).status_code == 409
+    response = client.post(
+        "/api/project/save",
+        json={
+            "baseRevision": original.project.revision,
+            "name": "Second",
+            "copy": True,
+        },
+    )
+    assert response.status_code == 200, response.text
+    second = client.get("/api/project").json()["project"]
+    assert second["id"] != identifier
+    assert len(client.get("/api/projects").json()) == 2
+    assert (
+        client.post("/api/projects/action", json={"kind": "open", "id": identifier}).status_code
+        == 200
+    )
+    assert client.get("/api/project").json()["project"]["name"] == "First"
+    assert (
+        client.post("/api/projects/action", json={"kind": "delete", "id": second["id"]}).status_code
+        == 200
+    )
+    assert len(client.get("/api/projects").json()) == 1
+    assert (
+        client.post("/api/projects/action", json={"kind": "open", "id": "../other"}).status_code
+        == 422
+    )
+
+
+def test_render_api_progress_download_and_native_save(client, original, tmp_path):
+    job = client.post(
+        "/api/native-import", json={"handle": grant(client, original), "analyse": False}
+    ).json()
+    assert await_job(client, job["id"])["state"] == "done"
+    revision = client.get("/api/project").json()["project"]["revision"]
+    assert client.post("/api/render", json={"baseRevision": 0}).status_code == 409
+    job = client.post(
+        "/api/render", json={"baseRevision": revision, "preset": "draft", "normalize": False}
+    ).json()
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        state = client.get("/api/renders").json()[-1]
+        if state["state"] in ("done", "failed"):
+            break
+        time.sleep(0.05)
+    assert state["state"] == "done", state
+    assert client.get(f"/api/renders/{job['id']}/file").headers["content-type"] == "video/mp4"
+    target = tmp_path / "saved.mp4"
+    payload = {"id": job["id"], "path": str(target)}
+    assert client.post("/api/desktop/render-save", json=payload).status_code == 403
+    headers = {"X-VideoFlow-Desktop": "host-secret"}
+    assert client.post("/api/desktop/render-save", json=payload, headers=headers).status_code == 200
+    assert target.is_file()
+    payload["path"] = str(original)
+    assert client.post("/api/desktop/render-save", json=payload, headers=headers).status_code == 422
+
+
 def test_auth_host_origin_and_cookie_flow(app_bundle):
     app, _ = app_bundle
     with TestClient(app, base_url="http://127.0.0.1:8765") as client:

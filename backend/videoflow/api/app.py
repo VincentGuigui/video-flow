@@ -3,8 +3,11 @@
 import asyncio
 import hashlib
 import json
+import os
 import secrets
+import shutil
 import sys
+import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -30,6 +33,7 @@ from videoflow.media.proxy import build_proxy
 from videoflow.project.commands import Command, RelinkAsset
 from videoflow.project.library import ProjectLibrary
 from videoflow.project.store import Bundle, ProjectStoreError, StaleRevisionError
+from videoflow.render.jobs import Renders
 
 
 class Patch(CamelModel):
@@ -46,6 +50,17 @@ class OutputRequest(CamelModel):
     formats: list[str] = Field(default_factory=lambda: ["otio"])
 
 
+class RenderRequest(CamelModel):
+    base_revision: int = Field(ge=0)
+    preset: Literal["draft", "final"] = "final"
+    normalize: bool = True
+
+
+class RenderSave(CamelModel):
+    id: str
+    path: str
+
+
 class ProjectAction(CamelModel):
     kind: Literal["new", "open", "rename", "delete"]
     id: str | None = None
@@ -54,7 +69,7 @@ class ProjectAction(CamelModel):
 
 class ProjectSave(CamelModel):
     name: str | None = None
-    copy: bool = False
+    save_copy: bool = Field(default=False, alias="copy")
     base_revision: int = Field(ge=0)
 
 
@@ -81,6 +96,7 @@ def create_app(
 ) -> FastAPI:
     library = ProjectLibrary(bundle.path.parent)
     imports = Imports(bundle)
+    renders = Renders(bundle)
     playbacks = PlaybackProxies(bundle)
     roots = [p.resolve() for p in (media_roots or [bundle.path.parent])]
     host = f"127.0.0.1:{port}"
@@ -111,6 +127,7 @@ def create_app(
     async def lifespan(_: FastAPI):  # type: ignore[no-untyped-def]
         yield
         await imports.close()
+        await renders.close()
 
     app = FastAPI(title="Video-Flow local editor", lifespan=lifespan)
     app.state.imports = imports
@@ -171,10 +188,14 @@ def create_app(
         }
 
     async def switch_project(target: Bundle) -> None:
-        nonlocal bundle, imports, playbacks, grants
+        nonlocal bundle, imports, playbacks, grants, renders
         if any(j.state in ("queued", "running") for j in imports.jobs.values()):
             raise HTTPException(409, "Finish or cancel imports before switching projects")
+        if renders.active:
+            raise HTTPException(409, "Finish or cancel renders before switching projects")
+        await renders.close()
         await imports.close()
+        renders = Renders(target)
         bundle, imports, playbacks = target, Imports(target), PlaybackProxies(target)
         app.state.imports = imports
         grants = SelectionGrants()
@@ -193,12 +214,18 @@ def create_app(
             if any(j.state in ("queued", "running") for j in imports.jobs.values()):
                 raise HTTPException(409, "Finish or cancel imports before managing projects")
             try:
+                if renders.active:
+                    raise HTTPException(409, "Finish or cancel renders before managing projects")
                 if payload.kind == "new":
                     await switch_project(await asyncio.to_thread(library.create, payload.name))
                 elif payload.kind == "open":
                     await switch_project(await asyncio.to_thread(library.find, payload.id or ""))
                 elif payload.kind == "rename":
-                    target = bundle if payload.id == bundle.project.id else library.find(payload.id or "")
+                    target = (
+                        bundle
+                        if payload.id == bundle.project.id
+                        else library.find(payload.id or "")
+                    )
                     library.rename(target, payload.name)
                 else:
                     if payload.id == bundle.project.id:
@@ -214,10 +241,14 @@ def create_app(
             if payload.base_revision != bundle.project.revision:
                 raise HTTPException(409, "The project changed; reload before saving")
             try:
-                if payload.copy:
+                if payload.save_copy:
+                    if renders.active:
+                        raise HTTPException(409, "Finish or cancel renders before Save as")
                     if any(j.state in ("queued", "running") for j in imports.jobs.values()):
                         raise HTTPException(409, "Finish or cancel imports before Save as")
-                    target = await asyncio.to_thread(library.create, payload.name or "Untitled copy", bundle)
+                    target = await asyncio.to_thread(
+                        library.create, payload.name or "Untitled copy", bundle
+                    )
                     await switch_project(target)
                 elif payload.name is not None:
                     library.rename(bundle, payload.name)
@@ -226,6 +257,63 @@ def create_app(
             except (ValueError, OSError, ProjectStoreError) as exc:
                 raise HTTPException(422, str(exc)) from exc
             return {"project": bundle.project.dump()}
+
+    @app.get("/api/renders")
+    async def render_jobs() -> Any:
+        return [j.dump() for j in renders.jobs.values()]
+
+    @app.post("/api/render")
+    async def render_video(payload: RenderRequest) -> Any:
+        async with mutation_lock:
+            if payload.base_revision != bundle.project.revision:
+                raise HTTPException(409, "The project changed; reload before rendering")
+            if renders.active:
+                raise HTTPException(409, "A render is already in progress")
+            return renders.submit(payload.preset, payload.normalize).dump()
+
+    @app.post("/api/renders/{identifier}/cancel")
+    async def cancel_render(identifier: str) -> Any:
+        if identifier not in renders.jobs:
+            raise HTTPException(404, "Unknown render")
+        await renders.cancel(identifier)
+        return {"ok": True}
+
+    def rendered_path(identifier: str) -> Path:
+        job = renders.jobs.get(identifier)
+        if job is None or job.state != "done" or not job.path:
+            raise HTTPException(404, "Completed render not found")
+        path = Path(job.path).resolve()
+        if not path.is_relative_to(bundle.renders_dir.resolve()) or not path.is_file():
+            raise HTTPException(404, "Rendered file is missing")
+        return path
+
+    @app.get("/api/renders/{identifier}/file")
+    async def render_file(identifier: str) -> FileResponse:
+        return FileResponse(rendered_path(identifier), filename="video.mp4")
+
+    @app.post("/api/desktop/render-save")
+    async def save_render(payload: RenderSave, request: Request) -> Any:
+        supplied = request.headers.get("x-videoflow-desktop", "")
+        if desktop_secret is None or not secrets.compare_digest(supplied, desktop_secret):
+            raise HTTPException(403, "Native host authentication required")
+        source = rendered_path(payload.id)
+        destination = await asyncio.to_thread(Path(payload.path).resolve)
+        if destination.suffix.lower() != ".mp4":
+            raise HTTPException(422, "Choose an MP4 filename")
+        originals = await asyncio.to_thread(
+            lambda: {Path(a.path).resolve() for a in bundle.project.assets}
+        )
+        if destination in originals:
+            raise HTTPException(422, "Original media cannot be overwritten")
+        if source == destination:
+            return {"ok": True}
+        temporary = destination.with_name("." + destination.name + "." + uuid.uuid4().hex + ".tmp")
+        try:
+            await asyncio.to_thread(shutil.copyfile, source, temporary)
+            await asyncio.to_thread(os.replace, temporary, destination)
+        finally:
+            temporary.unlink(missing_ok=True)
+        return {"ok": True}
 
     @app.get("/api/jobs")
     async def jobs() -> list[dict[str, Any]]:
