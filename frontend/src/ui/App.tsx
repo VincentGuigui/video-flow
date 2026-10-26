@@ -34,6 +34,7 @@ import {
   type Clip,
 } from "../model";
 import { api, updateClip, useEditor } from "../store";
+import { InterfaceZoom } from "./InterfaceZoom";
 import { RenderPanel } from "./RenderPanel";
 import { Home } from "./Home";
 import { ProjectSave } from "./ProjectSave";
@@ -460,6 +461,7 @@ export function App() {
         </main>
       </div>
       <footer className="app-footer">
+        <InterfaceZoom />
 
         <span>
           {resolved.total

@@ -181,6 +181,11 @@ class NativeBridge(QObject):
     def trusted(self) -> bool:
         return trusted_url(self.view.url(), self.backend.origin)
 
+    @Slot(float)
+    def setZoom(self, factor: float) -> None:
+        if self.trusted() and 0.5 <= factor <= 2.0:
+            self.view.setZoomFactor(factor)
+
     @Slot(str)
     def saveRenderedVideo(self, identifier: str) -> None:
         if not self.trusted():
@@ -291,6 +296,7 @@ window.__videoflowDesktop = true;
 new QWebChannel(qt.webChannelTransport, function(channel) {
   const host = channel.objects.desktop;
   window.videoFlowDesktop = {pickFiles: () => host.pickFiles(),
+    setZoom: factor => host.setZoom(factor),
     relink: id => host.relink(id), saveRenderedVideo: id => host.saveRenderedVideo(id)};
   host.filesSelected.connect(value => window.dispatchEvent(
     new CustomEvent('videoflow-selection', {detail: JSON.parse(value)})));

@@ -1870,3 +1870,6 @@ kbd {
 .output-result progress {width:100%;margin:10px 0;}
 .output-result p {overflow-wrap:anywhere;}
 .output-modal {max-height:90vh;overflow:auto;}
+
+.interface-zoom {display:flex;align-items:center;gap:8px;}
+.interface-zoom button {min-width:28px;height:26px;}
