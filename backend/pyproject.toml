@@ -117,3 +117,15 @@ files = ["videoflow"]
 # Third-party packages without type information (scipy-stubs not installed).
 module = ["scipy.*", "scenedetect.*", "faster_whisper.*", "ctranslate2.*", "opentimelineio.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Optional heavy extras (desktop, qwen) may be absent in the dev environment.
+module = ["PySide6.*", "torch.*", "transformers.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Qt classes are Any without PySide6 installed; the ignores are needed when it is.
+module = ["videoflow.desktop.*"]
+disallow_subclassing_any = false
+disallow_untyped_decorators = false
+warn_unused_ignores = false

@@ -26,6 +26,13 @@ from videoflow.project.models import new_project
 from videoflow.project.store import Bundle
 
 
+def editor_clips(bundle: Bundle) -> list[dict[str, Any]]:
+    clips: list[dict[str, Any]] = (
+        (bundle.project.model_extra or {}).get("editor", {}).get("clips", [])
+    )
+    return clips
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--media", type=Path, required=True)
@@ -222,13 +229,8 @@ def main(argv: list[str] | None = None) -> int:
                     "{clientX:bounds.x-30,clientY:bounds.y}));"
                 )
                 phase = "audio-trimmed"
-            elif phase == "audio-trimmed" and any(
-                c.get("heldRange")
-                for c in (bundle.project.model_extra or {}).get("editor", {}).get("clips", [])
-            ):
-                if any(
-                    c.get("kind") == "gap" for c in bundle.project.model_extra["editor"]["clips"]
-                ):
+            elif phase == "audio-trimmed" and any(c.get("heldRange") for c in editor_clips(bundle)):
+                if any(c.get("kind") == "gap" for c in editor_clips(bundle)):
                     raise ValueError("Audio trim inserted a fake gap")
                 report["checks"].append(
                     "Standard audio handles retain time without fake silence clips"

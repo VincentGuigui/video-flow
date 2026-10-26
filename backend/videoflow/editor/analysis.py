@@ -15,6 +15,7 @@ from videoflow.analysis.types import Transcript, Word
 from videoflow.core.base import CamelModel
 from videoflow.editor.topics import Topic, detect_topics, extractive_summary
 from videoflow.engines.registry import create
+from videoflow.hw.ai import Prefer
 from videoflow.project.store import Bundle, save_atomic
 
 if TYPE_CHECKING:
@@ -132,7 +133,7 @@ def similar(a: AnalysisFile, b: AnalysisFile) -> bool:
 class Transcriber:
     """Factory lives at module scope so multiprocessing spawn can import it."""
 
-    def __init__(self, asr_engine: str = "parakeet", prefer: str = "auto") -> None:
+    def __init__(self, asr_engine: str = "parakeet", prefer: Prefer = "auto") -> None:
         self.vad = create("vad", prefer=prefer)
         self.asr = create("asr", asr_engine, prefer=prefer)
         self.summary: QwenSummary | None = None
