@@ -354,7 +354,7 @@ class EngineWorker:
         g.conn.close()
         await asyncio.to_thread(proc.join, KILL_JOIN_S)
         if g.reader is not None:
-            await asyncio.to_thread(g.reader.join, .2)
+            await asyncio.to_thread(g.reader.join, 0.2)
         with contextlib.suppress(ValueError):
             proc.close()
 

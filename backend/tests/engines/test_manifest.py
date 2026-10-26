@@ -107,6 +107,7 @@ def test_fetch_passes_pinned_revision(monkeypatch, tmp_path):
 
 def test_models_dir_is_always_application_models(monkeypatch, tmp_path):
     from videoflow import runtime
+
     monkeypatch.setattr(runtime, "application_dir", lambda: tmp_path)
     monkeypatch.setenv("VIDEOFLOW_MODELS_DIR", "ignored-external-directory")
     assert mf.models_dir() == tmp_path / "models"

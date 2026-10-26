@@ -52,9 +52,13 @@ def compile_timeline(
 
     def child(clip: ResolvedClip, kind: str) -> Any:
         asset = assets.get(clip.asset_id)
-        silent = getattr(clip, "kind", "media") == "gap" or kind == "audio" and (
-            (clip.audio is not None and clip.audio.mode == "muted")
-            or (asset is not None and not asset.probe.has_audio)
+        silent = (
+            getattr(clip, "kind", "media") == "gap"
+            or kind == "audio"
+            and (
+                (clip.audio is not None and clip.audio.mode == "muted")
+                or (asset is not None and not asset.probe.has_audio)
+            )
         )
         if silent:
             result = otio.schema.Gap(source_range=time_range(0, clip.duration))
