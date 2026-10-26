@@ -22,8 +22,10 @@ Initial draft: 2026-10-23. Latest accepted architecture revision: 2026-10-25. Re
 | 08 | [08-review-and-plan.md](08-review-and-plan.md) | Review of choices, verified hypotheses, hardware policy, revised implementation plan (supersedes 01-07 where they conflict) |
 | 09 | [09-interactive-editor.md](09-interactive-editor.md) | Wireframe-driven editor, linked/independent media, explicit gaps, trim modes, keyboard, transforms and sidecar analysis (supersedes conflicting earlier rules) |
 | 10 | [10-desktop-shell.md](10-desktop-shell.md) | Accepted PySide6/Qt WebEngine desktop shell, native local-path imports without copying, lifecycle, security and platform acceptance gates |
+| 11 | [11-editor-refinements.md](11-editor-refinements.md) | Editor refinements: project home, save/save as, backgrounds, MP4 export, local AI model settings |
+| 12 | [12-unified-timeline.md](12-unified-timeline.md) | Unified timeline axis, linking separate clips, audio trimming with retained time, live properties |
 
-Suggested reading order: 10, 09 and 08 for current decisions, then 02, 04 and 05 for product behavior and data, 03 and 06 for implementation, and 07 for historical roadmap context.
+Suggested reading order: 12, 11, 10, 09 and 08 for current decisions, then 02, 04 and 05 for product behavior and data, 03 and 06 for implementation, and 07 for historical roadmap context.
 
 ## Key decisions at a glance
 
