@@ -178,6 +178,11 @@ class Imports:
                                         " ".join(w.text for w in transcript.words),
                                     )
                                     analysis.summary_engine = "qwen2.5-0.5b-instruct"
+                                    job.phase, job.progress = "Titling topics with local Qwen", 0.85
+                                    analysis.topics = await self.workers.call(
+                                        "transcriber", "topics", transcript.words
+                                    )
+                                    analysis.topics_engine = "qwen2.5-0.5b-instruct"
                                     analysis.summary_scope = (
                                         "First/last 1400 tokens when over 2800 tokens"
                                     )

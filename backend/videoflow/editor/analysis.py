@@ -5,6 +5,7 @@ import json
 import re
 from collections import Counter
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 from pydantic import Field
@@ -12,8 +13,12 @@ from rapidfuzz.fuzz import token_set_ratio
 
 from videoflow.analysis.types import Transcript, Word
 from videoflow.core.base import CamelModel
+from videoflow.editor.topics import Topic, detect_topics, extractive_summary
 from videoflow.engines.registry import create
 from videoflow.project.store import Bundle, save_atomic
+
+if TYPE_CHECKING:
+    from videoflow.engines.summary import QwenSummary
 
 
 class AnalysisFile(CamelModel):
@@ -25,6 +30,15 @@ class AnalysisFile(CamelModel):
     language: str | None = None
     summary_engine: str = "deterministic"
     summary_scope: str = "full transcript"
+    topics: list[Topic] = Field(default_factory=list)
+    topics_engine: str = "deterministic"
+
+
+def with_topics(analysis: AnalysisFile) -> AnalysisFile:
+    """Older sidecars have no topics; derive them without rewriting the file."""
+    if analysis.words and not analysis.topics:
+        analysis.topics = detect_topics(analysis.words)
+    return analysis
 
 
 def sidecar_path(source: Path) -> Path:
@@ -41,7 +55,7 @@ def read_sidecar(source: Path, digest: str) -> AnalysisFile | None:
                 continue
             analysis = AnalysisFile.model_validate(raw)
             if analysis.version == 1 and analysis.source_hash in (None, digest):
-                return analysis
+                return with_topics(analysis)
     return None
 
 
@@ -63,7 +77,7 @@ def load_analysis(source: Path, digest: str, bundle: Bundle) -> AnalysisFile | N
         with contextlib.suppress(ValueError, OSError):
             analysis = AnalysisFile.model_validate_json(path.read_bytes())
             if analysis.source_hash == digest and analysis.version == 1:
-                return analysis
+                return with_topics(analysis)
     return None
 
 
@@ -92,8 +106,9 @@ def describe(transcript: Transcript, digest: str) -> AnalysisFile:
         source_hash=digest,
         words=transcript.words,
         language=transcript.language,
-        summary=text[:280],
+        summary=extractive_summary(transcript.words),
         keywords=[t for t, _ in Counter(tokens).most_common(12)],
+        topics=detect_topics(transcript.words),
     )
 
 
@@ -120,14 +135,21 @@ class Transcriber:
     def __init__(self, asr_engine: str = "parakeet", prefer: str = "auto") -> None:
         self.vad = create("vad", prefer=prefer)
         self.asr = create("asr", asr_engine, prefer=prefer)
-        self.summary = None
+        self.summary: QwenSummary | None = None
 
-    def summarize(self, text: str) -> tuple[str, list[str]]:
+    def _qwen(self) -> "QwenSummary":
         if self.summary is None:
             from videoflow.engines.summary import QwenSummary
 
             self.summary = QwenSummary()
-        return self.summary.describe(text)
+        return self.summary
+
+    def summarize(self, text: str) -> tuple[str, list[str]]:
+        return self._qwen().describe(text)
+
+    def topics(self, words: list[Word]) -> list[Topic]:
+        """Topic sections titled by local Qwen, with keyword titles as fallback."""
+        return detect_topics(words, title=self._qwen().title)
 
     def transcribe(self, pcm: bytes, language: str) -> Transcript:
         audio = np.frombuffer(pcm, dtype="<f4").copy()
