@@ -2,10 +2,12 @@ import pytest
 from pydantic import ValidationError
 
 from tests.timeline.builders import ProjectBuilder, S, clip
+from videoflow.core.time import Rational
 from videoflow.editor.models import EditorClip, EditorDocument, Transform, layout
-from videoflow.editor.resolve import document_for, editable_document
+from videoflow.editor.resolve import document_for, editable_document, fit_transform
 from videoflow.exporters.otio_compile import compile_timeline
 from videoflow.project.commands import SetEditor, apply_batch
+from videoflow.project.models import ProjectSettings, VideoStreamInfo
 from videoflow.timeline.resolve import resolve
 
 
@@ -99,3 +101,22 @@ def test_legacy_edit_is_converted_without_losing_authored_cuts():
     assert {c.source_in for c in doc.clips} == {30}
     assert doc.clips[0].link_id == doc.clips[1].link_id
     assert document_for(project) is None
+
+
+def test_rotated_picture_fits_upright_without_stretching():
+    video = VideoStreamInfo(width=1920, height=1080, rotation=90, frame_rate=Rational.of(30))
+    transform = fit_transform(ProjectSettings(), video)
+    assert (transform.width, transform.height) == (607.5, 1080)
+    assert (transform.x, transform.y) == (656.25, 0)
+
+
+def test_thousands_of_disjoint_intervals_keep_exact_positions():
+    doc = EditorDocument(
+        clips=[
+            item(str(i)).model_copy(update={"start": i * 50, "enabled": i % 5 != 0})
+            for i in range(5000)
+        ]
+    )
+    clips, total = layout(doc)
+    assert total == 4000 * 30
+    assert all(c.start == i * 30 for i, c in enumerate(clips))

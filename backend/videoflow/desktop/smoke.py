@@ -83,9 +83,12 @@ def main(argv: list[str] | None = None) -> int:
     def js(source: str) -> None:
         window.page.runJavaScript(source)
 
-    def result(raw: str) -> None:
+    def result(raw: str | None) -> None:
         nonlocal phase, pending
         pending = False
+        if not raw:
+            # The first poll or a reload can arrive before the JS context exists.
+            return
         try:
             state = json.loads(raw)
             if phase == "loading" and state["ready"]:

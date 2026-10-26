@@ -1,6 +1,7 @@
 """Versioned editor extension; all editing time is integer project-rate frames."""
 
 import math
+from bisect import bisect_right
 from typing import Literal
 
 from pydantic import Field, model_validator
@@ -99,8 +100,17 @@ def layout(document: EditorDocument) -> tuple[list[EditorClip], int]:
         else:
             intervals.append([clip.start, end])
 
+    starts = [a for a, _ in intervals]
+    prefix = [0]
+    for a, b in intervals:
+        prefix.append(prefix[-1] + b - a)
+
     def position(frame: int) -> int:
-        return sum(max(0, min(frame, end) - start) for start, end in intervals)
+        index = bisect_right(starts, frame) - 1
+        if index < 0:
+            return 0
+        start, end = intervals[index]
+        return prefix[index] + min(frame, end) - start
 
     return [
         c.model_copy(update={"start": position(c.start)}) for c in document.clips if c.enabled

@@ -101,7 +101,12 @@ export function Preview() {
       (c) =>
         c.kind !== "gap" && frame >= c.start && frame < c.start + duration(c),
     )
-    .toSorted((a, b) => a.layer - b.layer);
+    .toSorted(
+      (a, b) =>
+        a.layer - b.layer ||
+        a.start - b.start ||
+        (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    );
   const selection = resolved.clips.find(
     (c) => c.id === selected && c.kind === "video",
   );
@@ -411,13 +416,19 @@ export function Preview() {
                 c = doc.clips.find((c) => c.id === selection.id)!,
                 asset = project.assets.find((a) => a.id === c.assetId);
               if (asset?.probe.video) {
-                const v = asset.probe.video,
-                  f = Math.min(width / v.width, height / v.height);
+                const v = asset.probe.video;
+                const rotated = v.rotation === 90 || v.rotation === 270;
+                const displayWidth = rotated ? v.height : v.width,
+                  displayHeight = rotated ? v.width : v.height;
+                const f = Math.min(
+                  width / displayWidth,
+                  height / displayHeight,
+                );
                 c.transform = {
-                  x: (width - v.width * f) / 2,
-                  y: (height - v.height * f) / 2,
-                  width: v.width * f,
-                  height: v.height * f,
+                  x: (width - displayWidth * f) / 2,
+                  y: (height - displayHeight * f) / 2,
+                  width: displayWidth * f,
+                  height: displayHeight * f,
                   cropLeft: 0,
                   cropRight: 0,
                   cropTop: 0,

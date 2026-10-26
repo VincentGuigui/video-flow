@@ -45,6 +45,12 @@ const document = (): Document => ({
   ],
 });
 describe("linked editing", () => {
+  it("moves linked clips into a parallel lane when their destination is occupied", () => {
+    const doc = move(document(), "v", 100, 0);
+    expect(partners(doc, "v").map((c) => c.layer)).toEqual([1, 1]);
+    expect(doc.clips.find((c) => c.id === "next")!.layer).toBe(0);
+    expect(layout(doc).total).toBe(100);
+  });
   it("splits both media at one frame and creates two independent linked pairs", () => {
     const doc = split(document(), "a", 40);
     expect(doc.clips).toHaveLength(5);
@@ -183,4 +189,16 @@ it("uses frame, second, ten-second and boundary keyboard steps", () => {
   expect(keyboardStep("ArrowRight", false, true, 30000 / 1001)).toBe(300);
   expect(keyboardStep("ArrowLeft", true, true, 30)).toBe("start");
   expect(keyboardStep("End", false, false, 30)).toBe("end");
+});
+
+it("compacts thousands of disjoint intervals with exact boundary positions", () => {
+  const clips = Array.from({ length: 5000 }, (_, i) => ({
+    ...c("c" + i, i * 150),
+    enabled: i % 5 !== 0,
+  }));
+  const result = layout({ version: 1, clips });
+  expect(result.total).toBe(400000);
+  expect(result.clips.every((clip, i) => clip.start === i * 100)).toBe(true);
+  expect(result.position(-1)).toBe(0);
+  expect(result.position(10000000)).toBe(result.total);
 });

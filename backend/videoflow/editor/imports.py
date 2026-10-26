@@ -11,8 +11,8 @@ from videoflow.core.base import CamelModel
 from videoflow.core.ids import new_id
 from videoflow.core.time import frames
 from videoflow.editor.analysis import AnalysisFile, describe, load_analysis, similar, store_analysis
-from videoflow.editor.models import EditorClip, EditorDocument, Transform, layout
-from videoflow.editor.resolve import editable_document
+from videoflow.editor.models import EditorClip, EditorDocument, layout
+from videoflow.editor.resolve import editable_document, fit_transform
 from videoflow.jobs.workers import EngineSpec, WorkerPool
 from videoflow.media import ffmpeg
 from videoflow.media.ingest import ingest_files
@@ -179,17 +179,7 @@ class Imports:
             raise ValueError("Media is shorter than one project frame")
         link = new_id("lnk") if asset.probe.video and asset.probe.has_audio else None
         video = asset.probe.video
-        transform = Transform(width=project.settings.width, height=project.settings.height)
-        if video:
-            factor = min(
-                project.settings.width / video.width, project.settings.height / video.height
-            )
-            transform = Transform(
-                width=video.width * factor,
-                height=video.height * factor,
-                x=(project.settings.width - video.width * factor) / 2,
-                y=(project.settings.height - video.height * factor) / 2,
-            )
+        transform = fit_transform(project.settings, video)
         added = [
             EditorClip(
                 id=new_id("clp"),

@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
@@ -45,13 +46,49 @@ export function Flow({ onImport }: { onImport: () => void }) {
   const scroll = useRef<HTMLDivElement>(null),
     [zoom, setZoom] = useState(1),
     [draft, setDraft] = useState<Document | null>(null),
-    [dragging, setDragging] = useState(false);
-  const doc = draft ?? document,
-    base = pack(doc),
-    resolved = layout(doc),
+    [dragging, setDragging] = useState(false),
+    [viewport, setViewport] = useState({
+      left: 0,
+      top: 0,
+      width: 1200,
+      height: 500,
+    });
+  const doc = draft ?? document;
+  const base = useMemo(() => pack(doc), [doc]),
+    resolved = useMemo(() => layout(doc), [doc]),
     rate = project ? fps(project.settings) : 30;
   const px = 2 * zoom;
   const layers = Math.max(2, ...doc.clips.map((c) => c.layer + 1));
+  useEffect(() => {
+    const node = scroll.current;
+    if (!node) return;
+    let raf = 0;
+    const measure = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() =>
+        setViewport({
+          left: node.scrollLeft,
+          top: node.scrollTop,
+          width: node.clientWidth,
+          height: node.clientHeight,
+        }),
+      );
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    node.addEventListener("scroll", measure);
+    measure();
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+      node.removeEventListener("scroll", measure);
+    };
+  }, []);
+  const visible = (c: Clip) =>
+    56 + (c.start + duration(c)) * px >= viewport.left - 180 &&
+    56 + c.start * px <= viewport.left + viewport.width + 180 &&
+    48 + (layers - 1 - c.layer) * 112 >= viewport.top - 180 &&
+    48 + (layers - 1 - c.layer) * 112 <= viewport.top + viewport.height + 180;
   const selectedClip = base.clips.find((c) => c.id === selected);
   const focused = base.clips.find((c) => c.id === focus);
   const focusStart = focused
@@ -144,7 +181,7 @@ export function Flow({ onImport }: { onImport: () => void }) {
         0.08,
         Math.min(16, old * Math.exp(-event.deltaY * 0.002)),
       );
-        const left = zoomAt(old, next, container.scrollLeft, pointer - 56);
+      const left = zoomAt(old, next, container.scrollLeft, pointer - 56);
       requestAnimationFrame(() => (container.scrollLeft = Math.max(0, left)));
       return next;
     });
@@ -169,9 +206,26 @@ export function Flow({ onImport }: { onImport: () => void }) {
   const ticks: number[] = [];
   const step =
     [1, 2, 5, 10, 15, 30, 60, 120, 300].find((s) => s * rate * px > 70) ?? 600;
-  for (let second = 0; second <= width / px / rate; second += step)
+  for (
+    let second = Math.max(
+      0,
+      Math.floor((viewport.left - 56) / px / rate / step) * step,
+    );
+    second <= Math.min(width, viewport.left + viewport.width + 180) / px / rate;
+    second += step
+  )
     ticks.push(second);
-  const pairs = base.clips.filter((c) => c.kind !== "audio" || !c.linkId);
+  const pairs = useMemo(
+    () => base.clips.filter((c) => c.kind !== "audio" || !c.linkId),
+    [base],
+  );
+  const byStart = useMemo(() => {
+    const index = new Map<number, Clip[]>();
+    for (const c of pairs) {
+      if (c.enabled) index.set(c.start, [...(index.get(c.start) ?? []), c]);
+    }
+    return index;
+  }, [pairs]);
   const actualIds = new Set(resolved.clips.map((c) => c.id));
   return (
     <section className="flow-panel">
@@ -322,9 +376,11 @@ export function Flow({ onImport }: { onImport: () => void }) {
               </marker>
             </defs>
             {pairs
-              .filter((c) => c.enabled)
+              .filter((c) => c.enabled && visible(c))
               .flatMap((c) => {
-                const following = pairs.filter(
+                const following = (
+                  byStart.get(c.start + duration(c)) ?? []
+                ).filter(
                   (n) =>
                     n.enabled &&
                     n.id !== c.id &&
@@ -348,7 +404,7 @@ export function Flow({ onImport }: { onImport: () => void }) {
                 });
               })}
           </svg>
-          {base.clips.map((c) => {
+          {base.clips.filter(visible).map((c) => {
             const linked = !!c.linkId,
               kind = c.kind;
             const y =

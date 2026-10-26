@@ -31,7 +31,7 @@ export interface Asset {
   path: string;
   probe: {
     durationUs: number;
-    video: null | { width: number; height: number };
+    video: null | { width: number; height: number; rotation?: number };
     audioStreams: unknown[];
   };
 }
@@ -77,13 +77,26 @@ export function layout(doc: Document): {
     if (last && c.start <= last[1]) last[1] = Math.max(last[1], end);
     else intervals.push([c.start, end]);
   }
-  const position = (f: number) =>
-    intervals.reduce((n, [a, b]) => n + Math.max(0, Math.min(f, b) - a), 0);
+  const prefix = [0];
+  for (const [a, b] of intervals) prefix.push(prefix.at(-1)! + b - a);
+  const position = (f: number) => {
+    let low = 0,
+      high = intervals.length;
+    while (low < high) {
+      const middle = (low + high) >>> 1;
+      if (intervals[middle][0] <= f) low = middle + 1;
+      else high = middle;
+    }
+    const index = low - 1;
+    return index < 0
+      ? 0
+      : prefix[index] + Math.min(f, intervals[index][1]) - intervals[index][0];
+  };
   return {
     clips: doc.clips
       .filter((c) => c.enabled)
       .map((c) => ({ ...c, start: position(c.start) })),
-    total: intervals.reduce((n, [a, b]) => n + b - a, 0),
+    total: prefix.at(-1)!,
     position,
   };
 }
@@ -169,6 +182,27 @@ export function move(
 ): Document {
   const selected = partners(doc, id),
     ids = new Set(selected.map((c) => c.id));
+  start = Math.max(0, Math.round(start));
+  layer = Math.max(0, Math.min(999, layer));
+  // Moving into occupied time creates a visible parallel lane instead of
+  // obscuring two draggable blocks on the same lane.
+  while (
+    layer < 1000 &&
+    doc.clips.some(
+      (other) =>
+        !ids.has(other.id) &&
+        other.enabled &&
+        other.layer === layer &&
+        selected.some(
+          (c) =>
+            c.kind === other.kind &&
+            start < other.start + duration(other) &&
+            start + duration(c) > other.start,
+        ),
+    )
+  )
+    layer++;
+  if (layer > 999) return doc;
   return pack({
     ...doc,
     clips: doc.clips.map((c) =>

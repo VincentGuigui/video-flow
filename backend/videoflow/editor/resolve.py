@@ -1,8 +1,8 @@
 """Resolve the interactive document into the common exporter/render contract."""
 
 from videoflow.core.time import frame_to_us, frames
-from videoflow.editor.models import EditorDocument, layout
-from videoflow.project.models import Project
+from videoflow.editor.models import EditorDocument, Transform, layout
+from videoflow.project.models import Project, ProjectSettings, VideoStreamInfo
 from videoflow.timeline.resolved import (
     ResolvedAudio,
     ResolvedClip,
@@ -17,9 +17,25 @@ def document_for(project: Project) -> EditorDocument | None:
     return EditorDocument.model_validate(raw) if raw is not None else None
 
 
+def fit_transform(settings: ProjectSettings, video: VideoStreamInfo | None) -> Transform:
+    """Fit the upright picture, matching FFmpeg's autorotation and SDR proxies."""
+    if video is None:
+        return Transform(width=settings.width, height=settings.height)
+    width, height = video.width, video.height
+    if video.rotation in (90, 270):
+        width, height = height, width
+    factor = min(settings.width / width, settings.height / height)
+    return Transform(
+        width=width * factor,
+        height=height * factor,
+        x=(settings.width - width * factor) / 2,
+        y=(settings.height - height * factor) / 2,
+    )
+
+
 def editable_document(project: Project) -> EditorDocument:
     """Import legacy authored cuts without silently discarding an existing edit."""
-    from videoflow.editor.models import EditorClip, Transform
+    from videoflow.editor.models import EditorClip
     from videoflow.timeline.resolve import resolve
 
     existing = document_for(project)
@@ -52,7 +68,7 @@ def editable_document(project: Project) -> EditorDocument:
                     layer=0 if track.id in ("V1", "A1") else 1,
                     link_id=link,
                     gain_db=c.audio.gain_db if c.audio else 0,
-                    transform=Transform(width=timeline.width, height=timeline.height),
+                    transform=fit_transform(project.settings, asset.probe.video),
                 )
             )
     return EditorDocument(clips=clips)
