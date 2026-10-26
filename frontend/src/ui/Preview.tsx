@@ -8,6 +8,7 @@ import { Crop, Maximize2, Move, Film, Music2, Minimize2 } from "lucide-react";
 import {
   clone,
   fitPicture,
+  nextFitMode,
   duration,
   fps,
   layout,
@@ -150,13 +151,10 @@ export function Preview() {
   );
   const sourceVideo = project.assets.find((a) => a.id === selection?.assetId)
     ?.probe.video;
-  const fitted = sourceVideo ? fitPicture(sourceVideo, project.settings) : null;
   const nextFill =
     !!selection &&
-    !!fitted &&
-    (Object.keys(fitted) as (keyof Transform)[]).every(
-      (k) => Math.abs(fitted[k] - selection.transform[k]) < 0.01,
-    );
+    !!sourceVideo &&
+    nextFitMode(selection, sourceVideo, project.settings) === "fill";
   const scale = Math.max(
     0.01,
     Math.min((size.width - 90) / width, (size.height - 36) / height),
@@ -464,6 +462,7 @@ export function Preview() {
                   project.settings,
                   nextFill,
                 );
+                c.fitMode = nextFill ? "fill" : "fit";
                 void save(doc);
               }
             }}

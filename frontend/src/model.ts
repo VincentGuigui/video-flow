@@ -21,6 +21,7 @@ export interface Clip {
   linkId: string | null;
   gainDb: number;
   transform: Transform;
+  fitMode?: "fit" | "fill";
   background?: { mode: "transparent" | "color" | "blur"; color: string };
   resizeReference?: { width: number; height: number; transform: Transform };
 }
@@ -374,6 +375,20 @@ export function fitPicture(
     width: w * factor,
     height: h * factor,
   };
+}
+
+export function nextFitMode(
+  clip: Clip,
+  video: NonNullable<Asset["probe"]["video"]>,
+  settings: Settings,
+): "fit" | "fill" {
+  if (clip.fitMode) return clip.fitMode === "fit" ? "fill" : "fit";
+  const fitted = fitPicture(video, settings);
+  return (Object.keys(fitted) as (keyof Transform)[]).every(
+    (k) => Math.abs(fitted[k] - clip.transform[k]) < 0.01,
+  )
+    ? "fill"
+    : "fit";
 }
 
 export function resize(

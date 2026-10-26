@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   defaultTransform,
   fitPicture,
+  nextFitMode,
   detach,
   duration,
   keyboardStep,
@@ -236,4 +237,19 @@ it("fits and fills rotated and portrait sources without stretching", () => {
   expect(fill.width).toBe(1920);
   expect(fit.width / fit.height).toBeCloseTo(9 / 16);
   expect(fill.width / fill.height).toBeCloseTo(9 / 16);
+});
+
+it("alternates fit and fill even when both produce the same dimensions", () => {
+  const settings = {
+      width: 1920,
+      height: 1080,
+      frameRate: { num: 30, den: 1 },
+    },
+    video = { width: 1920, height: 1080 };
+  const clip = c("same-ratio");
+  expect(nextFitMode(clip, video, settings)).toBe("fill");
+  clip.fitMode = "fill";
+  expect(nextFitMode(clip, video, settings)).toBe("fit");
+  clip.fitMode = "fit";
+  expect(nextFitMode(clip, video, settings)).toBe("fill");
 });
