@@ -1850,3 +1850,9 @@ kbd {
 }
 
 .alignment-guide { position:absolute; top:30px; width:2px; background:#2aaa77; pointer-events:none; z-index:12; }
+
+.save-split {position:relative;display:flex;border:1px solid var(--line);border-radius:6px;}
+.save-split .icon-button {border-left:1px solid var(--line);}
+.save-menu {position:absolute;top:100%;right:0;z-index:30;background:white;box-shadow:0 4px 20px #0002;padding:10px;border-radius:6px;}
+.modal label {display:grid;gap:8px;margin:16px 0;}
+.modal label input {padding:10px;border:1px solid var(--line);border-radius:5px;}

@@ -34,6 +34,7 @@ import {
   type Clip,
 } from "../model";
 import { api, updateClip, useEditor } from "../store";
+import { ProjectSave } from "./ProjectSave";
 import { Preview } from "./Preview";
 import { Flow } from "./Flow";
 import { Transport } from "./Transport";
@@ -314,6 +315,7 @@ export function App() {
             <Plus size={15} />
             Import media
           </button>
+          <ProjectSave />
           <button
             className="primary"
             onClick={() => {

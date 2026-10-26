@@ -28,6 +28,7 @@ from videoflow.media.ingest import MEDIA_EXTENSIONS
 from videoflow.media.peaks import compute_peaks, read_peaks
 from videoflow.media.proxy import build_proxy
 from videoflow.project.commands import Command, RelinkAsset
+from videoflow.project.library import ProjectLibrary
 from videoflow.project.store import Bundle, ProjectStoreError, StaleRevisionError
 
 
@@ -43,6 +44,12 @@ class PathImport(CamelModel):
 
 class OutputRequest(CamelModel):
     formats: list[str] = Field(default_factory=lambda: ["otio"])
+
+
+class ProjectSave(CamelModel):
+    name: str | None = None
+    copy: bool = False
+    base_revision: int = Field(ge=0)
 
 
 class NativeSelection(CamelModel):
@@ -66,6 +73,7 @@ def create_app(
     desktop_secret: str | None = None,
     allow_uploads: bool = False,
 ) -> FastAPI:
+    library = ProjectLibrary(bundle.path.parent)
     imports = Imports(bundle)
     playbacks = PlaybackProxies(bundle)
     roots = [p.resolve() for p in (media_roots or [bundle.path.parent])]
@@ -155,6 +163,38 @@ def create_app(
             "editor": editable_document(p).dump(),
             "inverses": [c.dump() for c in inverses],
         }
+
+    async def switch_project(target: Bundle) -> None:
+        nonlocal bundle, imports, playbacks, grants
+        if any(j.state in ("queued", "running") for j in imports.jobs.values()):
+            raise HTTPException(409, "Finish or cancel imports before switching projects")
+        await imports.close()
+        bundle, imports, playbacks = target, Imports(target), PlaybackProxies(target)
+        app.state.imports = imports
+        grants = SelectionGrants()
+        trusted_assets.clear()
+        trusted_assets.update({a.id: a.dump() for a in target.project.assets})
+        trusted_paths.clear()
+        trusted_paths.update({a.id: {a.path} for a in target.project.assets})
+
+    @app.post("/api/project/save")
+    async def save_project(payload: ProjectSave) -> Any:
+        async with mutation_lock:
+            if payload.base_revision != bundle.project.revision:
+                raise HTTPException(409, "The project changed; reload before saving")
+            try:
+                if payload.copy:
+                    if any(j.state in ("queued", "running") for j in imports.jobs.values()):
+                        raise HTTPException(409, "Finish or cancel imports before Save as")
+                    target = await asyncio.to_thread(library.create, payload.name or "Untitled copy", bundle)
+                    await switch_project(target)
+                elif payload.name is not None:
+                    library.rename(bundle, payload.name)
+                else:
+                    bundle.save(bundle.project)
+            except (ValueError, OSError, ProjectStoreError) as exc:
+                raise HTTPException(422, str(exc)) from exc
+            return {"project": bundle.project.dump()}
 
     @app.get("/api/jobs")
     async def jobs() -> list[dict[str, Any]]:
