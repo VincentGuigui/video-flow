@@ -18,9 +18,9 @@ The sidecar JSON (09) gains `topics` and `topicsEngine`; its version stays 1. Ol
 
 - Properties shows a **Transcript** tab next to Clip and Project, only while a clip is selected. It reads the selected clip's source analysis.
 - It shows the summary, then the list of topics: start – end timecodes and the title.
-- Clicking a topic expands it to its transcript lines, each with a timecode, and highlights the topic's range on the assembly timeline. Clicking it again collapses it and removes the highlight. Changing the selected clip also removes the highlight.
+- Clicking a topic expands it to its transcript lines, each with a timecode, and sets the timeline range to the topic (see 15). Clicking it again collapses it and resets the range. Words in the lines set the range too (15).
 - Clicking any timecode (topic start/end or transcript line) moves the timeline cursor there and stops playback.
-- Timecodes are assembly times, mapped through the clip's position and trim. Times outside the clip's trimmed range, or on a disabled clip, show the source time greyed out and do not move the cursor. The highlight is clamped to the trimmed range.
+- Timecodes are assembly times, mapped through the clip's position and trim. Times outside the clip's trimmed range, or on a disabled clip, show the source time greyed out and do not move the cursor. The range is clamped to the trimmed range.
 - Media without analysis shows a hint to import it again with analysis.
 
-Validation: backend tests cover sentence splitting, two-subject segmentation with timecodes, single-subject stability, title length and LLM fallback, summary length and topics derived for old sidecars. Frontend tests cover source-to-assembly mapping with trims, disabled clips and range clamping. A browser check on a served project confirmed topics, expansion, highlight and cursor seeks.
+Validation: backend tests cover sentence splitting, two-subject segmentation with timecodes, single-subject stability, title length and LLM fallback, summary length and topics derived for old sidecars. Frontend tests cover source-to-assembly mapping with trims, disabled clips and range clamping. A browser check on a served project confirmed topics, expansion, range selection and cursor seeks.

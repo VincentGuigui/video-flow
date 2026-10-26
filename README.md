@@ -34,7 +34,7 @@ scripts/run.sh --help          # any other arguments go to the videoflow CLI
 
 Use `videoflow desktop --project PATH.videoflow` to open/create a particular project. Import uses native dialogs and OS file drops: originals stay in place, and derived proxies, thumbnails and waveforms live in the project bundle. Read-only source folders use bundle-cached analysis. Offline sources can be relinked through a native picker without losing edits. `videoflow serve --project PATH.videoflow` is an explicit browser diagnostic option; normal desktop import never uploads or copies original media.
 
-Keyboard: Space play/pause; arrows one frame; Shift+arrows one second; Ctrl+arrows ten seconds; Home/End or Ctrl+Shift+arrows timeline bounds; S split; Delete lift with an empty clip; Backspace ripple delete; Escape leave clip focus; Ctrl+Z undo, Ctrl+Shift+Z redo. Ctrl+wheel zooms around the pointer. Double-click a clip to focus it with two seconds of context; top trim handles ripple, bottom handles preserve time with empty clips. Shift stretches scale/crop; Alt edits symmetrically.
+Keyboard: Space plays the timeline range (start/end markers on the ruler; with a marker selected, 2 s around it); arrows one frame; Shift+arrows one second; Ctrl+arrows ten seconds; Home/End or Ctrl+Shift+arrows timeline bounds; S split; Delete lift with an empty clip; Backspace ripple delete; Escape leave clip focus; Ctrl+Z undo, Ctrl+Shift+Z redo. Ctrl+wheel zooms around the pointer. Double-click a clip to focus it with two seconds of context; top trim handles ripple, bottom handles preserve time with empty clips. Shift stretches scale/crop; Alt edits symmetrically.
 
 See [desktop runtime and platform checks](docs/desktop-runtime.md) and the authoritative [desktop spec](docs/spec/10-desktop-shell.md).
 
@@ -50,7 +50,7 @@ The standalone desktop build is in `releases/Video-Flow/Video-Flow.exe`. Keep th
 
 ## Transcript and topics
 
-Analysed imports get a short summary and topic sections (start/end time and a title of up to five words). Select a clip and open the Transcript tab in the properties panel: click a topic to expand its transcript and highlight it on the timeline; click any timecode to move the cursor there.
+Analysed imports get a short summary and topic sections (start/end time and a title of up to five words). Select a clip and open the Transcript tab in the properties panel: click a topic to expand its transcript and set the timeline range to it; click a word (Shift+click to extend) to set the range; click any timecode to move the cursor there. In the Clip tab, Trim clip to range keeps only the range and moves later clips earlier; Auto-trim silence trims to the first and last spoken words.
 
 ## Settings and local models
 
