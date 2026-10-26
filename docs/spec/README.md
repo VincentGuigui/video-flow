@@ -42,3 +42,5 @@ Suggested reading order: 10, 09 and 08 for current decisions, then 02, 04 and 05
 - One commit per functional change, short functional commit message, no AI co-author trailer.
 - No refactoring, rollback, framework or major version change without explicit approval.
 - Keep `README.md` up to date with the essentials; extend `docs/` as the project grows.
+
+Latest accepted revisions: [10 — Desktop shell](10-desktop-shell.md) and [11 — Editor refinements and local AI settings](11-editor-refinements.md). They supersede conflicting earlier decisions.

@@ -96,12 +96,13 @@ FFmpeg hardware paths (separate from the Python extras, probed at run time): dec
 
 ## Models (pinned in `backend/videoflow/engines/manifest.toml`)
 
-Each model is pinned to a Hugging Face commit. Gated repositories and licences outside the manifest policy (MIT, Apache-2.0, BSD, CC-BY-4.0, CC0) are refused. Files are cached under `VIDEOFLOW_MODELS_DIR` (default `~/.cache/videoflow/models` on Linux, `%LOCALAPPDATA%\videoflow\models` on Windows).
+Each model is pinned to a Hugging Face commit. Gated repositories and licences outside the manifest policy (MIT, Apache-2.0, BSD, CC-BY-4.0, CC0) are refused. Files always live in the application `models/` subdirectory (repository root in development, beside the executable in a packaged build). `VIDEOFLOW_MODELS_DIR` is set to that path; external overrides are ignored. Settings manages explicit downloads and updates against the pinned manifest.
 
 | Key | Repository | Licence | Size | Used by |
 |---|---|---|---|---|
 | `silero-vad` | onnx-community/silero-vad | MIT | 2 MB | VAD (S3) |
 | `parakeet-tdt-0.6b-v3-int8` | istupakov/parakeet-tdt-0.6b-v3-onnx | CC-BY-4.0 (credit NVIDIA Parakeet TDT 0.6B v3) | 670 MB | ASR (S4), default |
+| `qwen2.5-0.5b-instruct` | Qwen/Qwen2.5-0.5B-Instruct | Apache-2.0 | ~1 GB | Optional CPU summaries/keywords (`qwen` extra) |
 | `faster-whisper-tiny` | Systran/faster-whisper-tiny | MIT | 75 MB | ASR alternative (`whisper` extra), smoke tier |
 | `multilingual-e5-small` | intfloat/multilingual-e5-small | MIT | 118 MB (int8) | Text embeddings (S10), default |
 | `paraphrase-multilingual-minilm-l12-v2` | sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 | Apache-2.0 | 118 MB (uint8) | Text embeddings, alternative |

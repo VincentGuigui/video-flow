@@ -46,6 +46,12 @@ just test | smoke | lint | serve        # or: scripts/dev.sh test | smoke | lint
 
 `test` runs the unit tier (CPU, synthetic media, no network; tests that need the `ml` extra are skipped without it); `smoke` runs the tests marked `smoke` (small CPU models, downloads them; needs an inference extra such as `cpu`/`smoke`, and `whisper` for the faster-whisper test). Synthetic samples are generated with FFmpeg (needs the `flite` filter) and cached under `VIDEOFLOW_SAMPLES_CACHE`.
 
+## Settings and local models
+
+Use Settings in the editor header to select transcription and summary engines, manage model downloads and set import/export defaults. Models always live in the application `models/` subdirectory; `VIDEOFLOW_MODELS_DIR` points there. Missing weights require an explicit download action. Compatible analysis JSON is reused first. Deterministic summaries need no generative model; optional Qwen summaries run locally on CPU. Development installs offering both optional engines use `uv sync --extra desktop --extra cpu --extra whisper --extra qwen` in `backend/`.
+
+The logo opens the project library. Save names an untitled project; Save as copies the edit with source references retained. Export → Save as MP4 video renders the enabled edit with progress, cancellation and a native save dialog. Other handoff formats remain available below it.
+
 ## Export an edit
 
 From `backend/` after installation:
@@ -70,5 +76,5 @@ OTIO retains exact transition definitions, editing identifiers and clip settings
 
 ## Documentation
 
-- [Specification](docs/spec/README.md); the plan and decisions that override it are in [docs/spec/08-review-and-plan.md](docs/spec/08-review-and-plan.md)
+- [Specification](docs/spec/README.md), with authoritative [desktop architecture](docs/spec/10-desktop-shell.md) and [editor/settings refinements](docs/spec/11-editor-refinements.md)
 - [Dependencies and accelerator matrix](docs/dependencies.md)

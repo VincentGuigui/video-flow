@@ -47,7 +47,9 @@ export function Transport() {
     if (!node) return;
     const wheel = (e: WheelEvent) => {
       if (e.shiftKey && !e.ctrlKey) {
-        e.preventDefault(); node.scrollLeft += e.deltaY || e.deltaX; return;
+        e.preventDefault();
+        node.scrollLeft += e.deltaY || e.deltaX;
+        return;
       }
       if (!e.ctrlKey) return;
       e.preventDefault();
@@ -69,13 +71,19 @@ export function Transport() {
   useEffect(() => {
     const node = root.current;
     if (!node || width <= 0) return;
-    if (!focus) { setZoom(1); node.scrollLeft = 0; return; }
-    const span = Math.max(1,end-start);
-    setZoom(Math.max(1,Math.max(total,Math.round(rate*10))/span));
-    requestAnimationFrame(()=>{node.scrollLeft = start*width/span;});
+    if (!focus) {
+      setZoom(1);
+      node.scrollLeft = 0;
+      return;
+    }
+    const span = Math.max(1, end - start);
+    setZoom(Math.max(1, Math.max(total, Math.round(rate * 10)) / span));
+    requestAnimationFrame(() => {
+      node.scrollLeft = (start * width) / span;
+    });
     // Refit on focus or viewport changes; ordinary cursor changes retain zoom.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focus,width]);
+  }, [focus, width]);
   function seek(value: number) {
     set({
       frame: Math.max(
@@ -108,17 +116,12 @@ export function Transport() {
   return (
     <section className="transport-panel">
       <div className="transport-heading">
-        <span>
-          {" "}
-          {focus ? "Clip timeline" : "Assembly timeline"}
-        </span>
+        <span> {focus ? "Clip timeline" : "Assembly timeline"}</span>
         <span className="transport-time">
           <strong data-testid="timecode">{timecode(frame, rate)}</strong>
           <span>/ {timecode(total, rate)}</span>
         </span>
-        <span className="muted">
-          Drag the cursor to scrub
-        </span>
+        <span className="muted">Drag the cursor to scrub</span>
       </div>
       <div
         className="overview-scroll"

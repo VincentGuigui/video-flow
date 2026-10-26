@@ -30,6 +30,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--media", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--features", action="store_true")
     args = parser.parse_args(argv)
     media, output = args.media.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -92,6 +93,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             state = json.loads(raw)
             if phase == "loading" and state["ready"]:
+                js("document.querySelector('[aria-label=\"Close settings\"]')?.click()")
                 report["codecs"] = state["codecs"]
                 report["checks"].append("Trusted native bridge connected")
                 mime = QMimeData()
@@ -177,13 +179,74 @@ def main(argv: list[str] | None = None) -> int:
                 and state["videoClips"] == 1
             ):
                 report["checks"].append("Reload preserved original references and edit")
+                if args.features:
+                    if not state["previewFits"]:
+                        raise ValueError("Preview canvas overflows its available viewport")
+                    js("document.querySelector('[aria-label=\"Zoom in interface\"]').click()")
+                    phase = "interface-zoom"
+                else:
+                    finish()
+            elif phase == "interface-zoom" and abs(window.view.zoomFactor() - 1.1) < 0.01:
+                report["checks"].append("Status zoom changes Qt WebEngine zoom and preview fits")
+                js(
+                    "document.querySelector('[aria-label=\"Reset interface zoom\"]').click();"
+                    "document.querySelector('.brand').click()"
+                )
+                phase = "home"
+            elif phase == "home" and state["homeProjects"] > 0:
+                report["checks"].append("Logo opens the project home screen")
+                js(
+                    "[...document.querySelectorAll('.home-page button')]"
+                    ".find(b=>b.textContent==='Back to editor').click();"
+                    "document.querySelector('[data-testid=clip-video]')"
+                    ".dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));"
+                )
+                phase = "background"
+            elif phase == "background" and state["focused"]:
+                js(
+                    "const s=document.querySelector('[aria-label=\"Clip background\"]');"
+                    "s.value='blur';s.dispatchEvent(new Event('change',{bubbles:true}));"
+                )
+                phase = "blurred"
+            elif phase == "blurred" and state["blurred"]:
+                report["checks"].append("Focused video has a decoded blurred backdrop")
+                js(
+                    "[...document.querySelectorAll('.header-actions button')]"
+                    ".find(b=>b.textContent.includes('Export')).click()"
+                )
+                phase = "export-panel"
+            elif phase == "export-panel" and state["renderPanel"]:
+                js(
+                    "const s=document.querySelector('[aria-label=\"Render quality\"]');"
+                    "s.value='draft';s.dispatchEvent(new Event('change',{bubbles:true}));"
+                )
+                QTimer.singleShot(
+                    200,
+                    lambda: js("document.querySelector('.render-panel .export-option').click()"),
+                )
+                phase = "rendered"
+            elif phase == "rendered" and state["renderDone"]:
+                report["checks"].append("Export produced a validated MP4 with blurred background")
+                js(
+                    "document.querySelector('[aria-label=\"Close export\"]').click();"
+                    "document.querySelector('[aria-label=\"Save options\"]').click()"
+                )
+                phase = "save-menu"
+            elif phase == "save-menu" and state["saveMenu"]:
+                js("document.querySelector('.save-menu button').click()")
+                phase = "save-copy"
+            elif phase == "save-copy" and state["saveDialog"]:
+                js("document.querySelector('[aria-label=\"Save as\"]').requestSubmit()")
+                phase = "saved-copy"
+            elif phase == "saved-copy" and state["copySaved"]:
+                report["checks"].append("Save as created a new named project and retained media")
                 finish()
         except Exception as exc:
             finish(str(exc))
 
     def poll() -> None:
         nonlocal pending
-        if time.monotonic() - started > 60:
+        if time.monotonic() - started > (120 if args.features else 60):
             finish(f"Timed out in phase: {phase}")
             return
         if pending:
@@ -204,7 +267,20 @@ def main(argv: list[str] | None = None) -> int:
           timecode:document.querySelector('[data-testid=timecode]')?.textContent,
           focused:!!document.querySelector('.focus-banner'),
           videoClips:document.querySelectorAll('[data-testid=clip-video]').length,
-          audioClips:document.querySelectorAll('[data-testid=clip-audio]').length
+          audioClips:document.querySelectorAll('[data-testid=clip-audio]').length,
+          previewFits:(()=>{const v=document.querySelector('.viewport')?.getBoundingClientRect();
+            const p=document.querySelector('.preview-body')?.getBoundingClientRect();
+            return !!v&&!!p&&v.height<=p.height+1&&v.width<=p.width+1;})(),
+          homeProjects:document.querySelectorAll('.home-page article').length,
+          blurred:[...document.querySelectorAll('video')].some(v=>
+            v.style.filter.includes('blur')&&v.readyState>=2),
+          renderPanel:!!document.querySelector('.render-panel'),
+          renderDone:!!document.querySelector('.render-panel .output-result p'),
+          saveMenu:!!document.querySelector('.save-menu'),
+          saveDialog:!!document.querySelector('[aria-label="Save as"]'),
+          copySaved:!document.querySelector('[aria-label="Save as"]')&&
+            document.body.innerText.includes('All changes saved')&&
+            !!document.querySelector('[data-testid=clip-video]')
         })""",
             result,
         )

@@ -228,7 +228,6 @@ export function Flow() {
     <section className="flow-panel">
       <div className="flow-toolbar">
         <div className="flow-heading">
-          
           <strong>Clip flow</strong>
           <span className="count-badge">{pairs.length} clips</span>
         </div>
@@ -355,10 +354,34 @@ export function Flow() {
               </span>
             </div>
           ))}
-          {dragging && [...new Set(base.clips.filter(c => c.id === selected || (!!selectedClip?.linkId && c.linkId === selectedClip.linkId)).flatMap(c => [c.start,c.start+duration(c)])
-            .filter(edge => base.clips.some(c => c.id !== selected && (!selectedClip?.linkId || c.linkId !== selectedClip.linkId) && (c.start === edge || c.start+duration(c) === edge))))].map(edge => (
-            <div key={edge} className="alignment-guide" style={{left:56+edge*px,height:layers*112+40}} />
-          ))}
+          {dragging &&
+            [
+              ...new Set(
+                base.clips
+                  .filter(
+                    (c) =>
+                      c.id === selected ||
+                      (!!selectedClip?.linkId &&
+                        c.linkId === selectedClip.linkId),
+                  )
+                  .flatMap((c) => [c.start, c.start + duration(c)])
+                  .filter((edge) =>
+                    base.clips.some(
+                      (c) =>
+                        c.id !== selected &&
+                        (!selectedClip?.linkId ||
+                          c.linkId !== selectedClip.linkId) &&
+                        (c.start === edge || c.start + duration(c) === edge),
+                    ),
+                  ),
+              ),
+            ].map((edge) => (
+              <div
+                key={edge}
+                className="alignment-guide"
+                style={{ left: 56 + edge * px, height: layers * 112 + 40 }}
+              />
+            ))}
           {base.clips.filter(visible).map((c) => {
             const linked = !!c.linkId,
               kind = c.kind;
@@ -527,7 +550,6 @@ export function Flow() {
                   <br />
                   compare takes, and find your flow.
                 </p>
-
               </div>
             </div>
           )}

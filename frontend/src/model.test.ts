@@ -205,19 +205,35 @@ it("compacts thousands of disjoint intervals with exact boundary positions", () 
 });
 
 it("restores landscape transforms after portrait and retains subsequent edits", () => {
-  const settings = {width:1920,height:1080,frameRate:{num:30,den:1}};
+  const settings = {
+    width: 1920,
+    height: 1080,
+    frameRate: { num: 30, den: 1 },
+  };
   const initial = document();
-  const portrait = resize(initial,settings,1080,1920);
-  expect(resize(portrait,{...settings,width:1080,height:1920},1920,1080).clips[0].transform).toEqual(initial.clips[0].transform);
+  const portrait = resize(initial, settings, 1080, 1920);
+  expect(
+    resize(portrait, { ...settings, width: 1080, height: 1920 }, 1920, 1080)
+      .clips[0].transform,
+  ).toEqual(initial.clips[0].transform);
   portrait.clips[0].transform.x += 30;
-  expect(resize(portrait,{...settings,width:1080,height:1920},1920,1080).clips[0].transform.x).not.toBe(0);
+  expect(
+    resize(portrait, { ...settings, width: 1080, height: 1920 }, 1920, 1080)
+      .clips[0].transform.x,
+  ).not.toBe(0);
 });
 
 it("fits and fills rotated and portrait sources without stretching", () => {
-  const settings={width:1920,height:1080,frameRate:{num:30,den:1}};
-  const video={width:1920,height:1080,rotation:90};
-  const fit=fitPicture(video,settings), fill=fitPicture(video,settings,true);
-  expect(fit.height).toBe(1080);expect(fill.width).toBe(1920);
-  expect(fit.width/fit.height).toBeCloseTo(9/16);
-  expect(fill.width/fill.height).toBeCloseTo(9/16);
+  const settings = {
+    width: 1920,
+    height: 1080,
+    frameRate: { num: 30, den: 1 },
+  };
+  const video = { width: 1920, height: 1080, rotation: 90 };
+  const fit = fitPicture(video, settings),
+    fill = fitPicture(video, settings, true);
+  expect(fit.height).toBe(1080);
+  expect(fill.width).toBe(1920);
+  expect(fit.width / fit.height).toBeCloseTo(9 / 16);
+  expect(fill.width / fill.height).toBeCloseTo(9 / 16);
 });

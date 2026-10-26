@@ -257,6 +257,29 @@
       "title": "AudioStreamInfo",
       "type": "object"
     },
+    "Background": {
+      "additionalProperties": true,
+      "properties": {
+        "color": {
+          "default": "#000000",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Color",
+          "type": "string"
+        },
+        "mode": {
+          "default": "transparent",
+          "enum": [
+            "transparent",
+            "color",
+            "blur"
+          ],
+          "title": "Mode",
+          "type": "string"
+        }
+      },
+      "title": "Background",
+      "type": "object"
+    },
     "Batch": {
       "additionalProperties": false,
       "description": "Several commands applied in order as one; its inverse undoes them in reverse.",
@@ -734,6 +757,9 @@
           "default": null,
           "title": "Assetid"
         },
+        "background": {
+          "$ref": "#/$defs/Background"
+        },
         "enabled": {
           "default": true,
           "title": "Enabled",
@@ -782,6 +808,17 @@
         "name": {
           "title": "Name",
           "type": "string"
+        },
+        "resizeReference": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResizeReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "sourceIn": {
           "minimum": 0,
@@ -1795,6 +1832,31 @@
         "name"
       ],
       "title": "RenameProject",
+      "type": "object"
+    },
+    "ResizeReference": {
+      "additionalProperties": true,
+      "properties": {
+        "height": {
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "integer"
+        },
+        "transform": {
+          "$ref": "#/$defs/Transform"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "width",
+        "height",
+        "transform"
+      ],
+      "title": "ResizeReference",
       "type": "object"
     },
     "SetBeatIncluded": {

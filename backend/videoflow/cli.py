@@ -54,11 +54,15 @@ def desktop(
 
 
 @app.command("desktop-check", hidden=True)
-def desktop_check(media: Path, output: Path) -> None:
+def desktop_check(media: Path, output: Path, features: bool = False) -> None:
     """Run native Qt checks in a development or packaged runtime."""
     from videoflow.desktop.smoke import main as smoke
 
-    raise typer.Exit(smoke(["--media", str(media), "--output", str(output)]))
+    raise typer.Exit(
+        smoke(
+            ["--media", str(media), "--output", str(output), *(["--features"] if features else [])]
+        )
+    )
 
 
 @app.command()
