@@ -872,6 +872,14 @@
           "title": "Clips",
           "type": "array"
         },
+        "transitions": {
+          "items": {
+            "$ref": "#/$defs/EditorTransition"
+          },
+          "maxItems": 10000,
+          "title": "Transitions",
+          "type": "array"
+        },
         "version": {
           "const": 1,
           "default": 1,
@@ -880,6 +888,45 @@
         }
       },
       "title": "EditorDocument",
+      "type": "object"
+    },
+    "EditorTransition": {
+      "additionalProperties": true,
+      "description": "Transition at the cut between two adjacent video clips on one lane.\n\nIt is dormant (ignored) while the clips are missing or not adjacent, so edits\nnever fail because of a transition; see editor.transitions.",
+      "properties": {
+        "duration": {
+          "default": 15,
+          "maximum": 3600,
+          "minimum": 1,
+          "title": "Duration",
+          "type": "integer"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "leftId": {
+          "minLength": 1,
+          "title": "Leftid",
+          "type": "string"
+        },
+        "rightId": {
+          "minLength": 1,
+          "title": "Rightid",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/TransitionType",
+          "default": "dissolve"
+        }
+      },
+      "required": [
+        "id",
+        "leftId",
+        "rightId"
+      ],
+      "title": "EditorTransition",
       "type": "object"
     },
     "FitRect": {
@@ -2420,6 +2467,14 @@
           "type": "string"
         }
       ]
+    },
+    "TransitionType": {
+      "enum": [
+        "dissolve",
+        "dip_black",
+        "dip_white"
+      ],
+      "type": "string"
     },
     "TransitionTypeName": {
       "enum": [

@@ -96,9 +96,28 @@ class EditorClip(CamelModel):
         return self.source_out - self.source_in
 
 
+type TransitionType = Literal["dissolve", "dip_black", "dip_white"]
+
+
+class EditorTransition(CamelModel):
+    """Transition at the cut between two adjacent video clips on one lane.
+
+    It is dormant (ignored) while the clips are missing or not adjacent, so edits
+    never fail because of a transition; see editor.transitions.
+    """
+
+    id: str = Field(min_length=1)
+    left_id: str = Field(min_length=1)
+    right_id: str = Field(min_length=1)
+    type: TransitionType = "dissolve"
+    duration: int = Field(default=15, ge=1, le=3600)
+    """Requested frames, centred on the cut."""
+
+
 class EditorDocument(CamelModel):
     version: Literal[1] = 1
     clips: list[EditorClip] = Field(default_factory=list, max_length=10000)
+    transitions: list[EditorTransition] = Field(default_factory=list, max_length=10000)
 
     @model_validator(mode="after")
     def valid(self) -> "EditorDocument":

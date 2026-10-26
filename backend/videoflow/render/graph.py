@@ -4,9 +4,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from videoflow.core.time import Rational, frames_to_samples
-from videoflow.editor.models import EditorDocument, layout
+from videoflow.core.time import Rational, frames, frames_to_samples
+from videoflow.editor.models import EditorClip, EditorDocument
 from videoflow.editor.resolve import document_for, editable_document, validate_assets
+from videoflow.editor.transitions import plan_transitions
 from videoflow.project.models import Project
 
 type Preset = Literal["draft", "final"]
@@ -66,7 +67,14 @@ def render_document(project: Project) -> EditorDocument:
 def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
     """Original sources only. Input indices are local to each independent graph."""
     document = render_document(project)
-    clips, total = layout(document)
+    assets_by_id = {a.id: a for a in project.assets}
+
+    def source_frames(clip: EditorClip) -> int:
+        asset = assets_by_id.get(clip.asset_id or "")
+        return frames(asset.probe.duration_us, project.settings.frame_rate) if asset else 0
+
+    plan = plan_transitions(document, source_frames)
+    clips, total = plan.clips, plan.total
     if total < 1:
         raise ValueError("The edit has no enabled content to render")
     settings = project.settings
@@ -90,7 +98,7 @@ def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
     ]
     inputs: list[Path] = []
     audio_inputs: list[Path] = []
-    warnings: list[str] = []
+    warnings: list[str] = list(plan.warnings)
     assets = {a.id: a for a in project.assets}
     video_count = 0
     for clip in sorted(clips, key=lambda c: (c.layer, c.start, c.id)):
@@ -128,6 +136,10 @@ def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
                 f"setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop={clip.duration},"
                 f"trim=end_frame={clip.duration},{tone}setsar=1,format=rgba"
             )
+            fade_in = plan.video_fade_in.get(clip.id, 0)
+            # A dissolve fades the incoming picture (and its backdrop) in over the outgoing one.
+            alpha = f",fade=t=in:s=0:n={fade_in}:alpha=1" if fade_in else ""
+            prepare += alpha
             timing = f"settb=AVTB,setpts=PTS+{clip.start}*{rate.den}/{rate.num}/TB"
             enable = _window(clip.start, clip.start + clip.duration, rate)
             if clip.background.mode == "blur":
@@ -144,7 +156,7 @@ def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
                     color = clip.background.color.replace("#", "0x")
                     video.append(
                         f"color=c={color}:s={out_w}x{out_h}:r={fps},format=rgba,"
-                        f"trim=end_frame={clip.duration},{timing}[back{index}]"
+                        f"trim=end_frame={clip.duration}{alpha},{timing}[back{index}]"
                     )
             if clip.background.mode != "transparent":
                 video.append(
@@ -172,13 +184,38 @@ def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
                 clip.start + clip.duration, rate, sample_rate
             ) - frames_to_samples(clip.start, rate, sample_rate)
             delay = frames_to_samples(clip.start, rate, sample_rate)
+            fade_in, fade_out = plan.audio_fades.get(clip.id, (0, 0))
+            fades = ""
+            if fade_in:
+                fades += f"afade=t=in:ss=0:ns={frames_to_samples(fade_in, rate, sample_rate)},"
+            if fade_out:
+                n = frames_to_samples(fade_out, rate, sample_rate)
+                fades += f"afade=t=out:ss={max(0, count - n)}:ns={n},"
             audio.append(
                 f"[{index}:a:0]aresample={sample_rate},"
                 f"aformat=sample_fmts=fltp:channel_layouts=stereo,"
                 f"atrim=start_sample={source_in}:end_sample={source_in + count},"
                 f"asetpts=PTS-STARTPTS,apad=whole_len={count},atrim=end_sample={count},"
-                f"volume={_number(clip.gain_db)}dB,adelay={delay}S:all=1[s{index}]"
+                f"{fades}volume={_number(clip.gain_db)}dB,adelay={delay}S:all=1[s{index}]"
             )
+    for number, dip in enumerate(plan.dips):
+        # A dip covers the whole composite with a colour that fades in, then out.
+        ramps: list[str] = []
+        if dip.before:
+            ramps.append(f"fade=t=in:s=0:n={dip.before}:alpha=1")
+        if dip.after:
+            ramps.append(f"fade=t=out:s={dip.before}:n={dip.after}:alpha=1")
+        length = dip.before + dip.after
+        video.append(
+            f"color=c={dip.color}:s={out_w}x{out_h}:r={fps},format=rgba,"
+            f"trim=end_frame={length},{','.join(ramps)},settb=AVTB,"
+            f"setpts=PTS+{dip.start}*{rate.den}/{rate.num}/TB[dip{number}]"
+        )
+        video.append(
+            f"[v{video_count}][dip{number}]overlay=eof_action=pass:repeatlast=0:format=rgb:"
+            f"enable='{_window(dip.start, dip.start + length, rate)}'[v{video_count + 1}]"
+        )
+        video_count += 1
     video.append(
         # The black base is CFR and drives every overlay; an fps filter here drops the
         # final frame at EOF on FFmpeg 6.1-7.x.

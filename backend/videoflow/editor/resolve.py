@@ -1,13 +1,15 @@
 """Resolve the interactive document into the common exporter/render contract."""
 
 from videoflow.core.time import frame_to_us, frames
-from videoflow.editor.models import EditorDocument, Transform, layout
+from videoflow.editor.models import EditorClip, EditorDocument, Transform
+from videoflow.editor.transitions import active_transitions
 from videoflow.project.models import Project, ProjectSettings, VideoStreamInfo
 from videoflow.timeline.resolved import (
     ResolvedAudio,
     ResolvedClip,
     ResolvedTimeline,
     ResolvedTrack,
+    ResolvedTransition,
     TimelineWarning,
 )
 
@@ -92,9 +94,47 @@ def validate_assets(document: EditorDocument, project: Project) -> None:
 def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeline:
     settings = project.settings
     rate = settings.frame_rate
-    clips, duration = layout(document)
+
+    def source_frames(clip: EditorClip) -> int:
+        asset = project.asset(clip.asset_id or "")
+        return frames(asset.probe.duration_us, rate) if asset else clip.source_out
+
+    clips, duration, active = active_transitions(document, source_frames)
     tracks: list[ResolvedTrack] = []
     warnings: list[TimelineWarning] = []
+    base = min((c.layer for c in clips if c.kind == "video"), default=0)
+    transitions: list[ResolvedTransition] = []
+    for item in active:
+        t = item.transition
+        if next(c for c in clips if c.id == t.left_id).layer != base:
+            warnings.append(
+                TimelineWarning(
+                    code="editor_transition_layer",
+                    message=f"Transition {t.id} is above V1: rendered, not exported.",
+                )
+            )
+            continue
+        transitions.append(
+            ResolvedTransition(
+                transition_id=t.id,
+                after_item_id=t.left_id,
+                before_item_id=t.right_id,
+                type=t.type,
+                state="active",
+                duration=item.duration,
+                cut_frame=item.cut,
+                left_frames=item.before,
+                right_frames=item.after,
+                audio_duration=item.duration,
+            )
+        )
+    if transitions:
+        warnings.append(
+            TimelineWarning(
+                code="editor_transition_audio",
+                message="Audio crossfades of transitions are rendered but not exported.",
+            )
+        )
     for kind in ("audio", "video"):
         layers = sorted({c.layer for c in clips if c.kind == kind or c.kind == "gap"})
         for index, layer in enumerate(layers):
@@ -143,5 +183,6 @@ def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeli
         sample_rate=settings.sample_rate,
         duration=duration,
         tracks=tracks,
+        transitions=transitions,
         warnings=warnings,
     )
