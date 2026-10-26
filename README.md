@@ -56,6 +56,10 @@ Analysed imports get a short summary and topic sections (start/end time and a ti
 
 Import stacks similar retakes on parallel lanes. Select one and click Compare takes in clip properties: the takes play side by side, synced on their first common word, with words said in only one take highlighted. Pick a take with its button or keys 1–9; it is enabled and the other takes are disabled.
 
+## Transitions
+
+Select a video clip: Transitions in clip properties sets the cut to the previous or next clip to Cut, Cross dissolve, Dip to black or Dip to white, with a duration in seconds, or applies one transition to all cuts. Dissolves use source media beyond the cut and are shortened (with a warning) when there is not enough. Transitions show on the timeline, play in the preview and render in the MP4.
+
 ## Settings and local models
 
 Use Settings in the editor header to select transcription and summary engines, manage model downloads and set import/export defaults. Models always live in the application `models/` subdirectory; `VIDEOFLOW_MODELS_DIR` points there. Missing weights require an explicit download action. Compatible analysis JSON is reused first. Deterministic summaries need no generative model; optional Qwen summaries run locally on CPU. Development installs offering both optional engines use `uv sync --extra desktop --extra cpu --extra whisper --extra qwen` in `backend/`.

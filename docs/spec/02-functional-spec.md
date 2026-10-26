@@ -124,13 +124,13 @@ Priority: **P0** = MVP, **P1** = shortly after MVP, **P2** = later.
 
 | ID | Requirement | Prio |
 |----|-------------|------|
-| TR-01 | Apply a transition at any cut between two main-line clips; default duration 0.5 s; default alignment centered on the cut. | P0 |
-| TR-02 | MVP catalog: cut, cross dissolve, fade through black, fade through white. | P0 |
+| TR-01 | Apply a transition at any cut between two main-line clips; default duration 0.5 s; default alignment centered on the cut. | P0 (implemented, see 17) |
+| TR-02 | MVP catalog: cut, cross dissolve, fade through black, fade through white. | P0 (implemented, see 17) |
 | TR-03 | Extended catalog mapped to FFmpeg `xfade` (wipes, slides, circle open/close, zoom, pixelize, radial...). See 06-render-export.md §4. | P1 |
-| TR-04 | Audio crossfade follows the video transition by default; independent audio transition optional. | P0 |
+| TR-04 | Audio crossfade follows the video transition by default; independent audio transition optional. | P0 (follow implemented, see 17) |
 | TR-05 | Automatic micro-fade (10 ms) on audio hard cuts to avoid clicks. | P0 |
-| TR-06 | Warn when handles are insufficient; offer to shorten the transition or change its alignment (start / end of cut). | P0 |
-| TR-07 | Apply a transition to all cuts / to selected cuts in one action. | P0 |
+| TR-06 | Warn when handles are insufficient; offer to shorten the transition or change its alignment (start / end of cut). | P0 (shortening implemented, see 17) |
+| TR-07 | Apply a transition to all cuts / to selected cuts in one action. | P0 (all cuts implemented, see 17) |
 | TR-08 | Each transition shows its export compatibility (which target formats support it, which fall back to dissolve). | P1 |
 
 ### 4.7 Preview (PRV)
