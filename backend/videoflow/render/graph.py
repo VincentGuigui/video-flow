@@ -168,7 +168,9 @@ def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
                 f"volume={_number(clip.gain_db)}dB,adelay={delay}S:all=1[s{index}]"
             )
     video.append(
-        f"[v{video_count}]fps={fps},trim=end_frame={total},"
+        # The black base is CFR and drives every overlay; an fps filter here drops the
+        # final frame at EOF on FFmpeg 6.1-7.x.
+        f"[v{video_count}]trim=end_frame={total},"
         f"settb=expr={rate.den}/{rate.num},setpts=N,format=yuv420p[vout]"
     )
     if audio_inputs:
