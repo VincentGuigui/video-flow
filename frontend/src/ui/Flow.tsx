@@ -223,7 +223,7 @@ export function Flow() {
     <section className="flow-panel">
       <div className="flow-toolbar">
         <div className="flow-heading">
-          <span className="eyebrow">03</span>
+          
           <strong>Clip flow</strong>
           <span className="count-badge">{pairs.length} clips</span>
         </div>

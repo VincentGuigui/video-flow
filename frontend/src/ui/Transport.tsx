@@ -96,7 +96,7 @@ export function Transport() {
     <section className="transport-panel">
       <div className="transport-heading">
         <span>
-          <span className="eyebrow">02</span>{" "}
+          {" "}
           {focus ? "Clip timeline" : "Assembly timeline"}
         </span>
         <span className="transport-time">

@@ -284,7 +284,7 @@ export function Preview() {
     <section className="preview-panel">
       <div className="panel-title">
         <span>
-          <span className="eyebrow">01</span> Preview & editor
+           Preview & editor
         </span>
         <span className="muted">
           {visible.some((c) => c.kind === "video")
