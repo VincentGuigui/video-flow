@@ -377,13 +377,7 @@ export function Preview() {
             </div>
           )}
         </div>
-        <span className="canvas-caption">
-          {width} × {height}
-          <i />{" "}
-          {project.settings.frameRate.den === 1001
-            ? "29.97 / non-drop"
-            : `${rate} fps`}
-        </span>
+
       </div>
       <div className="preview-tools">
         <div className="segmented">

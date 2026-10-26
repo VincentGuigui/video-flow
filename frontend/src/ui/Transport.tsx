@@ -117,7 +117,7 @@ export function Transport() {
           <span>/ {timecode(total, rate)}</span>
         </span>
         <span className="muted">
-          {focus ? "2s context on either side" : "Drag the cursor to scrub"}
+          Drag the cursor to scrub
         </span>
       </div>
       <div
