@@ -456,11 +456,7 @@ export function App() {
         </main>
       </div>
       <footer className="app-footer">
-        <span>
-          <span className="status-dot" />
-          Local workspace <span className="footer-dot">·</span> Your media stays
-          yours.
-        </span>
+
         <span>
           {resolved.total
             ? `${timecode(resolved.total, rate)} assembled`

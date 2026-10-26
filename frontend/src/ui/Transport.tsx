@@ -147,10 +147,6 @@ export function Transport() {
         </div>
       </div>
       <div className="transport-buttons">
-        <div className="transport-note">
-          <span className="status-dot" />
-          {playing ? "Playing" : focus ? "Focused clip" : "Full assembly"}
-        </div>
         <div className="navigation">
           <button title="Beginning (Home)" onClick={() => seek(start)}>
             <SkipBack size={16} />
