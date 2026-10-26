@@ -14,4 +14,4 @@ Build into a fresh staging directory when an existing installation contains `mod
 
 MP4 validation covers integer and NTSC frame counts, layer ordering, crop/position, explicit black/silent clips, enabled state, audio-only edits, normalization, offline failures, cancellation and all three clip-background modes. H.264 MP4 flattens transparent areas over underlying video or black. Legacy transition/fade rendering fails explicitly rather than silently omitting effects.
 
-Latest editor refinement checks: 423 backend tests passed (one optional ONNX skip), 29 frontend tests passed, and real Qt checks passed for the unified timeline, live numeric properties, AV relinking and placeholder-free audio trimming. Render tests also verify that retained audio time becomes actual silence in MP4.
+Latest editor refinement checks: 423 backend tests passed (one optional ONNX skip), 31 frontend tests passed, and real Qt checks passed for the unified timeline, live numeric properties, AV relinking and placeholder-free audio trimming. Render tests also verify that retained audio time becomes actual silence in MP4.
