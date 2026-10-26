@@ -16,6 +16,7 @@ htmlcov/
 # Local tools (static FFmpeg etc.) and caches
 .tools/
 tools/
+/releases/
 .cache/
 samples/
 !samples/README.md

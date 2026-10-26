@@ -8,7 +8,7 @@ Validated on Windows x64, Python 3.13 and PySide6 6.12. Linux and Windows ARM64 
 - Real Qt window: native scoped drop, unchanged originals, no original copies, actual playback, Space, focused linked split, undo, reload, page zoom, project home, blurred preview, validated MP4 and Save as all passed.
 - Standalone package: the same editor checks passed. A separate packaged check downloaded Silero through the frozen worker, transcribed generated speech with Whisper, summarized it with Qwen and copied the project with its analysis. The check completed in 71.31 seconds and confirmed owned-backend shutdown. This is a synthetic-fixture check, not a real-rush accuracy or performance benchmark.
 
-The current local executable is `tools/release/Video-Flow/Video-Flow.exe`. Models are not tracked in Git. The local validation installation retains its downloaded model cache; another installation asks before downloading missing models. Test engine preferences were removed after validation.
+The current local executable is `releases/Video-Flow/Video-Flow.exe`. Models are not tracked in Git. The local validation installation retains its downloaded model cache; another installation asks before downloading missing models. Test engine preferences were removed after validation.
 
 Build into a fresh staging directory when an existing installation contains `models/` or `settings.json`; PyInstaller's `--noconfirm` replaces its output directory. Preserve those application-owned files when updating an installation. FFmpeg remains separately provisioned beside the executable.
 

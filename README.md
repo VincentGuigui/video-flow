@@ -46,6 +46,8 @@ just test | smoke | lint | serve        # or: scripts/dev.sh test | smoke | lint
 
 `test` runs the unit tier (CPU, synthetic media, no network; tests that need the `ml` extra are skipped without it); `smoke` runs the tests marked `smoke` (small CPU models, downloads them; needs an inference extra such as `cpu`/`smoke`, and `whisper` for the faster-whisper test). Synthetic samples are generated with FFmpeg (needs the `flite` filter) and cached under `VIDEOFLOW_SAMPLES_CACHE`.
 
+The standalone desktop build is in `releases/Video-Flow/Video-Flow.exe`. Keep the entire `Video-Flow/` folder together when moving or distributing it. Repository `tools/` is reserved for development dependencies.
+
 ## Settings and local models
 
 Use Settings in the editor header to select transcription and summary engines, manage model downloads and set import/export defaults. Models always live in the application `models/` subdirectory; `VIDEOFLOW_MODELS_DIR` points there. Missing weights require an explicit download action. Compatible analysis JSON is reused first. Deterministic summaries need no generative model; optional Qwen summaries run locally on CPU. Development installs offering both optional engines use `uv sync --extra desktop --extra cpu --extra whisper --extra qwen` in `backend/`.

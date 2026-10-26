@@ -1,4 +1,5 @@
 # PyInstaller one-folder desktop build. Run after `npm run build` in frontend/.
+# Output: pyinstaller --distpath releases --workpath .cache/pyinstaller scripts/desktop.spec
 from pathlib import Path
 from PyInstaller.utils.hooks import collect_data_files, copy_metadata
 import PySide6
