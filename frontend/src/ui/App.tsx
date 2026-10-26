@@ -53,7 +53,9 @@ import { Preview } from "./Preview";
 import { Flow } from "./Flow";
 import { Transport } from "./Transport";
 import { Transcript } from "./Transcript";
-import { currentWindow, togglePlay } from "../playback";
+import { useAnalysis } from "./useAnalysis";
+import { currentRange, currentWindow, togglePlay } from "../playback";
+import { autoTrim, trimToRange } from "../range";
 import { ImportDialog } from "./Imports";
 import { native, type NativeFile, type NativeSelection } from "../desktop";
 
@@ -655,11 +657,21 @@ export function App() {
 function Inspector({ clip }: { clip: Clip | undefined }) {
   const { project, document, save, busy } = useEditor();
   const [tab, setTab] = useState("Clip");
+  const analysis = useAnalysis(clip?.assetId ?? null);
   const rate = project ? fps(project.settings) : 30;
   const candidates = clip ? linkCandidates(pack(document), clip.id) : [];
   const asset = project?.assets.find((a) => a.id === clip?.assetId);
   const video = asset?.probe.video;
   const restorable = clip ? canRestoreAudio(document, clip.id, asset) : false;
+  const rangeTrim = clip
+    ? trimToRange(document, clip.id, currentRange())
+    : null;
+  const padding = project?.settings.clipPadding as
+    { beforeUs: number; afterUs: number } | undefined;
+  const silenceTrim =
+    clip && analysis?.words
+      ? autoTrim(document, clip.id, analysis.words, rate, padding)
+      : null;
   const fitMode =
     clip && video && project
       ? nextFitMode(clip, video, project.settings)
@@ -842,6 +854,37 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
               <Volume2 size={14} />
               Restore original audio
             </button>
+          )}
+          {clip.kind !== "gap" && (
+            <div className="inspector-section trim-actions">
+              <span className="overline">TRIM</span>
+              <button
+                className="button trim-range-action"
+                disabled={busy || !rangeTrim}
+                title="Keep only the part of the clip inside the timeline range; later clips move earlier"
+                onClick={() => {
+                  if (!rangeTrim) return;
+                  void save(rangeTrim);
+                  useEditor.getState().set({ range: null, rangeHandle: null });
+                }}
+              >
+                <Scissors size={14} />
+                Trim clip to range
+              </button>
+              <button
+                className="button auto-trim-action"
+                disabled={busy || !silenceTrim}
+                title={
+                  analysis?.words?.length
+                    ? "Remove silence before the first and after the last word"
+                    : "Needs a transcript (import with analysis)"
+                }
+                onClick={() => silenceTrim && void save(silenceTrim)}
+              >
+                <Scissors size={14} />
+                Auto-trim silence
+              </button>
+            </div>
           )}
           <div className="inspector-tip">
             <Scissors size={17} />
