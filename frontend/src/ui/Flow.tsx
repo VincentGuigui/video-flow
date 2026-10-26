@@ -171,6 +171,11 @@ export function Flow() {
     window.addEventListener("pointerup", end, { once: true });
   }
   const wheel = (event: WheelEvent) => {
+    if (event.shiftKey && !event.ctrlKey && scroll.current) {
+      event.preventDefault();
+      scroll.current.scrollLeft += event.deltaY || event.deltaX;
+      return;
+    }
     if (!event.ctrlKey || !scroll.current) return;
     event.preventDefault();
     const container = scroll.current,
@@ -540,7 +545,7 @@ export function Flow() {
         <span>
           <MousePointer2 size={12} />
           Double-click a clip to edit <i />
-          Ctrl + wheel to zoom
+          Ctrl + wheel to zoom <i /> Shift + wheel to scroll
         </span>
       </div>
     </section>

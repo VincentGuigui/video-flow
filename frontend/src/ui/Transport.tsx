@@ -46,6 +46,9 @@ export function Transport() {
     const node = root.current;
     if (!node) return;
     const wheel = (e: WheelEvent) => {
+      if (e.shiftKey && !e.ctrlKey) {
+        e.preventDefault(); node.scrollLeft += e.deltaY || e.deltaX; return;
+      }
       if (!e.ctrlKey) return;
       e.preventDefault();
       const pointer = e.clientX - node.getBoundingClientRect().left;
