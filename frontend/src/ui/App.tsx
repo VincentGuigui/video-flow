@@ -52,6 +52,7 @@ import { TransformInput } from "./TransformInput";
 import { Preview } from "./Preview";
 import { Flow } from "./Flow";
 import { Transport } from "./Transport";
+import { Transcript } from "./Transcript";
 import { ImportDialog } from "./Imports";
 import { native, type NativeFile, type NativeSelection } from "../desktop";
 
@@ -673,15 +674,17 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
   return (
     <aside className="inspector">
       <div className="inspector-tabs">
-        {["Clip", "Project"].map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={tab === t ? "active" : ""}
-          >
-            {t}
-          </button>
-        ))}
+        {(clip ? ["Clip", "Transcript", "Project"] : ["Clip", "Project"]).map(
+          (t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={tab === t ? "active" : ""}
+            >
+              {t}
+            </button>
+          ),
+        )}
       </div>
       {tab === "Project" ? (
         <div className="inspector-content">
@@ -700,6 +703,8 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
             </p>
           </div>
         </div>
+      ) : tab === "Transcript" && clip ? (
+        <Transcript clip={clip} />
       ) : clip ? (
         <div className="inspector-content">
           <div className={`inspector-kind ${clip.kind}`}>

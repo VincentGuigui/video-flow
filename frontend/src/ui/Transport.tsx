@@ -27,7 +27,8 @@ import {
 import { useEditor } from "../store";
 
 export function Transport() {
-  const { project, document, frame, playing, focus, set } = useEditor();
+  const { project, document, frame, highlight, playing, focus, set } =
+    useEditor();
   const root = useRef<HTMLDivElement>(null);
   const { scale, scroll, width, set: setTimeline } = useTimeline();
   const previousFocus = useRef<string | null | undefined>(undefined);
@@ -206,6 +207,16 @@ export function Transport() {
                 />
               ))}
           </div>
+          {highlight && (
+            <div
+              className="overview-highlight"
+              data-testid="timeline-highlight"
+              style={{
+                left: origin + highlight.start * scale,
+                width: Math.max(2, (highlight.end - highlight.start) * scale),
+              }}
+            />
+          )}
           <div
             className="overview-playhead"
             style={{ left: origin + frame * scale }}

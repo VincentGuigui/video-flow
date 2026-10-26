@@ -27,6 +27,7 @@ interface State {
   selected: string | null;
   focus: string | null;
   frame: number;
+  highlight: { start: number; end: number } | null;
   playing: boolean;
   busy: boolean;
   error: string;
@@ -53,6 +54,7 @@ export const useEditor = create<State>((set, get) => ({
   selected: null,
   focus: null,
   frame: 0,
+  highlight: null,
   playing: false,
   busy: false,
   error: "",
@@ -74,6 +76,7 @@ export const useEditor = create<State>((set, get) => ({
               selected: null,
               focus: null,
               frame: 0,
+              highlight: null,
               playing: false,
               history: [],
               future: [],
