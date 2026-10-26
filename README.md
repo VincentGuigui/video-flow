@@ -80,3 +80,4 @@ OTIO retains exact transition definitions, editing identifiers and clip settings
 
 - [Specification](docs/spec/README.md), with authoritative [desktop architecture](docs/spec/10-desktop-shell.md) and [editor/settings refinements](docs/spec/11-editor-refinements.md)
 - [Dependencies and accelerator matrix](docs/dependencies.md)
+- [Agent guidelines](AGENTS.md): docs location, commit and spec rules
