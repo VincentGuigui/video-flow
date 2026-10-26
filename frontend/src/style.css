@@ -1848,3 +1848,5 @@ kbd {
     display: none;
   }
 }
+
+.alignment-guide { position:absolute; top:30px; width:2px; background:#2aaa77; pointer-events:none; z-index:12; }

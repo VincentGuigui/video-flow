@@ -218,13 +218,6 @@ export function Flow() {
     () => base.clips.filter((c) => c.kind !== "audio" || !c.linkId),
     [base],
   );
-  const byStart = useMemo(() => {
-    const index = new Map<number, Clip[]>();
-    for (const c of pairs) {
-      if (c.enabled) index.set(c.start, [...(index.get(c.start) ?? []), c]);
-    }
-    return index;
-  }, [pairs]);
   const actualIds = new Set(resolved.clips.map((c) => c.id));
   return (
     <section className="flow-panel">
@@ -357,52 +350,10 @@ export function Flow() {
               </span>
             </div>
           ))}
-          <svg
-            className="flow-connectors"
-            style={{ width, height: layers * 112 + 58 }}
-            aria-hidden="true"
-          >
-            <defs>
-              <marker
-                id="arrow"
-                markerWidth="6"
-                markerHeight="6"
-                refX="5"
-                refY="3"
-                orient="auto"
-              >
-                <path d="M0,0 L6,3 L0,6" fill="none" stroke="#438775" />
-              </marker>
-            </defs>
-            {pairs
-              .filter((c) => c.enabled && visible(c))
-              .flatMap((c) => {
-                const following = (
-                  byStart.get(c.start + duration(c)) ?? []
-                ).filter(
-                  (n) =>
-                    n.enabled &&
-                    n.id !== c.id &&
-                    n.start === c.start + duration(c),
-                );
-                return following.map((n) => {
-                  const x1 = 56 + (c.start + duration(c)) * px,
-                    y1 = 78 + (layers - 1 - c.layer) * 112,
-                    x2 = 56 + n.start * px,
-                    y2 = 78 + (layers - 1 - n.layer) * 112;
-                  return (
-                    <path
-                      key={`${c.id}-${n.id}`}
-                      d={`M${x1 - 5},${y1} C${x1 + 26},${y1} ${x2 - 26},${y2} ${x2 + 4},${y2}`}
-                      stroke="#438775"
-                      strokeWidth="2"
-                      fill="none"
-                      markerEnd="url(#arrow)"
-                    />
-                  );
-                });
-              })}
-          </svg>
+          {dragging && [...new Set(base.clips.filter(c => c.id === selected || (!!selectedClip?.linkId && c.linkId === selectedClip.linkId)).flatMap(c => [c.start,c.start+duration(c)])
+            .filter(edge => base.clips.some(c => c.id !== selected && (!selectedClip?.linkId || c.linkId !== selectedClip.linkId) && (c.start === edge || c.start+duration(c) === edge))))].map(edge => (
+            <div key={edge} className="alignment-guide" style={{left:56+edge*px,height:layers*112+40}} />
+          ))}
           {base.clips.filter(visible).map((c) => {
             const linked = !!c.linkId,
               kind = c.kind;
@@ -612,6 +563,7 @@ export function Flow() {
         rate) /
         1e6,
     );
+    setDragging(true);
     const motion = (event: PointerEvent) => {
       latest = trim(
         original,
@@ -626,6 +578,7 @@ export function Flow() {
     const end = () => {
       window.removeEventListener("pointermove", motion);
       window.removeEventListener("pointerup", end);
+      setDragging(false);
       apply(latest);
     };
     window.addEventListener("pointermove", motion);
