@@ -53,6 +53,8 @@ import { Preview } from "./Preview";
 import { Flow } from "./Flow";
 import { Transport } from "./Transport";
 import { Transcript } from "./Transcript";
+import { Compare } from "./Compare";
+import { stackedTakes } from "../compare";
 import { useAnalysis } from "./useAnalysis";
 import { currentRange, currentWindow, togglePlay } from "../playback";
 import { autoTrim, trimToRange } from "../range";
@@ -182,7 +184,8 @@ export function App() {
         home ||
         importFiles ||
         help ||
-        output
+        output ||
+        useEditor.getState().compare
       )
         return;
       const s = useEditor.getState(),
@@ -536,6 +539,7 @@ export function App() {
           onClose={() => setImportFiles(null)}
         />
       )}
+      {state.compare && <Compare clipId={state.compare} />}
       {settings && (
         <Settings requested={modelPrompt} onClose={() => setSettings(false)} />
       )}
@@ -663,6 +667,7 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
   const asset = project?.assets.find((a) => a.id === clip?.assetId);
   const video = asset?.probe.video;
   const restorable = clip ? canRestoreAudio(document, clip.id, asset) : false;
+  const takes = clip ? stackedTakes(document, clip.id) : [];
   const rangeTrim = clip
     ? trimToRange(document, clip.id, currentRange())
     : null;
@@ -853,6 +858,17 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
             >
               <Volume2 size={14} />
               Restore original audio
+            </button>
+          )}
+          {takes.length > 1 && (
+            <button
+              className="button compare-action"
+              onClick={() =>
+                useEditor.getState().set({ compare: clip.id, playing: false })
+              }
+            >
+              <Layers size={14} />
+              Compare takes ({takes.length})
             </button>
           )}
           {clip.kind !== "gap" && (

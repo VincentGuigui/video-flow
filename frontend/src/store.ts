@@ -31,6 +31,8 @@ interface State {
   // null follows the default range (focused clip ± 2 s, else the whole edit).
   range: Range | null;
   rangeHandle: Handle | null;
+  // Clip id whose stacked takes are open in the compare view.
+  compare: string | null;
   playing: boolean;
   busy: boolean;
   error: string;
@@ -59,6 +61,7 @@ export const useEditor = create<State>((set, get) => ({
   frame: 0,
   range: null,
   rangeHandle: null,
+  compare: null,
   playing: false,
   busy: false,
   error: "",
