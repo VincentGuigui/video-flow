@@ -119,7 +119,21 @@ export function pack(doc: Document): Document {
       ...c,
       start: position(c.start),
       heldRange: c.heldRange
-        ? { start: position(c.heldRange.start), end: position(c.heldRange.end) }
+        ? c.enabled
+          ? {
+              start: position(c.heldRange.start),
+              end: position(c.heldRange.end),
+            }
+          : {
+              start: Math.max(
+                0,
+                position(c.start) + c.heldRange.start - c.start,
+              ),
+              end:
+                Math.max(0, position(c.start) + c.heldRange.start - c.start) +
+                c.heldRange.end -
+                c.heldRange.start,
+            }
         : c.heldRange,
     })),
   };

@@ -297,3 +297,28 @@ it("audio trims a linked pair together without moving following clips", () => {
   expect(result.clips.some((c) => c.kind === "gap")).toBe(false);
   expect(layout(result).total).toBe(200);
 });
+
+it("preserves a valid retained range when trimmed audio is disabled and re-enabled", () => {
+  const doc = { version: 1 as const, clips: [c("sound", 0, "audio")] };
+  const trimmed = trimAudio(doc, "sound", "in", 20, 300);
+  trimmed.clips[0].enabled = false;
+  const packed = pack(trimmed);
+  expect(packed.clips[0].heldRange!.end).toBeGreaterThan(
+    packed.clips[0].heldRange!.start,
+  );
+  packed.clips[0].enabled = true;
+  expect(layout(packed).total).toBe(100);
+});
+it("moves retained audio time with later clips during video ripple trimming", () => {
+  const doc = {
+    version: 1 as const,
+    clips: [c("video"), c("sound", 100, "audio")],
+  };
+  const sound = trimAudio(doc, "sound", "in", 20, 300);
+  const result = trim(sound, "video", "out", -10, true, 300);
+  expect(result.clips.find((c) => c.id === "sound")).toMatchObject({
+    start: 110,
+    heldRange: { start: 90, end: 190 },
+  });
+  expect(layout(result).total).toBe(190);
+});
