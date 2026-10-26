@@ -65,6 +65,16 @@ export const useEditor = create<State>((set, get) => ({
     try {
       const r = await api<Result>("/project");
       set({
+        ...(get().project?.id !== r.project.id
+          ? {
+              selected: null,
+              focus: null,
+              frame: 0,
+              playing: false,
+              history: [],
+              future: [],
+            }
+          : {}),
         project: r.project,
         document: r.editor,
         roots: r.mediaRoots ?? [],
