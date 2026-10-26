@@ -354,6 +354,13 @@ function consumeGaps(doc: Document, a: number, b: number, layer: number) {
     return parts;
   });
 }
+export function fitPicture(video: NonNullable<Asset["probe"]["video"]>, settings: Settings, fill=false): Transform {
+  const rotated = video.rotation === 90 || video.rotation === 270;
+  const w = rotated ? video.height : video.width, h = rotated ? video.width : video.height;
+  const factor = (fill ? Math.max : Math.min)(settings.width/w,settings.height/h);
+  return {...defaultTransform(),x:(settings.width-w*factor)/2,y:(settings.height-h*factor)/2,width:w*factor,height:h*factor};
+}
+
 export function resize(
   doc: Document,
   old: Settings,

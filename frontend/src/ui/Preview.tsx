@@ -4,9 +4,10 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { Crop, Maximize2, Move, Film, Music2, RotateCcw } from "lucide-react";
+import { Crop, Maximize2, Move, Film, Music2, Minimize2 } from "lucide-react";
 import {
   clone,
+  fitPicture,
   duration,
   fps,
   layout,
@@ -110,6 +111,9 @@ export function Preview() {
   const selection = resolved.clips.find(
     (c) => c.id === selected && c.kind === "video" && !!focus,
   );
+  const sourceVideo = project.assets.find(a=>a.id===selection?.assetId)?.probe.video;
+  const fitted = sourceVideo ? fitPicture(sourceVideo,project.settings) : null;
+  const nextFill = !!selection && !!fitted && (Object.keys(fitted) as (keyof Transform)[]).every(k=>Math.abs(fitted[k]-selection.transform[k])<.01);
   const scale = Math.max(
     0.01,
     Math.min((size.width - 90) / width, (size.height - 36) / height),
@@ -403,36 +407,20 @@ export function Preview() {
         </span>}
         {selection && (
           <button
-            className="icon-button"
-            title="Reset transform to fit"
+            className="button"
+            title={nextFill ? "Scale to fill" : "Scale to fit"}
             onClick={() => {
               const doc = clone(document),
                 c = doc.clips.find((c) => c.id === selection.id)!,
                 asset = project.assets.find((a) => a.id === c.assetId);
               if (asset?.probe.video) {
-                const v = asset.probe.video;
-                const rotated = v.rotation === 90 || v.rotation === 270;
-                const displayWidth = rotated ? v.height : v.width,
-                  displayHeight = rotated ? v.width : v.height;
-                const f = Math.min(
-                  width / displayWidth,
-                  height / displayHeight,
-                );
-                c.transform = {
-                  x: (width - displayWidth * f) / 2,
-                  y: (height - displayHeight * f) / 2,
-                  width: displayWidth * f,
-                  height: displayHeight * f,
-                  cropLeft: 0,
-                  cropRight: 0,
-                  cropTop: 0,
-                  cropBottom: 0,
-                };
+                c.transform = fitPicture(asset.probe.video,project.settings,nextFill);
                 void save(doc);
               }
             }}
           >
-            <RotateCcw size={14} />
+            {nextFill ? <Maximize2 size={14}/> : <Minimize2 size={14}/>}
+            {nextFill ? "Scale to fill" : "Scale to fit"}
           </button>
         )}
       </div>

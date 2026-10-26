@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   defaultTransform,
+  fitPicture,
   detach,
   duration,
   keyboardStep,
@@ -210,4 +211,13 @@ it("restores landscape transforms after portrait and retains subsequent edits", 
   expect(resize(portrait,{...settings,width:1080,height:1920},1920,1080).clips[0].transform).toEqual(initial.clips[0].transform);
   portrait.clips[0].transform.x += 30;
   expect(resize(portrait,{...settings,width:1080,height:1920},1920,1080).clips[0].transform.x).not.toBe(0);
+});
+
+it("fits and fills rotated and portrait sources without stretching", () => {
+  const settings={width:1920,height:1080,frameRate:{num:30,den:1}};
+  const video={width:1920,height:1080,rotation:90};
+  const fit=fitPicture(video,settings), fill=fitPicture(video,settings,true);
+  expect(fit.height).toBe(1080);expect(fill.width).toBe(1920);
+  expect(fit.width/fit.height).toBeCloseTo(9/16);
+  expect(fill.width/fill.height).toBeCloseTo(9/16);
 });
