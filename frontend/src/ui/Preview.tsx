@@ -74,7 +74,7 @@ function Media({
 }
 
 export function Preview() {
-  const { project, document, selected, frame, playing, save, set, busy } =
+  const { project, document, selected, focus, frame, playing, save, set, busy } =
     useEditor();
   const host = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 800, height: 400 });
@@ -108,7 +108,7 @@ export function Preview() {
         (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
     );
   const selection = resolved.clips.find(
-    (c) => c.id === selected && c.kind === "video",
+    (c) => c.id === selected && c.kind === "video" && !!focus,
   );
   const scale = Math.max(
     0.01,
@@ -380,7 +380,7 @@ export function Preview() {
 
       </div>
       <div className="preview-tools">
-        <div className="segmented">
+        {focus && <div className="segmented">
           <button
             title="Scale & move"
             className={mode === "scale" ? "active" : ""}
@@ -397,10 +397,10 @@ export function Preview() {
             <Crop size={14} />
             Crop
           </button>
-        </div>
-        <span className="hint">
+        </div>}
+        {focus && <span className="hint">
           <Move size={12} /> Drag to position · Shift stretch · Alt symmetric
-        </span>
+        </span>}
         {selection && (
           <button
             className="icon-button"
