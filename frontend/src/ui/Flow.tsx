@@ -23,6 +23,7 @@ import {
   layout,
   move,
   pack,
+  occupied,
   partners,
   remove,
   split,
@@ -93,7 +94,11 @@ export function Flow() {
     48 + (layers - 1 - c.layer) * 112 >= viewport.top - 180 &&
     48 + (layers - 1 - c.layer) * 112 <= viewport.top + viewport.height + 180;
   const selectedClip = base.clips.find((c) => c.id === selected);
-  const width = Math.max(viewport.width, 112 + resolved.total * px);
+  const width = Math.max(
+    viewport.width,
+    112 +
+      Math.max(resolved.total, ...base.clips.map((c) => occupied(c)[1])) * px,
+  );
   function apply(next: Document) {
     setDraft(null);
     void save(next);

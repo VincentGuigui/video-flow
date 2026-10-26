@@ -17,7 +17,7 @@ import {
   ZoomOut,
   Focus,
 } from "lucide-react";
-import { duration, fps, layout, timecode } from "../model";
+import { duration, fps, layout, pack, occupied, timecode } from "../model";
 import {
   useTimeline,
   useTimelineWheel,
@@ -35,6 +35,11 @@ export function Transport() {
   const resolved = layout(document),
     rate = project ? fps(project.settings) : 30,
     total = resolved.total;
+  const extent = Math.max(
+    total,
+    ...pack(document).clips.map((c) => occupied(c)[1]),
+  );
+  const fitSpan = total || extent || Math.round(rate * 10);
   const selected = resolved.clips.find((c) => c.id === focus),
     start = selected ? Math.max(0, selected.start - Math.round(rate * 2)) : 0,
     end = selected
@@ -54,7 +59,7 @@ export function Transport() {
   function fitRange() {
     const next = Math.max(
       0.001,
-      (width - origin * 2) / Math.max(1, end - start),
+      (width - origin * 2) / Math.max(1, end - start || fitSpan),
     );
     setTimeline({
       scale: next,
@@ -66,7 +71,7 @@ export function Transport() {
     const changed = previousFocus.current !== focus;
     previousFocus.current = focus;
     if (changed || useTimeline.getState().fitting) fitRange();
-  }, [focus, width, total]);
+  }, [focus, width, total, extent]);
   useEffect(() => {
     if (root.current && Math.abs(root.current.scrollLeft - scroll) > 1)
       root.current.scrollLeft = scroll;
@@ -104,7 +109,8 @@ export function Transport() {
       0,
       Math.floor((scroll - origin) / scale / rate / step) * step,
     );
-    t <= Math.min(total / rate, (scroll + width) / scale / rate);
+    t <=
+    Math.min(Math.max(total, extent) / rate, (scroll + width) / scale / rate);
     t += step
   )
     ticks.push(t);
@@ -138,7 +144,7 @@ export function Transport() {
           <span>
             {Math.round(
               (scale /
-                Math.max(0.001, (width - origin * 2) / Math.max(1, total))) *
+                Math.max(0.001, (width - origin * 2) / Math.max(1, fitSpan))) *
                 100,
             )}
             %
@@ -169,7 +175,12 @@ export function Transport() {
       >
         <div
           className="overview-content"
-          style={{ width: Math.max(width, origin * 2 + total * scale) }}
+          style={{
+            width: Math.max(
+              width,
+              origin * 2 + Math.max(extent, total) * scale,
+            ),
+          }}
         >
           <div className="overview-ruler">
             {ticks.map((t) => (
