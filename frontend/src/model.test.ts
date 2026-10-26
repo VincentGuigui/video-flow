@@ -303,6 +303,7 @@ it("preserves a valid retained range when trimmed audio is disabled and re-enabl
   const trimmed = trimAudio(doc, "sound", "in", 20, 300);
   trimmed.clips[0].enabled = false;
   const packed = pack(trimmed);
+  expect(packed.clips[0].start).toBe(20);
   expect(packed.clips[0].heldRange!.end).toBeGreaterThan(
     packed.clips[0].heldRange!.start,
   );

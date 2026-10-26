@@ -117,7 +117,10 @@ export function pack(doc: Document): Document {
     ...doc,
     clips: doc.clips.map((c) => ({
       ...c,
-      start: position(c.start),
+      start:
+        c.heldRange && !c.enabled
+          ? position(c.heldRange.start) + c.start - c.heldRange.start
+          : position(c.start),
       heldRange: c.heldRange
         ? c.enabled
           ? {
@@ -125,12 +128,9 @@ export function pack(doc: Document): Document {
               end: position(c.heldRange.end),
             }
           : {
-              start: Math.max(
-                0,
-                position(c.start) + c.heldRange.start - c.start,
-              ),
+              start: position(c.heldRange.start),
               end:
-                Math.max(0, position(c.start) + c.heldRange.start - c.start) +
+                position(c.heldRange.start) +
                 c.heldRange.end -
                 c.heldRange.start,
             }
