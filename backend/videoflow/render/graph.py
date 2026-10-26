@@ -26,6 +26,18 @@ class RenderGraph:
     warnings: list[str]
 
 
+def _window(start: int, end: int, rate: Rational) -> str:
+    """Overlay enable expression for frames [start, end), by timestamp.
+
+    Frame counters (n) are unreliable once overlays are chained; half-frame margins
+    keep the comparison exact under timestamp rounding.
+    """
+    return (
+        f"gte(t,{2 * start - 1}*{rate.den}/{2 * rate.num})"
+        f"*lt(t,{2 * end - 1}*{rate.den}/{2 * rate.num})"
+    )
+
+
 def _number(value: float) -> str:
     return f"{value:.8f}".rstrip("0").rstrip(".") or "0"
 
@@ -117,7 +129,7 @@ def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
                 f"trim=end_frame={clip.duration},{tone}setsar=1,format=rgba"
             )
             timing = f"settb=AVTB,setpts=PTS+{clip.start}*{rate.den}/{rate.num}/TB"
-            enable = f"gte(n,{clip.start})*lt(n,{clip.start + clip.duration})"
+            enable = _window(clip.start, clip.start + clip.duration, rate)
             if clip.background.mode == "blur":
                 video.append(prepare + f",split=2[fg{index}][bg{index}]")
                 # Match preview: cover the viewport with an extra 8% overscan before blur.
@@ -148,7 +160,7 @@ def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
             video.append(
                 f"[v{video_count}][p{index}]overlay=x={x}:y={y}:"
                 f"eof_action=pass:repeatlast=0:format=rgb:"
-                f"enable='gte(n,{clip.start})*lt(n,{clip.start + clip.duration})'"
+                f"enable='{enable}'"
                 f"[v{video_count + 1}]"
             )
             video_count += 1

@@ -276,3 +276,38 @@ def test_digital_silence_skips_invalid_loudnorm_filter():
     assert measurement('{"input_i":"-inf", "input_tp":"-inf"}') is None
     with pytest.raises(ValueError, match="measurements"):
         measurement("no JSON")
+
+
+async def test_sequential_clips_on_one_lane_both_render(edit, tmp_path):
+    # Chained overlays once hid the second clip of a lane after a cut.
+    red, blue = (a.id for a in edit.project.assets)
+    doc = EditorDocument(
+        clips=[
+            EditorClip(
+                id="first",
+                kind="video",
+                asset_id=red,
+                name="Red",
+                start=0,
+                source_in=0,
+                source_out=25,
+                transform=Transform(width=160, height=90),
+            ),
+            EditorClip(
+                id="second",
+                kind="video",
+                asset_id=blue,
+                name="Blue",
+                start=25,
+                source_in=5,
+                source_out=30,
+                transform=Transform(width=160, height=90),
+            ),
+        ]
+    )
+    project, _ = SetEditor(document=doc).apply(edit.project)
+    edit.save(project)
+    output = await render_project(edit.project, edit, hw="cpu", normalize=False)
+    for frame, channel in ((10, 0), (26, 2), (35, 2), (49, 2)):
+        picture = (await pixels(output.path, frame, tmp_path)).reshape(-1, 3).mean(axis=0)
+        assert picture[channel] > 200, (frame, picture)
