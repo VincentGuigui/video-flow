@@ -1,3 +1,4 @@
+import type { Transition } from "./transitions";
 export interface Transform {
   x: number;
   y: number;
@@ -29,6 +30,7 @@ export interface Clip {
 export interface Document {
   version: 1;
   clips: Clip[];
+  transitions?: Transition[];
 }
 export interface Asset {
   id: string;
@@ -151,7 +153,8 @@ export function split(doc: Document, id: string, frame: number): Document {
     c = selected[0];
   if (!c || frame <= c.start || frame >= c.start + duration(c)) return doc;
   const result = clone(doc),
-    ids = new Set(selected.map((c) => c.id));
+    ids = new Set(selected.map((c) => c.id)),
+    rightIds = new Map<string, string>();
   const leftLink = c.linkId ? uid() : null,
     rightLink = c.linkId ? uid() : null;
   result.clips = result.clips.flatMap((p) => {
@@ -168,7 +171,7 @@ export function split(doc: Document, id: string, frame: number): Document {
       },
       {
         ...clone(p),
-        id: uid(),
+        id: rightIds.set(p.id, uid()).get(p.id)!,
         start: frame,
         sourceIn: boundary,
         linkId: rightLink,
@@ -181,6 +184,10 @@ export function split(doc: Document, id: string, frame: number): Document {
       },
     ];
   });
+  // The outgoing transition stays on the cut that follows the right part.
+  result.transitions = result.transitions?.map((t) =>
+    rightIds.has(t.leftId) ? { ...t, leftId: rightIds.get(t.leftId)! } : t,
+  );
   return result;
 }
 export function linkCandidates(doc: Document, id: string): Clip[] {

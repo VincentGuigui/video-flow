@@ -27,6 +27,12 @@ import {
 import { useEditor } from "../store";
 import { currentRange, togglePlay } from "../playback";
 import { moveHandle, type Handle } from "../range";
+import {
+  activeDuration,
+  activeTransitions,
+  sourceFramesFor,
+  TRANSITION_LABELS,
+} from "../transitions";
 
 export function Transport() {
   const { project, document, frame, playing, focus, rangeHandle, set } =
@@ -228,6 +234,18 @@ export function Transport() {
                 />
               ))}
           </div>
+          {activeTransitions(document, sourceFramesFor(project)).map((a) => (
+            <div
+              key={a.transition.id}
+              className={`overview-transition ${a.transition.type}`}
+              data-testid="timeline-transition"
+              title={`${TRANSITION_LABELS[a.transition.type]} · ${(activeDuration(a) / rate).toFixed(2)} s`}
+              style={{
+                left: origin + (a.cut - a.before) * scale,
+                width: Math.max(4, activeDuration(a) * scale),
+              }}
+            />
+          ))}
           <div
             className="overview-range"
             data-testid="timeline-range"

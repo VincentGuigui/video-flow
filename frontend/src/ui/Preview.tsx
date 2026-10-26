@@ -17,6 +17,12 @@ import { useEditor } from "../store";
 import { snapHandle } from "../snap";
 import { BackgroundSelector } from "./BackgroundSelector";
 import { mediaUrl } from "../desktop";
+import {
+  dipOpacity,
+  fadeGain,
+  planTransitions,
+  sourceFramesFor,
+} from "../transitions";
 
 function Media({
   clip,
@@ -24,12 +30,16 @@ function Media({
   rate,
   playing,
   backdrop = false,
+  opacity = 1,
+  gain = 1,
 }: {
   clip: Clip;
   frame: number;
   rate: number;
   playing: boolean;
   backdrop?: boolean;
+  opacity?: number;
+  gain?: number;
 }) {
   const ref = useRef<HTMLVideoElement & HTMLAudioElement>(null);
   const settings = useEditor((s) => s.project?.settings);
@@ -50,11 +60,11 @@ function Media({
       else if (!playing && !media.paused) media.pause();
     };
     media.volume =
-      clip.kind === "audio" ? Math.min(1, 10 ** (clip.gainDb / 20)) : 0;
+      clip.kind === "audio" ? Math.min(1, 10 ** (clip.gainDb / 20) * gain) : 0;
     if (media.readyState) sync();
     else media.addEventListener("loadedmetadata", sync, { once: true });
     return () => media.removeEventListener("loadedmetadata", sync);
-  }, [frame, rate, playing, clip]);
+  }, [frame, rate, playing, clip, gain]);
   if (clip.kind === "audio")
     return <audio ref={ref} src={mediaUrl(clip.assetId)} preload="auto" />;
   const t = clip.transform;
@@ -65,6 +75,7 @@ function Media({
           style={{
             position: "absolute",
             inset: 0,
+            opacity,
             background: clip.background.color,
           }}
         />
@@ -75,6 +86,7 @@ function Media({
           frame={frame}
           rate={rate}
           playing={playing}
+          opacity={opacity}
           backdrop
         />
       )}
@@ -86,6 +98,7 @@ function Media({
         src={mediaUrl(clip.assetId)}
         style={{
           position: "absolute",
+          opacity,
           left: backdrop ? 0 : t.x,
           top: backdrop ? 0 : t.y,
           width: backdrop ? settings?.width : t.width,
@@ -136,7 +149,8 @@ export function Preview() {
   if (!project) return null;
   const { width, height } = project.settings,
     rate = fps(project.settings),
-    resolved = layout(document);
+    plan = planTransitions(document, sourceFramesFor(project)),
+    resolved = { clips: plan.clips, total: layout(document).total };
   const visible = resolved.clips
     .filter(
       (c) =>
@@ -372,6 +386,27 @@ export function Preview() {
                 frame={frame}
                 rate={rate}
                 playing={playing}
+                opacity={
+                  plan.videoFadeIn.has(c.id)
+                    ? Math.min(
+                        1,
+                        (frame - c.start) / plan.videoFadeIn.get(c.id)!,
+                      )
+                    : 1
+                }
+                gain={fadeGain(plan.audioFades.get(c.id), c, frame)}
+              />
+            ))}
+            {plan.dips.map((dip, i) => (
+              <div
+                key={`dip${i}`}
+                className="preview-dip"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: dip.color,
+                  opacity: dipOpacity(dip, frame),
+                }}
               />
             ))}
             {selection && bounds && (

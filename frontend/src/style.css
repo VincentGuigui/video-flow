@@ -2338,3 +2338,64 @@ button.timecode:hover {
   text-decoration-color: #4f7856;
   text-decoration-thickness: 2px;
 }
+.overview-transition {
+  position: absolute;
+  top: 26px;
+  height: 23px;
+  border-radius: 3px;
+  pointer-events: auto;
+  background: linear-gradient(
+    90deg,
+    rgba(60, 90, 65, 0.05),
+    rgba(60, 90, 65, 0.45),
+    rgba(60, 90, 65, 0.05)
+  );
+  border: 1px solid rgba(60, 90, 65, 0.5);
+}
+.overview-transition.dip_black {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 0, 0, 0.6),
+    transparent
+  );
+}
+.overview-transition.dip_white {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.9),
+    transparent
+  );
+}
+.transition-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.transition-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 8px;
+  align-items: center;
+  font-size: var(--legend-font-size);
+}
+.transition-label {
+  grid-column: 1 / -1;
+  color: #7f8a75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.transition-duration {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.transition-duration input {
+  width: 56px;
+}
+.transition-warning {
+  grid-column: 1 / -1;
+  color: #b35c0c;
+}
