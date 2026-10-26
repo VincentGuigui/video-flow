@@ -9,15 +9,11 @@ import {
   Film,
   Music2,
   Link2,
-  Unlink,
   Scissors,
   Trash2,
   ChevronsLeft,
   Layers,
   MousePointer2,
-  ZoomIn,
-  ZoomOut,
-  Focus,
 } from "lucide-react";
 import {
   clone,
@@ -32,10 +28,11 @@ import {
   split,
   timecode,
   trim,
-  zoomAt,
+  trimAudio,
   type Clip,
   type Document,
 } from "../model";
+import { useTimeline, useTimelineWheel } from "../timeline";
 import { useEditor } from "../store";
 import { Waveform } from "./Waveform";
 
@@ -43,7 +40,6 @@ export function Flow() {
   const state = useEditor(),
     { project, document, selected, focus, frame, set, save, busy } = state;
   const scroll = useRef<HTMLDivElement>(null),
-    [zoom, setZoom] = useState(1),
     [draft, setDraft] = useState<Document | null>(null),
     [dragging, setDragging] = useState(false),
     [viewport, setViewport] = useState({
@@ -56,7 +52,15 @@ export function Flow() {
   const base = useMemo(() => pack(doc), [doc]),
     resolved = useMemo(() => layout(doc), [doc]),
     rate = project ? fps(project.settings) : 30;
-  const px = 2 * zoom;
+  const { scale: px, scroll: sharedScroll, set: setTimeline } = useTimeline();
+  useTimelineWheel(scroll);
+  useEffect(() => {
+    if (
+      scroll.current &&
+      Math.abs(scroll.current.scrollLeft - sharedScroll) > 1
+    )
+      scroll.current.scrollLeft = sharedScroll;
+  }, [sharedScroll, px]);
   const layers = Math.max(2, ...doc.clips.map((c) => c.layer + 1));
   useEffect(() => {
     const node = scroll.current;
@@ -89,38 +93,7 @@ export function Flow() {
     48 + (layers - 1 - c.layer) * 112 >= viewport.top - 180 &&
     48 + (layers - 1 - c.layer) * 112 <= viewport.top + viewport.height + 180;
   const selectedClip = base.clips.find((c) => c.id === selected);
-  const focused = base.clips.find((c) => c.id === focus);
-  const focusStart = focused
-    ? Math.max(0, focused.start - Math.round(rate * 2))
-    : 0;
-  const focusEnd = focused
-    ? Math.min(
-        resolved.total,
-        focused.start + duration(focused) + Math.round(rate * 2),
-      )
-    : resolved.total;
-  const width = Math.max(
-    1000,
-    (Math.max(resolved.total, Math.round(rate * 20)) + Math.round(rate * 3)) *
-      px,
-  );
-  useEffect(() => {
-    if (!focused || !scroll.current) return;
-    const view = scroll.current;
-    const newZoom = Math.max(
-      0.001,
-      Math.min(
-        100,
-        (view.clientWidth - 120) / Math.max(1, focusEnd - focusStart) / 2,
-      ),
-    );
-    setZoom(newZoom);
-    requestAnimationFrame(() => {
-      view.scrollLeft = Math.max(0, focusStart * 2 * newZoom - 30);
-    });
-    // Focus changes, not cursor or each draft gesture, should fit the clip.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focus]);
+  const width = Math.max(viewport.width, 112 + resolved.total * px);
   function apply(next: Document) {
     setDraft(null);
     void save(next);
@@ -170,55 +143,6 @@ export function Flow() {
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", end, { once: true });
   }
-  const wheel = (event: WheelEvent) => {
-    if (event.shiftKey && !event.ctrlKey && scroll.current) {
-      event.preventDefault();
-      scroll.current.scrollLeft += event.deltaY || event.deltaX;
-      return;
-    }
-    if (!event.ctrlKey || !scroll.current) return;
-    event.preventDefault();
-    const container = scroll.current,
-      pointer = event.clientX - container.getBoundingClientRect().left;
-    setZoom((old) => {
-      const next = Math.max(
-        0.08,
-        Math.min(16, old * Math.exp(-event.deltaY * 0.002)),
-      );
-      const left = zoomAt(old, next, container.scrollLeft, pointer - 56);
-      requestAnimationFrame(() => (container.scrollLeft = Math.max(0, left)));
-      return next;
-    });
-  };
-  useEffect(() => {
-    const node = scroll.current;
-    if (!node) return;
-    node.addEventListener("wheel", wheel, { passive: false });
-    return () => node.removeEventListener("wheel", wheel);
-  }, []);
-  const zoomButton = (factor: number) => {
-    const container = scroll.current;
-    if (!container) return;
-    const pointer = container.clientWidth / 2;
-    setZoom((old) => {
-      const next = Math.max(0.08, Math.min(16, old * factor));
-      const left = zoomAt(old, next, container.scrollLeft, pointer - 56);
-      requestAnimationFrame(() => (container.scrollLeft = left));
-      return next;
-    });
-  };
-  const ticks: number[] = [];
-  const step =
-    [1, 2, 5, 10, 15, 30, 60, 120, 300].find((s) => s * rate * px > 70) ?? 600;
-  for (
-    let second = Math.max(
-      0,
-      Math.floor((viewport.left - 56) / px / rate / step) * step,
-    );
-    second <= Math.min(width, viewport.left + viewport.width + 180) / px / rate;
-    second += step
-  )
-    ticks.push(second);
   const pairs = useMemo(
     () => base.clips.filter((c) => c.kind !== "audio" || !c.linkId),
     [base],
@@ -266,60 +190,11 @@ export function Flow() {
             Ripple
           </button>
         </div>
-        <div className="zoom-controls">
-          <button
-            className="icon-button"
-            title="Zoom out"
-            onClick={() => zoomButton(0.8)}
-          >
-            <ZoomOut size={15} />
-          </button>
-          <span>{Math.round(zoom * 100)}%</span>
-          <button
-            className="icon-button"
-            title="Zoom in"
-            onClick={() => zoomButton(1.25)}
-          >
-            <ZoomIn size={15} />
-          </button>
-          <button
-            className="icon-button"
-            title="Fit assembly"
-            onClick={() => {
-              setZoom(
-                Math.max(
-                  0.08,
-                  Math.min(
-                    16,
-                    ((scroll.current?.clientWidth ?? 1000) - 150) /
-                      Math.max(1, resolved.total) /
-                      2,
-                  ),
-                ),
-              );
-              if (scroll.current) scroll.current.scrollLeft = 0;
-              set({ focus: null });
-            }}
-          >
-            <Focus size={15} />
-          </button>
-        </div>
       </div>
-      {focus && (
-        <div className="focus-banner">
-          <Focus size={13} />
-          Editing {selectedClip?.name ?? focused?.name}
-          <span>
-            {timecode(focusStart, rate)} — {timecode(focusEnd, rate)}
-          </span>
-          <button onClick={() => set({ focus: null, selected: null })}>
-            Back to full edit <kbd>Esc</kbd>
-          </button>
-        </div>
-      )}
       <div
         className={`flow-scroll ${dragging ? "dragging" : ""}`}
         ref={scroll}
+        onScroll={(e) => setTimeline({ scroll: e.currentTarget.scrollLeft })}
         data-testid="flow"
         onDoubleClick={(e) => {
           if (!(e.target as HTMLElement).closest(".clip-card"))
@@ -333,15 +208,6 @@ export function Flow() {
             if (e.target === e.currentTarget) set({ selected: null });
           }}
         >
-          <div className="flow-ruler">
-            {ticks.map((s) => (
-              <span key={s} style={{ left: s * rate * px + 56 }}>
-                {s < 60
-                  ? `${s}s`
-                  : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`}
-              </span>
-            ))}
-          </div>
           {Array.from({ length: layers }, (_, i) => (
             <div
               key={i}
@@ -446,7 +312,6 @@ export function Flow() {
                 {kind === "video" && (
                   <div className="clip-detail">
                     {timecode(duration(c), rate)}
-                    <span>{linked ? "Linked audio" : "Video"}</span>
                   </div>
                 )}
                 {kind === "audio" && <Waveform clip={c} rate={rate} />}
@@ -469,12 +334,23 @@ export function Flow() {
                     <Link2 size={13} />
                   </button>
                 )}
-                {!linked && kind !== "gap" && isSelected && (
-                  <span className="detached-label" title="Independent clip">
-                    <Unlink size={10} />
-                  </span>
-                )}
                 {isSelected &&
+                  kind === "audio" &&
+                  (["in", "out"] as const).map((edge) => (
+                    <div
+                      key={edge}
+                      className={`audio-trim-handle trim-${edge}`}
+                      title="Trim audio"
+                      aria-label={`${edge} audio trim`}
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        startTrim(e, c, edge, false);
+                      }}
+                    />
+                  ))}
+                {isSelected &&
+                  kind !== "audio" &&
                   (["in", "out"] as const).map((edge) => (
                     <div className={`trim-handles trim-${edge}`} key={edge}>
                       <span
@@ -500,47 +376,13 @@ export function Flow() {
               </div>
             );
           })}
-          <div
-            className="flow-playhead"
-            style={{ left: 56 + frame * px, height: layers * 112 + 40 }}
-            onPointerDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              const node = scroll.current;
-              if (!node) return;
-              const seek = (client: number) =>
-                set({
-                  frame: Math.max(
-                    0,
-                    Math.min(
-                      resolved.total - 1,
-                      Math.round(
-                        (client -
-                          node.getBoundingClientRect().left +
-                          node.scrollLeft -
-                          56) /
-                          px,
-                      ),
-                    ),
-                  ),
-                  playing: false,
-                });
-              const motion = (e: PointerEvent) => seek(e.clientX);
-              const end = () =>
-                window.removeEventListener("pointermove", motion);
-              window.addEventListener("pointermove", motion);
-              window.addEventListener("pointerup", end, { once: true });
-            }}
-          >
-            <span />
-          </div>
           {!doc.clips.length && (
             <div className="flow-empty">
               <div className="empty-node">
                 <Film size={21} />
                 <span>Video</span>
                 <div>
-                  <Music2 size={13} /> Linked audio
+                  <Music2 size={13} /> Audio
                 </div>
               </div>
               <div>
@@ -556,14 +398,6 @@ export function Flow() {
         </div>
       </div>
       <div className="flow-footer">
-        <span>
-          <span className="legend-dot video" />
-          Video
-          <span className="legend-dot audio" />
-          Audio
-          <span className="legend-dot enabled" />
-          Enabled
-        </span>
         <span>
           <MousePointer2 size={12} />
           Double-click a clip to edit <i />
@@ -584,22 +418,32 @@ export function Flow() {
     const original = pack(document),
       initialX = e.clientX;
     let latest = original;
-    const limit = Math.round(
-      ((project?.assets.find((a) => a.id === c.assetId)?.probe.durationUs ??
-        1e12) *
-        rate) /
-        1e6,
-    );
+    const limit =
+      c.sourceOut +
+      Math.min(
+        ...partners(original, c.id).map(
+          (p) =>
+            Math.round(
+              ((project?.assets.find((a) => a.id === p.assetId)?.probe
+                .durationUs ?? 1e12) *
+                rate) /
+                1e6,
+            ) - p.sourceOut,
+        ),
+      );
     setDragging(true);
     const motion = (event: PointerEvent) => {
-      latest = trim(
-        original,
-        c.id,
-        edge,
-        (event.clientX - initialX) / px,
-        ripple,
-        limit,
-      );
+      latest = (
+        c.kind === "audio"
+          ? trimAudio
+          : (
+              doc: Document,
+              id: string,
+              edge: "in" | "out",
+              delta: number,
+              limit: number,
+            ) => trim(doc, id, edge, delta, ripple, limit)
+      )(original, c.id, edge, (event.clientX - initialX) / px, limit);
       setDraft(latest);
     };
     const end = () => {

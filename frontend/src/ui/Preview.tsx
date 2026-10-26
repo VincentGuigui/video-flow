@@ -7,8 +7,6 @@ import {
 import { Crop, Maximize2, Move, Film, Music2, Minimize2 } from "lucide-react";
 import {
   clone,
-  fitPicture,
-  nextFitMode,
   duration,
   fps,
   layout,
@@ -16,6 +14,7 @@ import {
   type Transform,
 } from "../model";
 import { useEditor } from "../store";
+import { snapHandle } from "../snap";
 import { BackgroundSelector } from "./BackgroundSelector";
 import { mediaUrl } from "../desktop";
 
@@ -119,7 +118,10 @@ export function Preview() {
   const [size, setSize] = useState({ width: 800, height: 400 });
   const [mode, setMode] = useState<"scale" | "crop">("scale");
   const [draft, setDraft] = useState<Transform | null>(null);
-  const [snap, setSnap] = useState(false);
+  const [snap, setSnap] = useState<{ x: number[]; y: number[] }>({
+    x: [],
+    y: [],
+  });
   useEffect(() => {
     if (!host.current) return;
     const observer = new ResizeObserver(([entry]) =>
@@ -149,12 +151,6 @@ export function Preview() {
   const selection = resolved.clips.find(
     (c) => c.id === selected && c.kind === "video" && !!focus,
   );
-  const sourceVideo = project.assets.find((a) => a.id === selection?.assetId)
-    ?.probe.video;
-  const nextFill =
-    !!selection &&
-    !!sourceVideo &&
-    nextFitMode(selection, sourceVideo, project.settings) === "fill";
   const scale = Math.max(
     0.01,
     Math.min((size.width - 90) / width, (size.height - 36) / height),
@@ -182,8 +178,8 @@ export function Preview() {
     const onMove = (e: PointerEvent) => {
       let dx = (e.clientX - initialX) / scale,
         dy = (e.clientY - initialY) / scale;
-      const next = clone(original);
-      let snapped = false;
+      let next = clone(original);
+      let guides: { x: number[]; y: number[] } = { x: [], y: [] };
       if (handle === "move") {
         next.x += dx;
         next.y += dy;
@@ -199,7 +195,7 @@ export function Preview() {
         ])
           if (Math.abs(offset - target) < threshold) {
             next.x += target - offset;
-            snapped = true;
+            guides.x.push(target);
             break;
           }
         for (const [offset, target] of [
@@ -209,7 +205,7 @@ export function Preview() {
         ])
           if (Math.abs(offset - target) < threshold) {
             next.y += target - offset;
-            snapped = true;
+            guides.y.push(target);
             break;
           }
       } else if (mode === "crop") {
@@ -306,15 +302,30 @@ export function Preview() {
           if (handle.includes("n")) next.y = original.y + original.height - h;
         }
       }
+      if (handle !== "move") {
+        const snapped = snapHandle(
+          original,
+          next,
+          handle,
+          mode,
+          canvasWidth,
+          canvasHeight,
+          8 / scale,
+          e.shiftKey,
+          e.altKey,
+        );
+        next = snapped.transform;
+        guides = { x: snapped.x, y: snapped.y };
+      }
       latest = next;
       setDraft(next);
-      setSnap(snapped);
+      setSnap(guides);
     };
     const end = () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", end);
       setDraft(null);
-      setSnap(false);
+      setSnap({ x: [], y: [] });
       const doc = clone(useEditor.getState().document),
         c = doc.clips.find((c) => c.id === selection.id);
       if (c) {
@@ -389,18 +400,20 @@ export function Preview() {
                 ))}
               </div>
             )}
-            {snap && (
-              <>
-                <div
-                  className="snap-x"
-                  style={{ left: width / 2, width: 1 / scale }}
-                />
-                <div
-                  className="snap-y"
-                  style={{ top: height / 2, height: 1 / scale }}
-                />
-              </>
-            )}
+            {snap.x.map((x) => (
+              <div
+                key={`x${x}`}
+                className="snap-x"
+                style={{ left: x, width: 1 / scale }}
+              />
+            ))}
+            {snap.y.map((y) => (
+              <div
+                key={`y${y}`}
+                className="snap-y"
+                style={{ top: y, height: 1 / scale }}
+              />
+            ))}
           </div>
           {!visible.some((c) => c.kind === "video") && (
             <div className="preview-empty">
@@ -447,29 +460,6 @@ export function Preview() {
           <span className="hint">
             <Move size={12} /> Drag to position · Shift stretch · Alt symmetric
           </span>
-        )}
-        {selection && (
-          <button
-            className="button"
-            title={nextFill ? "Scale to fill" : "Scale to fit"}
-            onClick={() => {
-              const doc = clone(document),
-                c = doc.clips.find((c) => c.id === selection.id)!,
-                asset = project.assets.find((a) => a.id === c.assetId);
-              if (asset?.probe.video) {
-                c.transform = fitPicture(
-                  asset.probe.video,
-                  project.settings,
-                  nextFill,
-                );
-                c.fitMode = nextFill ? "fill" : "fit";
-                void save(doc);
-              }
-            }}
-          >
-            {nextFill ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
-            {nextFill ? "Scale to fill" : "Scale to fit"}
-          </button>
         )}
       </div>
     </section>

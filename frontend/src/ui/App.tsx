@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Settings as SettingsIcon,
+  Maximize2,
+  Minimize2,
   ArrowUpRight,
   Check,
   ChevronDown,
@@ -23,6 +25,10 @@ import {
 import {
   clone,
   detach,
+  fitPicture,
+  nextFitMode,
+  linkCandidates,
+  linkClips,
   duration,
   fps,
   keyboardStep,
@@ -34,12 +40,13 @@ import {
   timecode,
   type Clip,
 } from "../model";
-import { api, updateClip, useEditor } from "../store";
+import { api, updateClip, useEditor, flushClipUpdates } from "../store";
 import { Settings, type SettingsData } from "./Settings";
 import { InterfaceZoom } from "./InterfaceZoom";
 import { RenderPanel } from "./RenderPanel";
 import { Home } from "./Home";
 import { ProjectSave } from "./ProjectSave";
+import { TransformInput } from "./TransformInput";
 import { Preview } from "./Preview";
 import { Flow } from "./Flow";
 import { Transport } from "./Transport";
@@ -260,6 +267,7 @@ export function App() {
     } else setImportFiles([]);
   }
   async function exportFiles(formats: string[]) {
+    await flushClipUpdates();
     setExporting(true);
     setOutputMessage("");
     try {
@@ -652,6 +660,13 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
   const { project, document, save, busy } = useEditor();
   const [tab, setTab] = useState("Clip");
   const rate = project ? fps(project.settings) : 30;
+  const candidates = clip ? linkCandidates(pack(document), clip.id) : [];
+  const video = project?.assets.find((a) => a.id === clip?.assetId)?.probe
+    .video;
+  const fitMode =
+    clip && video && project
+      ? nextFitMode(clip, video, project.settings)
+      : "fit";
   return (
     <aside className="inspector">
       <div className="inspector-tabs">
@@ -693,12 +708,8 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
                 : "Video clip"}
           </div>
           <h3 title={clip.name}>{clip.name}</h3>
-          <span className="clip-state">
-            <span className="status-dot" />
-            {clip.linkId ? "Linked video + audio" : "Independent clip"}
-          </span>
-          <div className="inspector-section">
-            <span className="overline">SOURCE RANGE</span>
+          <details className="inspector-section source-range" key={clip.id}>
+            <summary className="overline">Source range</summary>
             <div className="stat-row">
               <span>In</span>
               <strong>{timecode(clip.sourceIn, rate)}</strong>
@@ -711,33 +722,40 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
               <span>Duration</span>
               <strong>{timecode(duration(clip), rate)}</strong>
             </div>
-          </div>
+          </details>
           {clip.kind === "video" && (
             <div className="inspector-section">
               <span className="overline">TRANSFORM</span>
               <div className="transform-grid">
                 {(["x", "y", "width", "height"] as const).map((key) => (
-                  <label key={clip.id + key + clip.transform[key]}>
+                  <label key={clip.id + key}>
                     {{ x: "X", y: "Y", width: "Width", height: "Height" }[key]}
-                    <input
-                      aria-label={`Clip ${key}`}
-                      type="number"
-                      defaultValue={Math.round(clip.transform[key])}
-                      onBlur={(e) => {
-                        const value = Number(e.target.value);
-                        if (
-                          !Number.isFinite(value) ||
-                          ((key === "width" || key === "height") && value <= 0)
-                        )
-                          return;
-                        updateClip(clip.id, {
-                          transform: { ...clip.transform, [key]: value },
-                        });
-                      }}
-                    />
+                    <TransformInput clip={clip} field={key} />
                   </label>
                 ))}
               </div>
+              <button
+                className="button fit-picture"
+                disabled={busy || !video}
+                onClick={() => {
+                  if (!video || !project) return;
+                  updateClip(clip.id, {
+                    transform: fitPicture(
+                      video,
+                      project.settings,
+                      fitMode === "fill",
+                    ),
+                    fitMode,
+                  });
+                }}
+              >
+                {fitMode === "fill" ? (
+                  <Maximize2 size={14} />
+                ) : (
+                  <Minimize2 size={14} />
+                )}
+                Scale to {fitMode}
+              </button>
             </div>
           )}
           {clip.kind === "audio" && (
@@ -767,6 +785,43 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
               </div>
             </div>
           )}
+          {!clip.linkId && clip.kind !== "gap" && (
+            <div className="inspector-section">
+              <label className="link-selector">
+                Link {clip.kind === "video" ? "audio" : "video"}
+                <select
+                  aria-label="Link clip"
+                  value=""
+                  disabled={busy || !candidates.length}
+                  onChange={(e) => {
+                    if (!e.target.value) return;
+                    try {
+                      void save(
+                        linkClips(
+                          pack(useEditor.getState().document),
+                          clip.id,
+                          e.target.value,
+                        ),
+                      );
+                    } catch (error) {
+                      useEditor.getState().set({ error: String(error) });
+                    }
+                  }}
+                >
+                  <option value="">
+                    {candidates.length
+                      ? "Choose a clip…"
+                      : "Align starts and durations to link"}
+                  </option>
+                  {candidates.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
           {clip.linkId && (
             <button
               className="button detach-action"
@@ -780,8 +835,9 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
           <div className="inspector-tip">
             <Scissors size={17} />
             <p>
-              Top trim handles ripple time. Bottom handles keep time with an
-              empty clip.
+              {clip.kind === "audio"
+                ? "Drag either edge to trim audio. Other clips stay in place."
+                : "Top trim handles ripple time. Bottom handles preserve time."}
             </p>
           </div>
         </div>

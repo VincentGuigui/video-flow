@@ -13,16 +13,25 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  CornerDownLeft,
+  ZoomIn,
+  ZoomOut,
+  Focus,
 } from "lucide-react";
-import { duration, fps, layout, timecode, zoomAt } from "../model";
+import { duration, fps, layout, timecode } from "../model";
+import {
+  useTimeline,
+  useTimelineWheel,
+  zoomTimeline,
+  TIMELINE_ORIGIN as origin,
+} from "../timeline";
 import { useEditor } from "../store";
 
 export function Transport() {
   const { project, document, frame, playing, focus, set } = useEditor();
   const root = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(1000),
-    [zoom, setZoom] = useState(1);
+  const { scale, scroll, width, set: setTimeline } = useTimeline();
+  const previousFocus = useRef<string | null | undefined>(undefined);
+  useTimelineWheel(root);
   const resolved = layout(document),
     rate = project ? fps(project.settings) : 30,
     total = resolved.total;
@@ -37,53 +46,31 @@ export function Transport() {
   useEffect(() => {
     if (!root.current) return;
     const observer = new ResizeObserver(([entry]) =>
-      setWidth(entry.contentRect.width),
+      setTimeline({ width: entry.contentRect.width }),
     );
     observer.observe(root.current);
     return () => observer.disconnect();
   }, []);
-  useEffect(() => {
-    const node = root.current;
-    if (!node) return;
-    const wheel = (e: WheelEvent) => {
-      if (e.shiftKey && !e.ctrlKey) {
-        e.preventDefault();
-        node.scrollLeft += e.deltaY || e.deltaX;
-        return;
-      }
-      if (!e.ctrlKey) return;
-      e.preventDefault();
-      const pointer = e.clientX - node.getBoundingClientRect().left;
-      setZoom((old) => {
-        const next = Math.min(
-          40,
-          Math.max(1, old * Math.exp(-e.deltaY * 0.002)),
-        );
-        const left = zoomAt(old, next, node.scrollLeft, pointer);
-        requestAnimationFrame(() => (node.scrollLeft = left));
-        return next;
-      });
-    };
-    node.addEventListener("wheel", wheel, { passive: false });
-    return () => node.removeEventListener("wheel", wheel);
-  }, []);
-  const scale = (width * zoom) / Math.max(total, Math.round(rate * 10));
-  useEffect(() => {
-    const node = root.current;
-    if (!node || width <= 0) return;
-    if (!focus) {
-      setZoom(1);
-      node.scrollLeft = 0;
-      return;
-    }
-    const span = Math.max(1, end - start);
-    setZoom(Math.max(1, Math.max(total, Math.round(rate * 10)) / span));
-    requestAnimationFrame(() => {
-      node.scrollLeft = (start * width) / span;
+  function fitRange() {
+    const next = Math.max(
+      0.001,
+      (width - origin * 2) / Math.max(1, end - start),
+    );
+    setTimeline({
+      scale: next,
+      scroll: Math.max(0, start * next),
+      fitting: true,
     });
-    // Refit on focus or viewport changes; ordinary cursor changes retain zoom.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focus, width]);
+  }
+  useEffect(() => {
+    const changed = previousFocus.current !== focus;
+    previousFocus.current = focus;
+    if (changed || useTimeline.getState().fitting) fitRange();
+  }, [focus, width, total]);
+  useEffect(() => {
+    if (root.current && Math.abs(root.current.scrollLeft - scroll) > 1)
+      root.current.scrollLeft = scroll;
+  }, [scroll, scale]);
   function seek(value: number) {
     set({
       frame: Math.max(
@@ -98,7 +85,8 @@ export function Transport() {
     const node = root.current;
     if (!node) return;
     const position = (x: number) =>
-      (x - node.getBoundingClientRect().left + node.scrollLeft) / scale;
+      (x - node.getBoundingClientRect().left + node.scrollLeft - origin) /
+      scale;
     seek(position(event.clientX));
     const motion = (e: PointerEvent) => seek(position(e.clientX));
     const end = () => window.removeEventListener("pointermove", motion);
@@ -111,31 +99,81 @@ export function Transport() {
         600,
     ),
     ticks = [];
-  for (let t = 0; t <= Math.max(total, rate * 10) / rate; t += step)
+  for (
+    let t = Math.max(
+      0,
+      Math.floor((scroll - origin) / scale / rate / step) * step,
+    );
+    t <= Math.min(total / rate, (scroll + width) / scale / rate);
+    t += step
+  )
     ticks.push(t);
   return (
     <section className="transport-panel">
       <div className="transport-heading">
-        <span> {focus ? "Clip timeline" : "Assembly timeline"}</span>
+        <span>
+          {focus ? "Clip timeline" : "Assembly timeline"}
+          {focus && (
+            <button
+              className="exit-focus"
+              onClick={() => set({ focus: null, selected: null })}
+            >
+              Back to full edit <kbd>Esc</kbd>
+            </button>
+          )}
+        </span>
         <span className="transport-time">
           <strong data-testid="timecode">{timecode(frame, rate)}</strong>
           <span>/ {timecode(total, rate)}</span>
         </span>
-        <span className="muted">Drag the cursor to scrub</span>
+        <div className="zoom-controls">
+          <button
+            className="icon-button"
+            aria-label="Zoom out timeline"
+            title="Zoom out"
+            onClick={() => zoomTimeline(scale * 0.8, width / 2)}
+          >
+            <ZoomOut size={15} />
+          </button>
+          <span>
+            {Math.round(
+              (scale /
+                Math.max(0.001, (width - origin * 2) / Math.max(1, total))) *
+                100,
+            )}
+            %
+          </span>
+          <button
+            className="icon-button"
+            aria-label="Zoom in timeline"
+            title="Zoom in"
+            onClick={() => zoomTimeline(scale * 1.25, width / 2)}
+          >
+            <ZoomIn size={15} />
+          </button>
+          <button
+            className="icon-button"
+            title={focus ? "Fit clip range" : "Fit assembly"}
+            onClick={fitRange}
+          >
+            <Focus size={15} />
+          </button>
+        </div>
       </div>
       <div
         className="overview-scroll"
         ref={root}
+        onScroll={(e) => setTimeline({ scroll: e.currentTarget.scrollLeft })}
         onPointerDown={scrub}
         data-testid="timeline"
       >
         <div
           className="overview-content"
-          style={{ width: Math.max(width, Math.max(total, rate * 10) * scale) }}
+          style={{ width: Math.max(width, origin * 2 + total * scale) }}
         >
           <div className="overview-ruler">
             {ticks.map((t) => (
-              <span key={t} style={{ left: t * rate * scale }}>
+              <span key={t} style={{ left: origin + t * rate * scale }}>
                 {timecode(t * rate, rate).slice(3, 8)}
               </span>
             ))}
@@ -149,7 +187,7 @@ export function Transport() {
                   title={c.name}
                   className={`overview-clip ${c.kind}`}
                   style={{
-                    left: c.start * scale,
+                    left: origin + c.start * scale,
                     width: Math.max(1, duration(c) * scale - 2),
                     height: Math.max(7, 28 - c.layer * 4),
                     bottom: c.layer * 4,
@@ -157,7 +195,10 @@ export function Transport() {
                 />
               ))}
           </div>
-          <div className="overview-playhead" style={{ left: frame * scale }}>
+          <div
+            className="overview-playhead"
+            style={{ left: origin + frame * scale }}
+          >
             <span />
           </div>
         </div>
@@ -225,7 +266,7 @@ export function Transport() {
           </button>
         </div>
         <span className="transport-space">
-          <kbd>Space</kbd> to play / pause
+          <kbd>Space</kbd> to play / pause <i /> Drag the cursor to scrub
         </span>
       </div>
     </section>

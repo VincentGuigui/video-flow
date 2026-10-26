@@ -2070,3 +2070,82 @@ kbd {
 .model-state.missing {
   color: #957a65;
 }
+
+/* One shared assembly time axis; the flow only contains editable clip lanes. */
+.overview-scroll {
+  margin: 0;
+}
+.exit-focus {
+  font-size: var(--legend-font-size);
+  gap: 7px;
+  color: var(--teal);
+}
+.transport-heading {
+  height: auto;
+  min-height: 38px;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+}
+.transport-time {
+  margin-left: auto;
+}
+.transport-space {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.transport-space i {
+  height: 12px;
+  border-left: 1px solid var(--line);
+}
+.audio-trim-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  background: #839ed0;
+  cursor: ew-resize;
+  border-radius: 3px;
+}
+.audio-trim-handle.trim-in {
+  left: -3px;
+}
+.audio-trim-handle.trim-out {
+  right: -3px;
+}
+.source-range summary {
+  cursor: pointer;
+}
+.source-range[open] summary {
+  margin-bottom: 12px;
+}
+.fit-picture {
+  margin-top: 14px;
+  width: 100%;
+}
+.link-selector {
+  display: grid;
+  gap: 8px;
+  font-size: var(--legend-font-size);
+}
+.link-selector select {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 3px;
+  border: 1px solid var(--line);
+  background: white;
+  border-radius: 4px;
+}
+
+.transport-buttons {
+  height: auto;
+  min-height: 45px;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 16px;
+}
+.source-range summary {
+  display: list-item;
+  list-style-position: inside;
+}

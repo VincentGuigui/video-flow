@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Film, Plus, X } from "lucide-react";
-import { api, useEditor } from "../store";
+import { api, useEditor, flushClipUpdates } from "../store";
 
 interface Entry {
   id: string;
@@ -26,6 +26,7 @@ export function Home({ onClose }: { onClose: () => void }) {
   async function perform(kind: string, id?: string) {
     setBusy(true);
     try {
+      await flushClipUpdates();
       await api("/projects/action", {
         method: "POST",
         body: JSON.stringify({ kind, id, name }),

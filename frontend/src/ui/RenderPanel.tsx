@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import type { SettingsData } from "./Settings";
-import { api, useEditor } from "../store";
+import { api, useEditor, flushClipUpdates } from "../store";
 
 interface Job {
   id: string;
@@ -46,10 +46,11 @@ export function RenderPanel() {
   async function start() {
     setWorking(true);
     try {
+      await flushClipUpdates();
       const next = await api<Job>("/render", {
         method: "POST",
         body: JSON.stringify({
-          baseRevision: project?.revision,
+          baseRevision: useEditor.getState().project?.revision,
           preset,
           normalize,
         }),

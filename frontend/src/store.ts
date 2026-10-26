@@ -64,6 +64,10 @@ export const useEditor = create<State>((set, get) => ({
   load: async () => {
     try {
       const r = await api<Result>("/project");
+      if (get().project?.id !== r.project.id) {
+        pendingClipUpdates.clear();
+        clearTimeout(editTimer);
+      }
       set({
         ...(get().project?.id !== r.project.id
           ? {
@@ -87,6 +91,9 @@ export const useEditor = create<State>((set, get) => ({
   save: async (document, settings) => {
     const state = get();
     if (state.busy || !state.project) return;
+    document = applyPending(document);
+    pendingClipUpdates.clear();
+    clearTimeout(editTimer);
     const original = state.document;
     const commands: Command[] = [{ type: "SetEditor", document }];
     if (settings) commands.push({ type: "SetSettings", settings });
@@ -118,6 +125,7 @@ export const useEditor = create<State>((set, get) => ({
     }
   },
   undo: async () => {
+    await flushClipUpdates();
     const state = get(),
       commands = state.history.at(-1);
     if (!commands || state.busy || !state.project) return;
@@ -146,6 +154,7 @@ export const useEditor = create<State>((set, get) => ({
     }
   },
   redo: async () => {
+    await flushClipUpdates();
     const state = get(),
       commands = state.future.at(-1);
     if (!commands || state.busy || !state.project) return;
@@ -172,12 +181,51 @@ export const useEditor = create<State>((set, get) => ({
     }
   },
 }));
-export function updateClip(id: string, values: Record<string, unknown>) {
-  const s = useEditor.getState(),
-    doc = clone(s.document);
-  const c = doc.clips.find((c) => c.id === id);
-  if (c) {
-    Object.assign(c, values);
-    void s.save(doc);
+const pendingClipUpdates = new Map<string, Record<string, unknown>>();
+let editTimer: ReturnType<typeof setTimeout> | undefined;
+function applyPending(doc: Document) {
+  const next = clone(doc);
+  for (const [id, values] of pendingClipUpdates) {
+    const clip = next.clips.find((c) => c.id === id);
+    if (clip) Object.assign(clip, values);
   }
+  return next;
+}
+let flushing: Promise<void> | null = null;
+export function flushClipUpdates(): Promise<void> {
+  clearTimeout(editTimer);
+  if (flushing) return flushing;
+  flushing = (async () => {
+    while (pendingClipUpdates.size) {
+      if (useEditor.getState().busy) {
+        await new Promise<void>((resolve) => {
+          const unsubscribe = useEditor.subscribe((s) => {
+            if (!s.busy) {
+              unsubscribe();
+              resolve();
+            }
+          });
+        });
+        continue;
+      }
+      const doc = applyPending(useEditor.getState().document);
+      pendingClipUpdates.clear();
+      await useEditor.getState().save(doc);
+      if (pendingClipUpdates.size)
+        useEditor
+          .getState()
+          .set({ document: applyPending(useEditor.getState().document) });
+    }
+  })().finally(() => {
+    flushing = null;
+  });
+  return flushing;
+}
+export function updateClip(id: string, values: Record<string, unknown>) {
+  const state = useEditor.getState();
+  if (!state.document.clips.some((c) => c.id === id)) return;
+  pendingClipUpdates.set(id, { ...pendingClipUpdates.get(id), ...values });
+  state.set({ document: applyPending(state.document) });
+  clearTimeout(editTimer);
+  editTimer = setTimeout(() => void flushClipUpdates(), 150);
 }

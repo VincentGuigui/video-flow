@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Save, ChevronDown, X } from "lucide-react";
-import { api, useEditor } from "../store";
+import { api, useEditor, flushClipUpdates } from "../store";
 
 export function ProjectSave() {
   const { project, busy, set, load } = useEditor();
@@ -20,12 +20,13 @@ export function ProjectSave() {
   async function save(copy: boolean, value?: string) {
     setWorking(true);
     try {
+      await flushClipUpdates();
       await api("/project/save", {
         method: "POST",
         body: JSON.stringify({
           name: value,
           copy,
-          baseRevision: project?.revision,
+          baseRevision: useEditor.getState().project?.revision,
         }),
       });
       if (copy)
