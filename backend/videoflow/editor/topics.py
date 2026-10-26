@@ -131,7 +131,10 @@ def keyword_title(section: Sequence[Sentence], others: Sequence[Sequence[Sentenc
 
     best = set(sorted(counts, key=lambda t: (-weight(t), tokens.index(t)))[:TITLE_WORDS])
     ordered = [t for t in dict.fromkeys(tokens) if t in best]
-    original = {strip_accents(w.casefold()): w for s in section for w in re.findall(r"\w+", s.text)}
+    original: dict[str, str] = {}
+    for s in section:
+        for w in re.findall(r"\w+", s.text):
+            original.setdefault(strip_accents(w.casefold()), w)
     title = " ".join(original.get(t, t) for t in ordered)
     return title[:1].upper() + title[1:]
 
