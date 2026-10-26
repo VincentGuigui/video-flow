@@ -108,9 +108,9 @@ export function Flow() {
     if (!focused || !scroll.current) return;
     const view = scroll.current;
     const newZoom = Math.max(
-      0.15,
+      0.001,
       Math.min(
-        12,
+        100,
         (view.clientWidth - 120) / Math.max(1, focusEnd - focusStart) / 2,
       ),
     );

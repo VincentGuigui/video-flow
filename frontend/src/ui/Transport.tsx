@@ -63,6 +63,16 @@ export function Transport() {
     return () => node.removeEventListener("wheel", wheel);
   }, []);
   const scale = (width * zoom) / Math.max(total, Math.round(rate * 10));
+  useEffect(() => {
+    const node = root.current;
+    if (!node || width <= 0) return;
+    if (!focus) { setZoom(1); node.scrollLeft = 0; return; }
+    const span = Math.max(1,end-start);
+    setZoom(Math.max(1,Math.max(total,Math.round(rate*10))/span));
+    requestAnimationFrame(()=>{node.scrollLeft = start*width/span;});
+    // Refit on focus or viewport changes; ordinary cursor changes retain zoom.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus,width]);
   function seek(value: number) {
     set({
       frame: Math.max(
