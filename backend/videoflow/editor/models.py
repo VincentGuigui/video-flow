@@ -51,6 +51,19 @@ class ResizeReference(CamelModel):
     transform: Transform
 
 
+class HeldRange(CamelModel):
+    """Assembly time retained by a standard audio trim, without a fake media clip."""
+
+    start: int = Field(ge=0)
+    end: int = Field(gt=0)
+
+    @model_validator(mode="after")
+    def valid(self) -> "HeldRange":
+        if self.end <= self.start:
+            raise ValueError("Retained time must have positive duration")
+        return self
+
+
 class EditorClip(CamelModel):
     id: str = Field(min_length=1)
     kind: Literal["video", "audio", "gap"]
@@ -66,6 +79,7 @@ class EditorClip(CamelModel):
     transform: Transform = Field(default_factory=Transform)
     resize_reference: ResizeReference | None = None
     background: Background = Field(default_factory=Background)
+    held_range: HeldRange | None = None
 
     @model_validator(mode="after")
     def valid(self) -> "EditorClip":
@@ -98,7 +112,7 @@ class EditorDocument(CamelModel):
             if len(pair) != 2 or {c.kind for c in pair} != {"video", "audio"}:
                 raise ValueError("A link must join one video and one audio clip")
             a, b = pair
-            if (a.start, a.source_in, a.source_out) != (b.start, b.source_in, b.source_out):
+            if (a.start, a.duration) != (b.start, b.duration):
                 raise ValueError("Linked clips must have the same timing")
         return self
 
@@ -106,12 +120,19 @@ class EditorDocument(CamelModel):
 def layout(document: EditorDocument) -> tuple[list[EditorClip], int]:
     """Remove uncovered intervals globally, preserving explicit empty clips."""
     intervals: list[list[int]] = []
-    for clip in sorted((c for c in document.clips if c.enabled), key=lambda c: c.start):
-        end = clip.start + clip.duration
-        if intervals and clip.start <= intervals[-1][1]:
+    spans = [
+        (
+            min(c.start, c.held_range.start) if c.held_range else c.start,
+            max(c.start + c.duration, c.held_range.end) if c.held_range else c.start + c.duration,
+        )
+        for c in document.clips
+        if c.enabled
+    ]
+    for start, end in sorted(spans):
+        if intervals and start <= intervals[-1][1]:
             intervals[-1][1] = max(intervals[-1][1], end)
         else:
-            intervals.append([clip.start, end])
+            intervals.append([start, end])
 
     starts = [a for a, _ in intervals]
     prefix = [0]

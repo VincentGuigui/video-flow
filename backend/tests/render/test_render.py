@@ -128,6 +128,53 @@ async def pixels(path, frame, folder, rate=25):
     return np.frombuffer(target.read_bytes(), dtype=np.uint8).reshape(90, 160, 3)
 
 
+async def test_standard_audio_trim_renders_retained_time_as_silence(edit, tmp_path):
+    from videoflow.editor.models import HeldRange
+
+    asset = edit.project.assets[0].id
+    document = EditorDocument(
+        clips=[
+            EditorClip(
+                id="trimmed",
+                kind="audio",
+                name="Trimmed",
+                asset_id=asset,
+                start=10,
+                source_in=10,
+                source_out=50,
+                held_range=HeldRange(start=0, end=75),
+            ),
+            EditorClip(
+                id="later",
+                kind="audio",
+                name="Later",
+                asset_id=asset,
+                start=75,
+                source_in=0,
+                source_out=25,
+            ),
+        ]
+    )
+    project, _ = SetEditor(document=document).apply(edit.project)
+    output = await render_project(project, edit, hw="cpu", normalize=False)
+    assert (await ffmpeg.probe(output.path)).video.nb_frames == 100
+    pcm = tmp_path / "trimmed.f32"
+    result = await ffmpeg.run(
+        ["-y", "-i", str(output.path), "-vn", "-ac", "1", "-ar", "48000", "-f", "f32le", str(pcm)]
+    )
+    assert result.ok
+    audio = np.frombuffer(pcm.read_bytes(), dtype="<f4")
+
+    def rms(start, end):
+        section = audio[round(start * 48000) : round(end * 48000)]
+        return float(np.sqrt(np.mean(section**2)))
+
+    assert rms(0.05, 0.2) < 1e-5
+    assert rms(0.8, 1) > 1e-3
+    assert rms(2.3, 2.6) < 1e-5
+    assert rms(3.3, 3.6) > 1e-3
+
+
 @pytest.mark.parametrize("mode, expected", [("color", 1), ("blur", 2), ("transparent", 0)])
 async def test_clip_background_color_blur_and_transparent_layers(edit, tmp_path, mode, expected):
     from videoflow.editor.models import Background
@@ -229,4 +276,3 @@ def test_digital_silence_skips_invalid_loudnorm_filter():
     assert measurement('{"input_i":"-inf", "input_tp":"-inf"}') is None
     with pytest.raises(ValueError, match="measurements"):
         measurement("no JSON")
-

@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
+  linkClips,
+  linkCandidates,
+  trimAudio,
+  pack,
   defaultTransform,
   fitPicture,
   nextFitMode,
@@ -252,4 +256,44 @@ it("alternates fit and fill even when both produce the same dimensions", () => {
   expect(nextFitMode(clip, video, settings)).toBe("fit");
   clip.fitMode = "fit";
   expect(nextFitMode(clip, video, settings)).toBe("fill");
+});
+
+it("relinks aligned separate media with independent source offsets", () => {
+  const doc = detach(document(), "v");
+  doc.clips.find((c) => c.id === "a")!.sourceIn = 25;
+  doc.clips.find((c) => c.id === "a")!.sourceOut = 125;
+  expect(linkCandidates(doc, "v").map((c) => c.id)).toEqual(["a"]);
+  const linked = linkClips(doc, "v", "a");
+  const parts = split(linked, "a", 40);
+  expect(parts.clips.find((c) => c.id === "a")!.sourceOut).toBe(65);
+  expect(parts.clips.find((c) => c.id === "v")!.sourceOut).toBe(50);
+  expect(partners(linked, "v")).toHaveLength(2);
+  expect(() => linkClips(doc, "v", "next")).toThrow("Align");
+});
+it("audio edge trims preserve assembly time and later clips without fake gaps", () => {
+  const doc = {
+    version: 1 as const,
+    clips: [c("audio", 0, "audio"), c("later", 100, "audio")],
+  };
+  const head = trimAudio(doc, "audio", "in", 20, 300);
+  const result = trimAudio(head, "audio", "out", -30, 300);
+  expect(result.clips.find((c) => c.id === "audio")).toMatchObject({
+    start: 20,
+    sourceIn: 30,
+    sourceOut: 80,
+  });
+  expect(result.clips.find((c) => c.id === "later")!.start).toBe(100);
+  expect(result.clips.some((c) => c.kind === "gap")).toBe(false);
+  expect(layout(result).total).toBe(200);
+  expect(pack(result).clips.find((c) => c.id === "later")!.start).toBe(100);
+  expect(layout(remove(result, "audio", false)).total).toBe(200);
+  expect(layout(remove(result, "audio", true)).total).toBe(100);
+  expect(layout(split(result, "audio", 40)).total).toBe(200);
+});
+it("audio trims a linked pair together without moving following clips", () => {
+  const result = trimAudio(document(), "a", "out", -20, 300);
+  expect(partners(result, "a").map(duration)).toEqual([80, 80]);
+  expect(result.clips.find((c) => c.id === "next")!.start).toBe(100);
+  expect(result.clips.some((c) => c.kind === "gap")).toBe(false);
+  expect(layout(result).total).toBe(200);
 });

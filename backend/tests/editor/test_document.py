@@ -3,7 +3,7 @@ from pydantic import ValidationError
 
 from tests.timeline.builders import ProjectBuilder, S, clip
 from videoflow.core.time import Rational
-from videoflow.editor.models import EditorClip, EditorDocument, Transform, layout
+from videoflow.editor.models import EditorClip, EditorDocument, HeldRange, Transform, layout
 from videoflow.editor.resolve import document_for, editable_document, fit_transform
 from videoflow.exporters.otio_compile import compile_timeline
 from videoflow.project.commands import SetEditor, apply_batch
@@ -41,6 +41,40 @@ def test_disabled_layers_do_not_extend_or_erase_enabled_layers():
     clips, total = layout(doc)
     assert total == 30
     assert [c.id for c in clips] == ["v", "upper"]
+
+
+def test_standard_audio_trim_retains_time_without_placeholder_clips():
+    audio = item("sound", "audio").model_copy(
+        update={
+            "start": 10,
+            "source_in": 10,
+            "source_out": 20,
+            "held_range": HeldRange(start=0, end=30),
+        }
+    )
+    later = item("later", "audio").model_copy(update={"start": 30})
+    document = EditorDocument(clips=[audio, later])
+    clips, total = layout(document)
+    assert total == 60
+    assert [c.start for c in clips] == [10, 30]
+    assert all(c.kind == "audio" for c in clips)
+    project = ProjectBuilder().asset("a", 10 * S).build()
+    project, _ = apply_batch(project, [SetEditor(document=document)])
+    assert document_for(project).clips[0].held_range == HeldRange(start=0, end=30)
+    assert compile_timeline(resolve(project), project).duration().value == 60
+
+
+def test_linked_media_can_have_different_source_offsets():
+    video = item(link_id="pair")
+    audio = item("audio", "audio", link_id="pair").model_copy(
+        update={
+            "source_in": 20,
+            "source_out": 50,
+        }
+    )
+    assert EditorDocument(clips=[video, audio]).clips[1].source_in == 20
+    with pytest.raises(ValidationError, match="same timing"):
+        EditorDocument(clips=[video, audio.model_copy(update={"source_out": 49})])
 
 
 def test_link_requires_one_video_one_audio_with_identical_timing():

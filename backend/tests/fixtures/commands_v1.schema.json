@@ -772,6 +772,17 @@
           "title": "Gaindb",
           "type": "number"
         },
+        "heldRange": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HeldRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "id": {
           "minLength": 1,
           "title": "Id",
@@ -969,6 +980,28 @@
         "pq"
       ],
       "type": "string"
+    },
+    "HeldRange": {
+      "additionalProperties": true,
+      "description": "Assembly time retained by a standard audio trim, without a fake media clip.",
+      "properties": {
+        "end": {
+          "exclusiveMinimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "HeldRange",
+      "type": "object"
     },
     "Id": {
       "minLength": 1,

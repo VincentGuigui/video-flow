@@ -22,6 +22,7 @@ export interface Clip {
   gainDb: number;
   transform: Transform;
   fitMode?: "fit" | "fill";
+  heldRange?: { start: number; end: number } | null;
   background?: { mode: "transparent" | "color" | "blur"; color: string };
   resizeReference?: { width: number; height: number; transform: Transform };
 }
@@ -74,11 +75,11 @@ export function layout(doc: Document): {
   const intervals: number[][] = [];
   for (const c of doc.clips
     .filter((c) => c.enabled)
-    .toSorted((a, b) => a.start - b.start)) {
-    const end = c.start + duration(c),
+    .toSorted((a, b) => occupied(a)[0] - occupied(b)[0])) {
+    const [start, end] = occupied(c),
       last = intervals.at(-1);
-    if (last && c.start <= last[1]) last[1] = Math.max(last[1], end);
-    else intervals.push([c.start, end]);
+    if (last && start <= last[1]) last[1] = Math.max(last[1], end);
+    else intervals.push([start, end]);
   }
   const prefix = [0];
   for (const [a, b] of intervals) prefix.push(prefix.at(-1)! + b - a);
@@ -103,12 +104,24 @@ export function layout(doc: Document): {
     position,
   };
 }
+export function occupied(c: Clip): [number, number] {
+  return [
+    Math.min(c.start, c.heldRange?.start ?? c.start),
+    Math.max(c.start + duration(c), c.heldRange?.end ?? 0),
+  ];
+}
 // Pack only unintended empty time. Disabled alternatives remain visible at their slot.
 export function pack(doc: Document): Document {
   const { position } = layout(doc);
   return {
     ...doc,
-    clips: doc.clips.map((c) => ({ ...c, start: position(c.start) })),
+    clips: doc.clips.map((c) => ({
+      ...c,
+      start: position(c.start),
+      heldRange: c.heldRange
+        ? { start: position(c.heldRange.start), end: position(c.heldRange.end) }
+        : c.heldRange,
+    })),
   };
 }
 export function partners(doc: Document, id: string): Clip[] {
@@ -131,17 +144,97 @@ export function split(doc: Document, id: string, frame: number): Document {
     if (!ids.has(p.id)) return [p];
     const boundary = p.sourceIn + frame - p.start;
     return [
-      { ...p, sourceOut: boundary, linkId: leftLink },
+      {
+        ...p,
+        sourceOut: boundary,
+        linkId: leftLink,
+        heldRange: p.heldRange
+          ? { start: Math.min(p.heldRange.start, p.start), end: frame }
+          : null,
+      },
       {
         ...clone(p),
         id: uid(),
         start: frame,
         sourceIn: boundary,
         linkId: rightLink,
+        heldRange: p.heldRange
+          ? {
+              start: frame,
+              end: Math.max(p.heldRange.end, p.start + duration(p)),
+            }
+          : null,
       },
     ];
   });
   return result;
+}
+export function linkCandidates(doc: Document, id: string): Clip[] {
+  const clip = doc.clips.find((c) => c.id === id);
+  if (!clip || clip.linkId || clip.kind === "gap") return [];
+  return doc.clips.filter(
+    (c) =>
+      !c.linkId &&
+      c.kind !== "gap" &&
+      c.kind !== clip.kind &&
+      c.start === clip.start &&
+      duration(c) === duration(clip),
+  );
+}
+export function linkClips(
+  doc: Document,
+  id: string,
+  otherId: string,
+): Document {
+  const clip = doc.clips.find((c) => c.id === id);
+  if (!clip || !linkCandidates(doc, id).some((c) => c.id === otherId))
+    throw Error(
+      "Align the video and audio start and duration before linking them",
+    );
+  const linkId = uid();
+  const next = {
+    ...doc,
+    clips: doc.clips.map((c) =>
+      c.id === id || c.id === otherId ? { ...c, linkId } : c,
+    ),
+  };
+  return move(next, id, clip.start, clip.layer);
+}
+export function trimAudio(
+  doc: Document,
+  id: string,
+  edge: "in" | "out",
+  delta: number,
+  maxFrames: number,
+): Document {
+  const selected = partners(doc, id),
+    c = doc.clips.find((c) => c.id === id);
+  if (!c) return doc;
+  delta = Math.round(delta);
+  delta =
+    edge === "in"
+      ? Math.max(
+          -Math.min(c.start, ...selected.map((p) => p.sourceIn)),
+          Math.min(duration(c) - 1, delta),
+        )
+      : Math.max(1 - duration(c), Math.min(maxFrames - c.sourceOut, delta));
+  if (!delta) return doc;
+  const ids = new Set(selected.map((c) => c.id));
+  const [start, end] = occupied(c);
+  return {
+    ...doc,
+    clips: doc.clips.map((p) =>
+      ids.has(p.id)
+        ? {
+            ...p,
+            sourceIn: p.sourceIn + (edge === "in" ? delta : 0),
+            sourceOut: p.sourceOut + (edge === "out" ? delta : 0),
+            start: p.start + (edge === "in" ? delta : 0),
+            heldRange: p.id === id ? { start, end } : p.heldRange,
+          }
+        : p,
+    ),
+  };
 }
 export function detach(doc: Document, id: string): Document {
   const ids = new Set(partners(doc, id).map((c) => c.id));
@@ -174,7 +267,13 @@ export function remove(doc: Document, id: string, ripple: boolean): Document {
     end = c.start + duration(c);
   let clips = doc.clips.filter((c) => !ids.has(c.id));
   // An overlapping layer still occupies this time. Only uncovered time ripples away.
-  if (!ripple) clips.push(gap(c.start, duration(c), c.layer));
+  if (!ripple) {
+    const [start, end] = occupied(c);
+    const ranges = selected.map(occupied);
+    const a = Math.min(start, ...ranges.map((r) => r[0])),
+      b = Math.max(end, ...ranges.map((r) => r[1]));
+    clips.push(gap(a, b - a, c.layer));
+  }
   return ripple ? pack({ ...doc, clips }) : mergeGaps({ ...doc, clips });
 }
 export function move(
@@ -214,10 +313,30 @@ export function move(
             ...c,
             start: Math.max(0, Math.round(start)),
             layer: Math.max(0, layer),
+            heldRange: c.heldRange
+              ? {
+                  start: Math.max(0, c.heldRange.start + start - c.start),
+                  end: c.heldRange.end + start - c.start,
+                }
+              : null,
           }
         : c,
     ),
   });
+}
+function shifted(clip: Clip, delta: number): Clip {
+  const start = Math.max(0, clip.start + delta),
+    change = start - clip.start;
+  return {
+    ...clip,
+    start,
+    heldRange: clip.heldRange
+      ? {
+          start: Math.max(0, clip.heldRange.start + change),
+          end: clip.heldRange.end + change,
+        }
+      : clip.heldRange,
+  };
 }
 export function trim(
   doc: Document,
@@ -228,14 +347,17 @@ export function trim(
   maxFrames: number,
 ): Document {
   const selected = partners(doc, id),
-    c = selected[0];
+    c = doc.clips.find((c) => c.id === id);
   if (!c) return doc;
   const d = duration(c),
     ids = new Set(selected.map((c) => c.id));
   delta = Math.round(delta);
   delta =
     edge === "in"
-      ? Math.max(-c.sourceIn, Math.min(d - 1, delta))
+      ? Math.max(
+          -Math.min(...selected.map((p) => p.sourceIn)),
+          Math.min(d - 1, delta),
+        )
       : Math.max(1 - d, Math.min(maxFrames - c.sourceOut, delta));
   if (!delta) return doc;
   const next = clone(doc);
@@ -245,9 +367,15 @@ export function trim(
       // Move later assembly time by the exact source delta; the selected head stays put.
       next.clips = next.clips.map((p) =>
         ids.has(p.id)
-          ? { ...p, sourceIn: p.sourceIn + delta }
+          ? {
+              ...p,
+              sourceIn: p.sourceIn + delta,
+              heldRange: p.heldRange
+                ? { ...p.heldRange, end: p.heldRange.end - delta }
+                : p.heldRange,
+            }
           : p.start >= end
-            ? { ...p, start: Math.max(0, p.start - delta) }
+            ? shifted(p, -delta)
             : p,
       );
     } else {
@@ -275,7 +403,7 @@ export function trim(
         ids.has(p.id)
           ? { ...p, sourceIn: p.sourceIn + delta, start: p.start + headShift }
           : overflow && p.start >= end
-            ? { ...p, start: p.start + overflow }
+            ? shifted(p, overflow)
             : p,
       );
       if (delta > 0) next.clips.push(gap(c.start, delta, c.layer));
@@ -284,9 +412,16 @@ export function trim(
   } else {
     next.clips = next.clips.map((p) =>
       ids.has(p.id)
-        ? { ...p, sourceOut: p.sourceOut + delta }
+        ? {
+            ...p,
+            sourceOut: p.sourceOut + delta,
+            heldRange:
+              ripple && p.heldRange
+                ? { ...p.heldRange, end: p.heldRange.end + delta }
+                : p.heldRange,
+          }
         : ripple && p.start >= end
-          ? { ...p, start: Math.max(0, p.start + delta) }
+          ? shifted(p, delta)
           : p,
     );
     if (!ripple) {
@@ -312,7 +447,7 @@ export function trim(
         if (overflow)
           next.clips = next.clips.map((p) =>
             !ids.has(p.id) && p.start >= end + bounded
-              ? { ...p, start: p.start + overflow }
+              ? shifted(p, overflow)
               : p,
           );
       }
