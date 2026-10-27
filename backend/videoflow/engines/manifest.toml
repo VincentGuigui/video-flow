@@ -6,6 +6,7 @@
 allowed_licenses = ["mit", "apache-2.0", "bsd-3-clause", "bsd-2-clause", "cc-by-4.0", "cc0-1.0"]
 
 [models.silero-vad]
+goal = "Finds where people speak, so transcription skips silence."
 purpose = "vad"
 repo = "onnx-community/silero-vad"
 revision = "e71cae966052b992a7eca6b17738916ce0eca4ec"
@@ -14,6 +15,7 @@ gated = false
 files = ["onnx/model.onnx"]
 
 [models."parakeet-tdt-0.6b-v3-int8"]
+goal = "Transcribes speech with word timecodes (default, fastest)."
 purpose = "asr"
 repo = "istupakov/parakeet-tdt-0.6b-v3-onnx"
 revision = "8f23f0c03c8761650bdb5b40aaf3e40d2c15f1ce"
@@ -22,6 +24,7 @@ gated = false
 files = ["config.json", "vocab.txt", "encoder-model.int8.onnx", "decoder_joint-model.int8.onnx"]
 
 [models.faster-whisper-tiny]
+goal = "Transcribes speech with word timecodes (Whisper alternative)."
 purpose = "asr"
 repo = "Systran/faster-whisper-tiny"
 revision = "d90ca5fe260221311c53c58e660288d3deb8d356"
@@ -30,6 +33,7 @@ gated = false
 files = ["config.json", "model.bin", "tokenizer.json", "vocabulary.txt"]
 
 [models.multilingual-e5-small]
+goal = "Matches similar sentences to group retakes. Not used by the editor yet."
 purpose = "text-embed"
 repo = "intfloat/multilingual-e5-small"
 revision = "614241f622f53c4eeff9890bdc4f31cfecc418b3"
@@ -42,6 +46,7 @@ passage_prefix = "query: "  # e5 symmetric tasks (paraphrase detection) use "que
 max_length = 128
 
 [models.paraphrase-multilingual-minilm-l12-v2]
+goal = "Matches similar sentences (alternative). Not used by the editor yet."
 purpose = "text-embed"
 repo = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 revision = "e8f8c211226b894fcb81acc59f3b34ba3efd5f42"
@@ -54,6 +59,7 @@ passage_prefix = ""
 max_length = 128
 
 [models.dinov2-small]
+goal = "Matches similar shots without speech (B-roll). Not used by the editor yet."
 purpose = "visual-embed"
 repo = "Xenova/dinov2-small"  # ONNX export of facebook/dinov2-small (Apache-2.0)
 revision = "c2bb04a51fab207c420665f1946016107bffc701"
@@ -63,6 +69,7 @@ files = ["onnx/model_quantized.onnx"]
 dim = 384
 
 [models."qwen2.5-0.5b-instruct"]
+goal = "Writes clip summaries and topic titles (optional)."
 purpose = "summary"
 repo = "Qwen/Qwen2.5-0.5B-Instruct"
 revision = "7ae557604adf67be50417f59c2c2f167def9a775"

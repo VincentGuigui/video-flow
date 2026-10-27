@@ -2399,3 +2399,7 @@ button.timecode:hover {
   grid-column: 1 / -1;
   color: #b35c0c;
 }
+.model-list p.model-goal {
+  font-size: 13px;
+  color: #3f5243;
+}

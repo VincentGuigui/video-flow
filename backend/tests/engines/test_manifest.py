@@ -122,3 +122,9 @@ def test_all_onnx_sessions_go_through_make_session():
             if "InferenceSession(" in path.read_text(encoding="utf-8"):
                 offenders.append(str(path.relative_to(ROOT)))
     assert offenders == []
+
+
+def test_every_shipped_model_states_its_goal() -> None:
+    for key, spec in mf.load_manifest().models.items():
+        assert spec.goal.strip(), key
+        assert len(spec.goal) <= 90, key

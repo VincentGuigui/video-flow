@@ -14,6 +14,7 @@ interface Model {
   id: string;
   name: string;
   purpose: string;
+  goal?: string;
   state: string;
   required: boolean;
   revision: string;
@@ -264,7 +265,8 @@ export function Settings({
                   <article key={model.id}>
                     <div>
                       <strong>{model.name}</strong>
-                      <p>
+                      {model.goal && <p className="model-goal">{model.goal}</p>}
+                      <p className="muted">
                         {model.purpose} · {model.license}
                         {required(model) ? " · selected" : " · optional"}
                       </p>

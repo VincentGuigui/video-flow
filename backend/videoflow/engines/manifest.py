@@ -22,6 +22,8 @@ class ModelSpec(BaseModel):
 
     key: str
     purpose: str
+    goal: str = ""
+    """What the model does for the user, shown in Settings."""
     repo: str
     revision: str
     license: str

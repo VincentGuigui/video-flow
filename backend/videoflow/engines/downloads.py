@@ -70,6 +70,7 @@ class ModelDownloads:
                     "id": key,
                     "name": spec.repo,
                     "purpose": spec.purpose,
+                    "goal": spec.goal,
                     "state": model_state(key),
                     "revision": spec.revision,
                     "required": key in required,
