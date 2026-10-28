@@ -104,6 +104,6 @@ Each model is pinned to a Hugging Face commit. Gated repositories and licences o
 | `parakeet-tdt-0.6b-v3-int8` | istupakov/parakeet-tdt-0.6b-v3-onnx | CC-BY-4.0 (credit NVIDIA Parakeet TDT 0.6B v3) | 670 MB | ASR (S4), default |
 | `qwen2.5-0.5b-instruct` | Qwen/Qwen2.5-0.5B-Instruct | Apache-2.0 | ~1 GB | Optional CPU summaries/keywords (`qwen` extra) |
 | `faster-whisper-tiny` | Systran/faster-whisper-tiny | MIT | 75 MB | ASR alternative (`whisper` extra), smoke tier |
-| `multilingual-e5-small` | intfloat/multilingual-e5-small | MIT | 118 MB (int8) | Text embeddings (S10), default |
-| `paraphrase-multilingual-minilm-l12-v2` | sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 | Apache-2.0 | 118 MB (uint8) | Text embeddings, alternative |
-| `dinov2-small` | Xenova/dinov2-small (export of facebook/dinov2-small) | Apache-2.0 | 24 MB (int8) | Visual embeddings (S7), optional |
+| `multilingual-e5-small` | intfloat/multilingual-e5-small | MIT | 118 MB (int8) | Text embeddings (S10), default; pipeline only, hidden in Settings |
+| `paraphrase-multilingual-minilm-l12-v2` | sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 | Apache-2.0 | 118 MB (uint8) | Text embeddings, alternative; pipeline only, hidden in Settings |
+| `dinov2-small` | Xenova/dinov2-small (export of facebook/dinov2-small) | Apache-2.0 | 24 MB (int8) | Visual embeddings (S7), optional; pipeline only, hidden in Settings |
