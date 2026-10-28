@@ -24,6 +24,8 @@ class ModelSpec(BaseModel):
     purpose: str
     goal: str = ""
     """What the model does for the user, shown in Settings."""
+    in_editor: bool = True
+    """False for models the editor does not use yet: hidden from Settings downloads."""
     repo: str
     revision: str
     license: str

@@ -33,7 +33,8 @@ gated = false
 files = ["config.json", "model.bin", "tokenizer.json", "vocabulary.txt"]
 
 [models.multilingual-e5-small]
-goal = "Matches similar sentences to group retakes. Not used by the editor yet."
+goal = "Matches similar sentences to group retakes."
+in_editor = false  # pipeline/CLI only: hidden from Settings downloads
 purpose = "text-embed"
 repo = "intfloat/multilingual-e5-small"
 revision = "614241f622f53c4eeff9890bdc4f31cfecc418b3"
@@ -46,7 +47,8 @@ passage_prefix = "query: "  # e5 symmetric tasks (paraphrase detection) use "que
 max_length = 128
 
 [models.paraphrase-multilingual-minilm-l12-v2]
-goal = "Matches similar sentences (alternative). Not used by the editor yet."
+goal = "Matches similar sentences (alternative)."
+in_editor = false  # pipeline/CLI only: hidden from Settings downloads
 purpose = "text-embed"
 repo = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 revision = "e8f8c211226b894fcb81acc59f3b34ba3efd5f42"
@@ -59,7 +61,8 @@ passage_prefix = ""
 max_length = 128
 
 [models.dinov2-small]
-goal = "Matches similar shots without speech (B-roll). Not used by the editor yet."
+goal = "Matches similar shots without speech (B-roll)."
+in_editor = false  # pipeline/CLI only: hidden from Settings downloads
 purpose = "visual-embed"
 repo = "Xenova/dinov2-small"  # ONNX export of facebook/dinov2-small (Apache-2.0)
 revision = "c2bb04a51fab207c420665f1946016107bffc701"

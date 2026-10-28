@@ -113,3 +113,18 @@ def test_import_waits_for_download_consent_and_can_be_cancelled(local_root):
         assert not (local_root / "models").exists()
         assert client.post(f"/api/jobs/cancel?job_id={identifier}").status_code == 200
         assert client.get("/api/jobs").json()[0]["state"] == "cancelled"
+
+
+def test_models_unused_by_the_editor_are_hidden_and_not_downloadable():
+    downloads = ModelDownloads()
+    listed = {m["id"] for m in downloads.status(Preferences())["models"]}
+    hidden = {k for k, s in load_manifest().models.items() if not s.in_editor}
+    assert hidden == {
+        "multilingual-e5-small",
+        "paraphrase-multilingual-minilm-l12-v2",
+        "dinov2-small",
+    }
+    assert not listed & hidden
+    assert {"silero-vad", "parakeet-tdt-0.6b-v3-int8"} <= listed
+    with pytest.raises(ValueError, match="not used by the editor"):
+        downloads.submit("dinov2-small")

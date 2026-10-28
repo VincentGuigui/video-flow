@@ -60,6 +60,8 @@ class ModelDownloads:
         required = required_models(preferences)
         models = []
         for key, spec in load_manifest().models.items():
+            if not spec.in_editor:
+                continue
             modules = (
                 ("torch", "transformers")
                 if spec.purpose == "summary"
@@ -82,7 +84,8 @@ class ModelDownloads:
         return {"directory": str(models_dir()), "models": models}
 
     def submit(self, key: str) -> dict[str, Any]:
-        load_manifest().get(key)
+        if not load_manifest().get(key).in_editor:
+            raise ValueError(f"{key} is not used by the editor")
         if key in self.tasks and not self.tasks[key].done():
             return self.jobs[key]
         job: dict[str, Any] = {"state": "queued", "progress": 0, "phase": "Waiting", "error": None}
