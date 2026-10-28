@@ -200,7 +200,7 @@ const SPEEDS = [0.25, 1 / 3, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
 // Clip speed (and its linked partner); later clips ripple by the change.
 export function SpeedControls({ clip }: { clip: Clip }) {
   const { project, document, save, busy } = useEditor();
-  if (!project || clip.kind === "gap") return null;
+  if (!project || clip.kind === "gap" || clip.kind === "text") return null;
   const current = speedOf(clip),
     range = currentRange(),
     target = range.end - range.start,

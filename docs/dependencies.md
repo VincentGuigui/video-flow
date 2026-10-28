@@ -16,6 +16,9 @@ Source of truth for versions: `backend/pyproject.toml` and `backend/uv.lock`. Ve
 | OpenTimelineIO-Plugins | 0.18 | Apache-2.0 | Interchange readers and EDL round-trip validation; CMX output uses our own writer |
 | rapidfuzz | 3.14 | MIT | Fuzzy text matching for retake detection |
 | python-ulid | 4.0 | MIT | Short sortable ids |
+| pillow | 13.0 (>= 10.1) | MIT-CMU (HPND) | Draws text clips (titles, lower thirds) as transparent pictures for the render and preview; wheels bundle FreeType |
+
+Bundled font: Inter 4.0 Regular and Bold (`backend/videoflow/assets/fonts/`, SIL Open Font License 1.1, licence in `OFL.txt` next to the files), used for titles. Titles do not need FFmpeg's `drawtext`, which some static builds (including the pinned Linux 7.0.2 build) lack.
 
 ## Dev (dependency group `dev`, installed by default by `uv sync`)
 

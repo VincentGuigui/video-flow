@@ -14,6 +14,7 @@ dependencies = [
     "opentimelineio>=0.17",
     "OpenTimelineIO-Plugins>=0.17",
     "rapidfuzz>=3.9",
+    "pillow>=10.1",
     "python-ulid>=3.0",
 ]
 

@@ -78,7 +78,7 @@ def editable_document(project: Project) -> EditorDocument:
 
 def validate_assets(document: EditorDocument, project: Project) -> None:
     for clip in document.clips:
-        if clip.kind == "gap":
+        if clip.kind in ("gap", "text"):
             continue
         asset = project.asset(clip.asset_id or "")
         if asset is None:
@@ -102,7 +102,7 @@ def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeli
     clips, duration, active = active_transitions(document, source_frames)
     tracks: list[ResolvedTrack] = []
     warnings: list[TimelineWarning] = []
-    base = min((c.layer for c in clips if c.kind == "video"), default=0)
+    base = min((c.layer for c in clips if c.kind in ("video", "text")), default=0)
     transitions: list[ResolvedTransition] = []
     for item in active:
         t = item.transition
@@ -136,12 +136,13 @@ def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeli
             )
         )
     for kind in ("audio", "video"):
-        layers = sorted({c.layer for c in clips if c.kind == kind or c.kind == "gap"})
+        lane_kinds = (kind, "gap") if kind == "audio" else (kind, "gap", "text")
+        layers = sorted({c.layer for c in clips if c.kind in lane_kinds})
         for index, layer in enumerate(layers):
             track_id = ("A" if kind == "audio" else "V") + str(index + 1)
             resolved = []
             for clip in sorted(clips, key=lambda c: (c.start, c.id)):
-                if clip.layer != layer or clip.kind not in (kind, "gap"):
+                if clip.layer != layer or clip.kind not in lane_kinds:
                     continue
                 asset = project.asset(clip.asset_id or "")
                 source_duration = frames(asset.probe.duration_us, rate) if asset else clip.duration
@@ -170,7 +171,9 @@ def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeli
                             if clip.kind == "audio"
                             else 0,
                         ),
-                        kind="gap" if clip.kind == "gap" else "media",
+                        # Text clips export as gaps carrying their title (spec 21).
+                        kind="media" if clip.kind in ("video", "audio") else "gap",
+                        **({"title": clip.title.dump()} if clip.title else {}),
                         **({"speed": clip.speed} if clip.speed != 1 else {}),
                         transform=clip.transform.dump(),
                         layer=clip.layer,
@@ -182,6 +185,14 @@ def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeli
             TimelineWarning(
                 code="editor_speed",
                 message="Clip speed is rendered; OTIO and EDL carry it as metadata only.",
+            )
+        )
+    if any(c.kind == "text" for c in clips):
+        warnings.append(
+            TimelineWarning(
+                code="editor_titles",
+                message="Titles are rendered and exported to Camtasia; OTIO and EDL carry "
+                "them as gaps (with their text as OTIO metadata).",
             )
         )
     if any(c.kind == "video" for c in clips):

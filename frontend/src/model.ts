@@ -1,6 +1,7 @@
 import type { Transition } from "./transitions";
 import type { Zoom } from "./zoom";
 import type { VolumeRange } from "./volume";
+import type { Title } from "./titles";
 export interface Transform {
   x: number;
   y: number;
@@ -13,7 +14,7 @@ export interface Transform {
 }
 export interface Clip {
   id: string;
-  kind: "video" | "audio" | "gap";
+  kind: "video" | "audio" | "gap" | "text";
   assetId: string | null;
   name: string;
   start: number;
@@ -29,6 +30,7 @@ export interface Clip {
   speed?: number; // 1 = normal; source frames per timeline frame
   zooms?: Zoom[];
   volumeRanges?: VolumeRange[];
+  title?: Title; // text clips only (spec 21)
   fadeIn?: number; // frames, edge fade at the clip's start (spec 21)
   fadeOut?: number;
   background?: { mode: "transparent" | "color" | "blur"; color: string };
@@ -122,6 +124,8 @@ export function layout(doc: Document): {
     position,
   };
 }
+// Text clips play on video lanes.
+const lane = (c: Clip) => (c.kind === "text" ? "video" : c.kind);
 export function occupied(c: Clip): [number, number] {
   return [
     Math.min(c.start, c.heldRange?.start ?? c.start),
@@ -383,7 +387,7 @@ export function move(
         other.layer === layer &&
         selected.some(
           (c) =>
-            c.kind === other.kind &&
+            lane(c) === lane(other) &&
             start < other.start + duration(other) &&
             start + duration(c) > other.start,
         ),
@@ -441,7 +445,11 @@ export function trim(
   delta =
     edge === "in"
       ? Math.max(
-          -Math.min(...selected.map((p) => toTimeline(p, p.sourceIn))),
+          -Math.min(
+            ...selected.map((p) =>
+              p.kind === "text" ? Infinity : toTimeline(p, p.sourceIn),
+            ),
+          ),
           Math.min(d - 1, delta),
         )
       : Math.max(
@@ -546,6 +554,12 @@ export function trim(
       }
     }
   }
+  // A text clip has no source: its range always starts at 0.
+  next.clips = next.clips.map((p) =>
+    p.kind === "text" && p.sourceIn
+      ? { ...p, sourceIn: 0, sourceOut: p.sourceOut - p.sourceIn }
+      : p,
+  );
   return ripple ? pack(next) : mergeGaps(next);
 }
 function mergeGaps(doc: Document): Document {
@@ -708,7 +722,8 @@ export function setSpeed(doc: Document, id: string, speed: number): Document {
   const selected = partners(doc, id),
     c = selected[0];
   speed = Math.min(10, Math.max(0.1, Math.round(speed * 1000) / 1000));
-  if (!c || c.kind === "gap" || speed === speedOf(c)) return doc;
+  if (!c || c.kind === "gap" || c.kind === "text" || speed === speedOf(c))
+    return doc;
   const ids = new Set(selected.map((p) => p.id)),
     end = c.start + duration(c),
     delta = duration({ ...c, speed }) - duration(c);

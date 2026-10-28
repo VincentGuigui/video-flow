@@ -13,6 +13,7 @@ a = Analysis(
     datas=[
         (str(root / "frontend" / "dist"), "frontend/dist"),
         (str(root / "backend" / "videoflow" / "engines" / "manifest.toml"), "videoflow/engines"),
+        (str(root / "backend" / "videoflow" / "assets" / "fonts"), "videoflow/assets/fonts"),
         (str(root / "docs" / "desktop-runtime.md"), "notices"),
     ] + collect_data_files("opentimelineio") + copy_metadata("opentimelineio"),
     hiddenimports=["videoflow.editor.analysis", "videoflow.engines.asr.parakeet_onnx",

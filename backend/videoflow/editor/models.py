@@ -107,9 +107,29 @@ class VolumeRange(CamelModel):
         return 0.0 if self.gain_db <= -60 else float(10 ** (self.gain_db / 20))
 
 
+class Title(CamelModel):
+    """Text of a text clip (spec 21), laid out by editor.titles."""
+
+    text: str = Field(min_length=1, max_length=1000)
+    """Lines separated by newlines."""
+    style: Literal["title", "lower_third"] = "title"
+    size: float = Field(default=0.08, ge=0.02, le=0.3)
+    """Font size of the first line, relative to the picture height."""
+    color: str = Field(default="#ffffff", pattern=r"^#[0-9a-fA-F]{6}$")
+    box: bool = False
+    box_color: str = Field(default="#000000", pattern=r"^#[0-9a-fA-F]{6}$")
+    box_opacity: float = Field(default=0.75, ge=0, le=1)
+
+    @model_validator(mode="after")
+    def valid(self) -> "Title":
+        if not self.text.strip():
+            raise ValueError("A title needs text")
+        return self
+
+
 class EditorClip(CamelModel):
     id: str = Field(min_length=1)
-    kind: Literal["video", "audio", "gap"]
+    kind: Literal["video", "audio", "gap", "text"]
     asset_id: str | None = None
     name: str
     start: int = Field(ge=0)
@@ -127,18 +147,24 @@ class EditorClip(CamelModel):
     """Frames fading in at the clip's start (picture from what lies below, audio from silence)."""
     fade_out: int = Field(default=0, ge=0)
     speed: float = Field(default=1.0, ge=0.1, le=10)
+    """Playback speed: source frames per timeline frame (spec 21)."""
     zooms: list[Zoom] = Field(default_factory=list, max_length=200)
     volume_ranges: list[VolumeRange] = Field(default_factory=list, max_length=2000)
-    """Playback speed: source frames per timeline frame (spec 21)."""
+    title: Title | None = None
+    """Text drawn by a text clip; text clips have no asset and play on video lanes."""
 
     @model_validator(mode="after")
     def valid(self) -> "EditorClip":
         if self.source_out <= self.source_in:
             raise ValueError("Clip must contain at least one frame")
-        if self.kind != "gap" and self.asset_id is None:
+        if self.kind in ("video", "audio") and self.asset_id is None:
             raise ValueError("Media clips require an asset")
-        if self.kind == "gap" and (self.asset_id is not None or self.link_id is not None):
-            raise ValueError("Empty clips have no asset or link")
+        if self.kind in ("gap", "text") and (self.asset_id is not None or self.link_id is not None):
+            raise ValueError("Empty and text clips have no asset or link")
+        if (self.kind == "text") != (self.title is not None):
+            raise ValueError("Text clips, and only they, have a title")
+        if self.kind == "text" and self.speed != 1:
+            raise ValueError("Text clips play at normal speed")
         return self
 
     @property

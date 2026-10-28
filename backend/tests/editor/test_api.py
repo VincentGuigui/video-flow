@@ -300,3 +300,18 @@ def test_global_cancel_stops_current_and_queued_imports(client, app_bundle, orig
     jobs = client.get("/api/jobs").json()
     assert all(job["state"] == "cancelled" for job in jobs if job["id"] in ids)
     assert not app_bundle[1].project.assets
+
+
+def test_title_picture_is_drawn_at_the_project_size(client):
+    import json
+    from io import BytesIO
+
+    from PIL import Image
+
+    spec = json.dumps({"text": "Hello", "style": "lower_third", "box": True})
+    response = client.get("/api/title", params={"spec": spec})
+    assert response.status_code == 200 and response.headers["content-type"] == "image/png"
+    picture = Image.open(BytesIO(response.content))
+    assert picture.size == (1920, 1080) and picture.mode == "RGBA"
+    assert client.get("/api/title", params={"spec": '{"text": " "}'}).status_code == 422
+    assert client.get("/api/title", params={"spec": "nope"}).status_code == 422

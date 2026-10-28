@@ -14,6 +14,8 @@ import {
   ChevronsLeft,
   Layers,
   MousePointer2,
+  Type,
+  PanelBottom,
 } from "lucide-react";
 import {
   clone,
@@ -34,6 +36,7 @@ import {
   type Document,
 } from "../model";
 import { useTimeline, useTimelineWheel } from "../timeline";
+import { addTitle, type Title } from "../titles";
 import { useEditor } from "../store";
 import { Waveform } from "./Waveform";
 
@@ -194,6 +197,29 @@ export function Flow() {
             <ChevronsLeft size={14} />
             Ripple
           </button>
+          {(["title", "lower_third"] as Title["style"][]).map((style) => (
+            <button
+              key={style}
+              disabled={busy || !project}
+              onClick={() => {
+                const added = addTitle(pack(document), style, frame, rate);
+                apply(added.doc);
+                set({ selected: added.id });
+              }}
+              title={
+                style === "title"
+                  ? "Add a title at the cursor, over the picture"
+                  : "Add a lower third (name and role) at the cursor"
+              }
+            >
+              {style === "title" ? (
+                <Type size={14} />
+              ) : (
+                <PanelBottom size={14} />
+              )}
+              {style === "title" ? "Title" : "Lower third"}
+            </button>
+          ))}
         </div>
       </div>
       <div
@@ -297,6 +323,8 @@ export function Flow() {
                     <Music2 size={12} />
                   ) : kind === "video" ? (
                     <Film size={13} />
+                  ) : kind === "text" ? (
+                    <Type size={13} />
                   ) : (
                     <span className="gap-icon" />
                   )}
@@ -314,8 +342,12 @@ export function Flow() {
                     }}
                   />
                 </div>
-                {kind === "video" && (
+                {(kind === "video" || kind === "text") && (
                   <div className="clip-detail">
+                    {kind === "text" &&
+                      (c.title?.style === "lower_third"
+                        ? "Lower third · "
+                        : "Title · ")}
                     {timecode(duration(c), rate)}
                   </div>
                 )}

@@ -804,7 +804,8 @@
           "enum": [
             "video",
             "audio",
-            "gap"
+            "gap",
+            "text"
           ],
           "title": "Kind",
           "type": "string"
@@ -864,6 +865,17 @@
           "minimum": 0,
           "title": "Start",
           "type": "integer"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Title"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "transform": {
           "$ref": "#/$defs/Transform"
@@ -2321,6 +2333,63 @@
         }
       },
       "title": "TimelineMarkerTarget",
+      "type": "object"
+    },
+    "Title": {
+      "additionalProperties": true,
+      "description": "Text of a text clip (spec 21), laid out by editor.titles.",
+      "properties": {
+        "box": {
+          "default": false,
+          "title": "Box",
+          "type": "boolean"
+        },
+        "boxColor": {
+          "default": "#000000",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Boxcolor",
+          "type": "string"
+        },
+        "boxOpacity": {
+          "default": 0.75,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Boxopacity",
+          "type": "number"
+        },
+        "color": {
+          "default": "#ffffff",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Color",
+          "type": "string"
+        },
+        "size": {
+          "default": 0.08,
+          "maximum": 0.3,
+          "minimum": 0.02,
+          "title": "Size",
+          "type": "number"
+        },
+        "style": {
+          "default": "title",
+          "enum": [
+            "title",
+            "lower_third"
+          ],
+          "title": "Style",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "Title",
       "type": "object"
     },
     "TrackName": {

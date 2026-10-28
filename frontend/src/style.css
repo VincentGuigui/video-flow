@@ -1043,6 +1043,11 @@ kbd {
   background: linear-gradient(100deg, #e6eee0, #dce9d3);
   border-color: #adc4a4;
 }
+.clip-card.text {
+  background: linear-gradient(100deg, #f6ecdf, #f1e2cf);
+  border-color: #dcc1a0;
+  color: #9a6a3a;
+}
 .clip-card.audio {
   background: #dee6f6;
   border-color: #a4b7dc;
@@ -2431,4 +2436,21 @@ button.timecode:hover {
   border-radius: 50%;
   background: #d9822b;
   pointer-events: none;
+}
+.title-controls textarea {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.preview-title {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
 }

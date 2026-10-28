@@ -19,8 +19,10 @@ from pathlib import Path
 from typing import Any
 
 from videoflow.core.time import frames
-from videoflow.editor.models import EditorClip
+from videoflow.editor.fonts import FAMILY
+from videoflow.editor.models import EditorClip, Title
 from videoflow.editor.resolve import document_for, editable_document
+from videoflow.editor.titles import layout_title, title_lines
 from videoflow.editor.transitions import active_transitions
 from videoflow.editor.zoom import ramps
 from videoflow.project.models import Asset, Project, ProjectSettings
@@ -90,6 +92,85 @@ _UNIFIED: dict[str, Any] = {
     "scalar": 1,
     "metadata": dict(_MEDIA_METADATA),
 }
+_CALLOUT_METADATA = {
+    **_MEDIA_METADATA,
+    "default-HAlign": "center",
+    "default-LineSpace": 0.0,
+    "default-VAlign": "center",
+    **{f"default-{k}{i}": v for k, v in (("anchor", 0.0), ("rotation", 0.0)) for i in range(3)},
+    **{f"default-scale{i}": 1.0 for i in range(3)},
+    **{f"default-shear{i}": 0.0 for i in range(3)},
+    **{f"default-translation{i}": 0.0 for i in range(3)},
+    "default-height": 250.0,
+    "default-width": 400.0,
+    "default-text-attributes": None,
+}
+
+
+def _double(value: float) -> dict[str, Any]:
+    return {"type": "double", "defaultValue": value, "interp": "linr"}
+
+
+_TEXT_DEF: dict[str, Any] = {
+    "kind": "remix",
+    "shape": "text",
+    "style": "basic",
+    "enable-ligatures": 1.0,
+    "height": 250.0,
+    "line-spacing": 0.0,
+    "width": 400.0,
+    "word-wrap": 1.0,
+    "horizontal-alignment": "center",
+    "resize-behavior": "resizeText",
+    "text": "",
+    "vertical-alignment": "center",
+    "font": {
+        "color-blue": 1.0,
+        "color-green": 1.0,
+        "color-red": 1.0,
+        "size": 64.0,
+        "tracking": 0.0,
+        "name": "Montserrat",
+        "weight": "Regular",
+    },
+    "textAttributes": {"type": "textAttributeList", "keyframes": []},
+}
+_CALLOUT: dict[str, Any] = {
+    "id": 0,
+    "_type": "Callout",
+    "def": _TEXT_DEF,
+    "attributes": {"ident": "", "autoRotateText": True},
+    "parameters": {
+        "translation0": _param(0.0),
+        "translation1": _param(0.0),
+        **{f"geometryCrop{i}": _param(0.0) for i in range(4)},
+    },
+    "effects": [],
+    "start": 0,
+    "duration": 0,
+    "mediaStart": 0,
+    "mediaDuration": 0,
+    "scalar": 1,
+    "metadata": _CALLOUT_METADATA,
+    "animationTracks": {},
+}
+_BOX_CALLOUT: dict[str, Any] = {
+    **_CALLOUT,
+    "def": {
+        **_TEXT_DEF,
+        "shape": "text-rectangle",
+        **{f"fill-color-{c}": _double(0.0) for c in ("red", "green", "blue")},
+        "fill-color-opacity": _double(1.0),
+        **{f"stroke-color-{c}": _double(0.0) for c in ("red", "green", "blue")},
+        "stroke-color-opacity": _double(1.0),
+        "stroke-width": _double(0.0),
+        "tail-x": 0.0,
+        "tail-y": -20.0,
+        "fill-style": "solid",
+        "stroke-style": "solid",
+    },
+}
+TEXT_SHAPES = ("text", "text-rectangle")
 _SOURCE_TRACK = {
     "range": [0, 0],
     "trackRect": [0, 0, 0, 0],
@@ -144,7 +225,7 @@ DEFAULT_TEMPLATE: dict[str, Any] = {
                         "tracks": [
                             {
                                 "trackIndex": 0,
-                                "medias": [_UNIFIED, _VIDEO, _AUDIO],
+                                "medias": [_UNIFIED, _VIDEO, _AUDIO, _CALLOUT, _BOX_CALLOUT],
                                 "transitions": [
                                     {
                                         "name": "Fade",
@@ -210,6 +291,8 @@ class Prototypes:
     track_attributes: dict[str, Any]
     bin_entry: dict[str, Any]
     bin_tracks: dict[int, dict[str, Any]]
+    callouts: dict[str, dict[str, Any]] = field(default_factory=dict)
+    """Text callouts by shape: plain text, and text on a filled rectangle."""
     warnings: list[str] = field(default_factory=list)
 
 
@@ -255,6 +338,18 @@ def prototypes(template: dict[str, Any]) -> Prototypes:
         (b for b in bins if any(t.get("type") == 0 for t in b.get("sourceTracks", []))), bins[0]
     )
     attributes = (template.get("timeline", {}).get("trackAttributes") or [None])[0]
+    callouts = {
+        shape: next(
+            m
+            for source in (medias, fallback)
+            for m in source
+            if m.get("_type") == "Callout"
+            and isinstance(m.get("def"), dict)
+            and m["def"].get("kind") == "remix"
+            and m["def"].get("shape") == shape
+        )
+        for shape in TEXT_SHAPES
+    }
     return Prototypes(
         unified=unified,
         video=video,
@@ -264,6 +359,7 @@ def prototypes(template: dict[str, Any]) -> Prototypes:
         track_attributes=attributes or DEFAULT_TEMPLATE["timeline"]["trackAttributes"][0],
         bin_entry=bin_entry,
         bin_tracks=bin_tracks,
+        callouts=callouts,
         warnings=warnings,
     )
 
@@ -338,9 +434,10 @@ def export_camtasia(
         return frames(asset.probe.duration_us, rate) if asset else clip.source_out
 
     clips, _, active = active_transitions(document, source_frames)
-    media_clips = [c for c in clips if c.kind != "gap" and c.asset_id in assets]
-    if not media_clips:
-        raise ValueError("The edit has no enabled media clips to export")
+    media_clips = [c for c in clips if c.kind in ("video", "audio") and c.asset_id in assets]
+    text_clips = [c for c in clips if c.kind == "text" and c.title]
+    if not media_clips and not text_clips:
+        raise ValueError("The edit has no enabled media or text clips to export")
     by_id = {c.id: c for c in media_clips}
     partner = {
         c.id: o.id
@@ -396,9 +493,31 @@ def export_camtasia(
             media["parameters"] = {"volume": {"type": "double", "keyframes": keyframes}}
         return media
 
+    def text_media(clip: EditorClip, title: Title) -> dict[str, Any]:
+        media = copy.deepcopy(proto.callouts["text-rectangle" if title.box else "text"])
+        media.update(
+            id=new_id(),
+            start=ticks(clip.start),
+            duration=ticks(clip.duration),
+            mediaStart=0,
+            mediaDuration=ticks(clip.duration),
+            scalar=1,
+        )
+        media.setdefault("attributes", {})["ident"] = clip.name
+        media["effects"] = []
+        media["def"] = _callout_def(media.get("def") or {}, title, settings)
+        parameters = media.setdefault("parameters", {})
+        layout = layout_title(title, settings.width, settings.height)
+        left, top, right, bottom = layout.bounds
+        _set(parameters, "translation0", round((left + right - settings.width) / 2, 4))
+        _set(parameters, "translation1", round((settings.height - top - bottom) / 2, 4))
+        return media
+
     # One Camtasia track per editor lane: video lanes bottom-up (linked audio travels
-    # inside UnifiedMedia), then lanes of independent audio.
-    lanes = sorted({("video", c.layer) for c in media_clips if c.kind == "video"}) + sorted(
+    # inside UnifiedMedia, text clips become callouts), then lanes of independent audio.
+    lanes = sorted(
+        {("video", c.layer) for c in [*media_clips, *text_clips] if c.kind != "audio"}
+    ) + sorted(
         {("audio", c.layer) for c in media_clips if c.kind == "audio" and c.id not in partner}
     )
     tracks, media_ids = [], {}
@@ -407,13 +526,17 @@ def export_camtasia(
         lane = sorted(
             (
                 c
-                for c in media_clips
-                if c.kind == kind and c.layer == layer and not (kind == "audio" and c.id in partner)
+                for c in [*media_clips, *text_clips]
+                if (c.kind == kind or kind == "video" and c.kind == "text")
+                and c.layer == layer
+                and not (kind == "audio" and c.id in partner)
             ),
             key=lambda c: c.start,
         )
         for clip in lane:
-            if kind == "video" and clip.id in partner:
+            if clip.title is not None:
+                media = text_media(clip, clip.title)
+            elif kind == "video" and clip.id in partner:
                 media = copy.deepcopy(proto.unified)
                 media["video"] = video_media(clip, proto.unified.get("video") or proto.video)
                 media["audio"] = audio_media(
@@ -457,8 +580,9 @@ def export_camtasia(
         track = tracks[index]
         used_left = {t.get("leftMedia") for t in track["transitions"]}
         used_right = {t.get("rightMedia") for t in track["transitions"]}
-        for clip in media_clips:
-            if clip.kind != kind or clip.layer != layer or clip.id not in media_ids:
+        for clip in [*media_clips, *text_clips]:
+            lane_kind = "video" if clip.kind == "text" else clip.kind
+            if lane_kind != kind or clip.layer != layer or clip.id not in media_ids:
                 continue
             identifier = media_ids[clip.id]
             for frames_, side, used in (
@@ -520,6 +644,82 @@ def _bin_entry(proto: Prototypes, asset: Asset, identifier: int) -> dict[str, An
         tracks.append(track)
     entry.update(id=identifier, src=asset.path, rect=[0, 0, width, height], sourceTracks=tracks)
     return entry
+
+
+def _callout_def(base: dict[str, Any], title: Title, settings: ProjectSettings) -> dict[str, Any]:
+    """A text callout's definition (spec 21): lines, fonts, alignment and box."""
+    layout = layout_title(title, settings.width, settings.height)
+    left, top, right, bottom = layout.bounds
+    lines = title_lines(title)
+    red, green, blue = _rgb(title.color)
+    attributes, start = [], 0
+    for index, (text, line) in enumerate(zip(lines, layout.lines, strict=True)):
+        # Ranges count UTF-16 units; the line break belongs to the line before it.
+        end = start + len(text.encode("utf-16-le")) // 2 + (index < len(lines) - 1)
+        values: list[tuple[str, Any, str]] = [
+            ("fontName", FAMILY, "string"),
+            ("fontSize", round(line.size, 2), "double"),
+            ("fontWeight", 700 if line.bold else 400, "int"),
+            (
+                "fgColor",
+                f"({round(red * 255)},{round(green * 255)},{round(blue * 255)},255)",
+                "color",
+            ),
+            ("fontItalic", 0, "int"),
+            ("underline", 0, "int"),
+            ("strikethrough", 0, "int"),
+            ("kerning", 0.0, "double"),
+        ]
+        attributes += [
+            {"name": n, "rangeEnd": end, "rangeStart": start, "value": v, "valueType": t}
+            for n, v, t in values
+        ]
+        start = end
+    definition = copy.deepcopy(base)
+    definition.update(
+        {
+            "text": "\r".join(lines),
+            "width": round(right - left, 4),
+            "height": round(bottom - top, 4),
+            "word-wrap": 0.0,
+            "horizontal-alignment": "center" if layout.centred else "left",
+            "vertical-alignment": "center",
+            "textAttributes": {
+                "type": "textAttributeList",
+                "keyframes": [{"endTime": 0, "time": 0, "value": attributes, "duration": 0}],
+            },
+        }
+    )
+    font = definition.setdefault("font", {})
+    font.update(
+        {"color-red": red, "color-green": green, "color-blue": blue},
+        size=round(layout.lines[0].size, 2),
+        name=FAMILY,
+        weight="Bold",
+    )
+    if title.box:
+        for channel, value in zip(("red", "green", "blue"), _rgb(title.box_color), strict=True):
+            _fill(definition, f"fill-color-{channel}", value)
+        _fill(definition, "fill-color-opacity", title.box_opacity)
+        _fill(definition, "stroke-width", 0.0)
+    return definition
+
+
+def _fill(definition: dict[str, Any], key: str, value: float) -> None:
+    current = definition.get(key)
+    if isinstance(current, dict):
+        current.pop("keyframes", None)
+        current["defaultValue"] = round(value, 6)
+    else:
+        definition[key] = {"type": "double", "defaultValue": round(value, 6), "interp": "linr"}
+
+
+def _rgb(color: str) -> tuple[float, float, float]:
+    return (
+        int(color[1:3], 16) / 255,
+        int(color[3:5], 16) / 255,
+        int(color[5:7], 16) / 255,
+    )
 
 
 def _volume_keyframes(clip: EditorClip, ticks: Any) -> list[dict[str, Any]]:

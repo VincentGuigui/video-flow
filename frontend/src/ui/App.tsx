@@ -21,6 +21,7 @@ import {
   X,
   Scissors,
   Download,
+  Type,
 } from "lucide-react";
 import {
   canRestoreAudio,
@@ -54,6 +55,7 @@ import { Flow } from "./Flow";
 import { Transport } from "./Transport";
 import { Transcript } from "./Transcript";
 import { Compare } from "./Compare";
+import { TitleControls } from "./TitleControls";
 import {
   FadeControls,
   SpeedControls,
@@ -699,17 +701,18 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
   return (
     <aside className="inspector">
       <div className="inspector-tabs">
-        {(clip ? ["Clip", "Transcript", "Project"] : ["Clip", "Project"]).map(
-          (t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={tab === t ? "active" : ""}
-            >
-              {t}
-            </button>
-          ),
-        )}
+        {(clip && clip.kind !== "text"
+          ? ["Clip", "Transcript", "Project"]
+          : ["Clip", "Project"]
+        ).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={tab === t ? "active" : ""}
+          >
+            {t}
+          </button>
+        ))}
       </div>
       {tab === "Project" ? (
         <div className="inspector-content">
@@ -728,34 +731,45 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
             </p>
           </div>
         </div>
-      ) : tab === "Transcript" && clip ? (
+      ) : tab === "Transcript" && clip && clip.kind !== "text" ? (
         <Transcript clip={clip} />
       ) : clip ? (
         <div className="inspector-content">
           <div className={`inspector-kind ${clip.kind}`}>
-            {clip.kind === "audio" ? <Music2 size={16} /> : <Film size={16} />}{" "}
+            {clip.kind === "audio" ? (
+              <Music2 size={16} />
+            ) : clip.kind === "text" ? (
+              <Type size={16} />
+            ) : (
+              <Film size={16} />
+            )}{" "}
             {clip.kind === "gap"
               ? "Empty clip"
               : clip.kind === "audio"
                 ? "Audio clip"
-                : "Video clip"}
+                : clip.kind === "text"
+                  ? "Text clip"
+                  : "Video clip"}
           </div>
           <h3 title={clip.name}>{clip.name}</h3>
-          <details className="inspector-section source-range" key={clip.id}>
-            <summary className="overline">Source range</summary>
-            <div className="stat-row">
-              <span>In</span>
-              <strong>{timecode(clip.sourceIn, rate)}</strong>
-            </div>
-            <div className="stat-row">
-              <span>Out</span>
-              <strong>{timecode(clip.sourceOut, rate)}</strong>
-            </div>
-            <div className="stat-row">
-              <span>Duration</span>
-              <strong>{timecode(duration(clip), rate)}</strong>
-            </div>
-          </details>
+          <TitleControls clip={clip} />
+          {clip.kind !== "text" && (
+            <details className="inspector-section source-range" key={clip.id}>
+              <summary className="overline">Source range</summary>
+              <div className="stat-row">
+                <span>In</span>
+                <strong>{timecode(clip.sourceIn, rate)}</strong>
+              </div>
+              <div className="stat-row">
+                <span>Out</span>
+                <strong>{timecode(clip.sourceOut, rate)}</strong>
+              </div>
+              <div className="stat-row">
+                <span>Duration</span>
+                <strong>{timecode(duration(clip), rate)}</strong>
+              </div>
+            </details>
+          )}
           {clip.kind === "video" && (
             <div className="inspector-section">
               <span className="overline">TRANSFORM</span>
@@ -818,7 +832,7 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
               </div>
             </div>
           )}
-          {!clip.linkId && clip.kind !== "gap" && (
+          {!clip.linkId && clip.kind !== "gap" && clip.kind !== "text" && (
             <div className="inspector-section">
               <label className="link-selector">
                 Link {clip.kind === "video" ? "audio" : "video"}

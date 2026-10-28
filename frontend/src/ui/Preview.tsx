@@ -19,6 +19,7 @@ import { BackgroundSelector } from "./BackgroundSelector";
 import { mediaUrl } from "../desktop";
 import { zoomAt } from "../zoom";
 import { envelopeAt } from "../volume";
+import { titleUrl } from "../titles";
 import {
   clipOpacity,
   dipOpacity,
@@ -390,7 +391,7 @@ export function Preview() {
       <div className="panel-title">
         <span>Preview & editor</span>
         <span className="muted">
-          {visible.some((c) => c.kind === "video")
+          {visible.some((c) => c.kind === "video" || c.kind === "text")
             ? "Composite view"
             : visible.some((c) => c.kind === "audio")
               ? "Audio playback"
@@ -412,22 +413,34 @@ export function Preview() {
               transformOrigin: "top left",
             }}
           >
-            {visible.map((c) => (
-              <Media
-                key={c.id}
-                clip={
-                  c.id === selected && draft ? { ...c, transform: draft } : c
-                }
-                frame={frame}
-                rate={rate}
-                playing={playing}
-                opacity={clipOpacity(plan, c, frame)}
-                gain={
-                  fadeGain(plan.audioFades.get(c.id), c, frame) *
-                  envelopeAt(c, frame)
-                }
-              />
-            ))}
+            {visible.map((c) =>
+              c.kind === "text" && c.title ? (
+                <img
+                  key={c.id}
+                  className="preview-title"
+                  data-testid="preview-title"
+                  src={titleUrl(c.title)}
+                  alt={c.title.text}
+                  draggable={false}
+                  style={{ opacity: clipOpacity(plan, c, frame) }}
+                />
+              ) : (
+                <Media
+                  key={c.id}
+                  clip={
+                    c.id === selected && draft ? { ...c, transform: draft } : c
+                  }
+                  frame={frame}
+                  rate={rate}
+                  playing={playing}
+                  opacity={clipOpacity(plan, c, frame)}
+                  gain={
+                    fadeGain(plan.audioFades.get(c.id), c, frame) *
+                    envelopeAt(c, frame)
+                  }
+                />
+              ),
+            )}
             {plan.dips.map((dip, i) => (
               <div
                 key={`dip${i}`}
@@ -481,7 +494,7 @@ export function Preview() {
               />
             ))}
           </div>
-          {!visible.some((c) => c.kind === "video") && (
+          {!visible.some((c) => c.kind === "video" || c.kind === "text") && (
             <div className="preview-empty">
               {visible.some((c) => c.kind === "audio") ? (
                 <Music2 size={35} />

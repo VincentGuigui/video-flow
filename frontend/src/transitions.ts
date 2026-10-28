@@ -278,7 +278,7 @@ export function setAllTransitions(
 function edgeFades(plan: Plan, clip: Clip) {
   const fadeIn = Math.min(clip.fadeIn ?? 0, duration(clip)),
     fadeOut = Math.min(clip.fadeOut ?? 0, duration(clip));
-  if (clip.kind === "video") {
+  if (clip.kind === "video" || clip.kind === "text") {
     if (fadeIn)
       plan.videoFadeIn.set(
         clip.id,

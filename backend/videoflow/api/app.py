@@ -15,15 +15,23 @@ from typing import Any, Literal
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import (
+    FileResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+    StreamingResponse,
+)
 from pydantic import Field
 
 from videoflow.core.base import CamelModel
 from videoflow.desktop.grants import SelectionGrants
 from videoflow.editor.analysis import AnalysisFile, load_analysis
 from videoflow.editor.imports import Imports
+from videoflow.editor.models import Title
 from videoflow.editor.playback import PlaybackProxies
 from videoflow.editor.resolve import editable_document
+from videoflow.editor.titles import title_png
 from videoflow.engines.downloads import ModelDownloads
 from videoflow.exporters.service import export_project
 from videoflow.media import ffmpeg
@@ -552,6 +560,17 @@ def create_app(
             if not result.ok:
                 raise HTTPException(422, "Could not create thumbnail")
         return FileResponse(target)
+
+    @app.get("/api/title")
+    async def title_picture(spec: str) -> Response:
+        """The title picture the render overlays, at the project size (spec 21)."""
+        try:
+            title = Title.model_validate_json(spec)
+        except ValueError as exc:
+            raise HTTPException(422, "Invalid title") from exc
+        settings = bundle.project.settings
+        png = await asyncio.to_thread(title_png, title, settings.width, settings.height)
+        return Response(png, media_type="image/png", headers={"Cache-Control": "max-age=3600"})
 
     @app.post("/api/export")
     async def export(payload: OutputRequest) -> Any:

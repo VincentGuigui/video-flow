@@ -235,3 +235,92 @@ def test_volume_ranges_become_camtasia_volume_keyframes():
         (f["time"], f["duration"], f["value"]) for f in audio["parameters"]["volume"]["keyframes"]
     ]
     assert frames == [(16 * TICKS, 4 * TICKS, 0.0), (30 * TICKS, 4 * TICKS, 1.0)]
+
+
+def test_text_clips_become_text_callouts():
+    from videoflow.editor.models import Title
+
+    p = project()
+    doc = document_for(p)
+    assert doc is not None
+    title = Title(text="Big title", size=0.1)
+    lower = Title(
+        text="Ada Lovelace\nMathématicienne",
+        style="lower_third",
+        size=0.06,
+        box=True,
+        box_color="#ff0000",
+        box_opacity=0.5,
+        color="#00ff00",
+    )
+    for identifier, start, layer, value_ in (("t1", 0, 2, title), ("t2", 60, 2, lower)):
+        doc.clips.append(
+            EditorClip(
+                id=identifier,
+                kind="text",
+                name=identifier,
+                start=start,
+                source_in=0,
+                source_out=25,
+                layer=layer,
+                fade_in=5 if identifier == "t1" else 0,
+                title=value_,
+            )
+        )
+    p, _ = SetEditor(document=doc).apply(p)
+    data = json.loads(cm.export_camtasia(p).text)
+    lane = tracks(data)[2]
+    first, second = lane["medias"]
+    assert first["_type"] == second["_type"] == "Callout"
+    assert first["def"]["shape"] == "text" and second["def"]["shape"] == "text-rectangle"
+    assert (second["start"], second["duration"], second["mediaStart"]) == (
+        60 * TICKS,
+        25 * TICKS,
+        0,
+    )
+    assert first["def"]["text"] == "Big title"
+    assert first["def"]["horizontal-alignment"] == "center"
+    assert value(first["parameters"], "translation0") == pytest.approx(0, abs=1e-6)
+    assert value(first["parameters"], "translation1") == pytest.approx(0, abs=1e-6)
+    d = second["def"]
+    assert d["text"] == "Ada Lovelace\rMathématicienne" and d["horizontal-alignment"] == "left"
+    assert d["fill-color-red"]["defaultValue"] == 1.0 and d["fill-color-green"]["defaultValue"] == 0
+    assert d["fill-color-opacity"]["defaultValue"] == 0.5
+    attributes = d["textAttributes"]["keyframes"][0]["value"]
+    sizes = [
+        (a["rangeStart"], a["rangeEnd"], a["value"]) for a in attributes if a["name"] == "fontSize"
+    ]
+    assert sizes == [(0, 13, 64.8), (13, 28, 45.36)]
+    weights = [a["value"] for a in attributes if a["name"] == "fontWeight"]
+    assert weights == [700, 400]
+    assert {a["value"] for a in attributes if a["name"] == "fgColor"} == {"(0,255,0,255)"}
+    assert {a["value"] for a in attributes if a["name"] == "fontName"} == {"Inter"}
+    # Bottom-left: left of the canvas centre, below it (Camtasia y points up).
+    assert value(second["parameters"], "translation0") < -400
+    assert value(second["parameters"], "translation1") < -300
+    fades = [t for t in lane["transitions"] if t.get("rightMedia") == first["id"]]
+    assert len(fades) == 1 and fades[0]["duration"] == 5 * TICKS
+    assert "leftMedia" not in fades[0]
+
+
+def test_titles_alone_export():
+    from videoflow.editor.models import Title
+
+    p = project()
+    doc = EditorDocument(
+        clips=[
+            EditorClip(
+                id="t",
+                kind="text",
+                name="t",
+                start=0,
+                source_in=0,
+                source_out=25,
+                title=Title(text="Only a title"),
+            )
+        ]
+    )
+    p, _ = SetEditor(document=doc).apply(p)
+    data = json.loads(cm.export_camtasia(p).text)
+    assert data["sourceBin"] == []
+    assert [m["_type"] for t in tracks(data) for m in t["medias"]] == ["Callout"]

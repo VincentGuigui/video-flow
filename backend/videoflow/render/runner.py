@@ -18,7 +18,7 @@ from videoflow.media.caps import get_caps
 from videoflow.media.proxy import default_hw_report
 from videoflow.project.models import Project
 from videoflow.project.store import Bundle, save_atomic
-from videoflow.render.graph import Preset, RenderGraph, compile_graph
+from videoflow.render.graph import Preset, RenderGraph, compile_graph, write_titles
 from videoflow.render.loudness import measured_filter, measurement
 
 type Progress = Callable[[float, str], None]
@@ -60,7 +60,8 @@ async def render_project(
     identifier = render_id or uuid.uuid4().hex
     if not re.fullmatch(r"[A-Za-z0-9_-]+", identifier):
         raise ValueError("Invalid render identifier")
-    plan = compile_graph(project, preset)
+    plan = compile_graph(project, preset, bundle.cache_dir / "titles")
+    await asyncio.to_thread(write_titles, plan)
     folder = bundle.cache_dir / "render" / identifier
     folder.mkdir(parents=True, exist_ok=False)
     bundle.renders_dir.mkdir(parents=True, exist_ok=True)

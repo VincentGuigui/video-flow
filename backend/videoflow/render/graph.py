@@ -1,12 +1,14 @@
 """Compile the interactive edit to independent video/audio filter graphs."""
 
-from dataclasses import dataclass
+import hashlib
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
 from videoflow.core.time import Rational, frames, frames_to_samples
-from videoflow.editor.models import EditorClip, EditorDocument
+from videoflow.editor.models import EditorClip, EditorDocument, Title
 from videoflow.editor.resolve import document_for, editable_document, validate_assets
+from videoflow.editor.titles import title_png
 from videoflow.editor.transitions import plan_transitions
 from videoflow.editor.volume import volume_expression
 from videoflow.editor.zoom import zoompan_expressions
@@ -27,6 +29,16 @@ class RenderGraph:
     samples: int
     rate: Rational
     warnings: list[str]
+    titles: dict[Path, Title] = field(default_factory=dict)
+    """Title pictures (video inputs) to draw before running FFmpeg; see write_titles."""
+
+
+def write_titles(graph: RenderGraph) -> None:
+    """Draw the transparent title pictures the graph reads, once per title and size."""
+    for path, title in graph.titles.items():
+        if not path.is_file():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(title_png(title, graph.width, graph.height))
 
 
 def _window(start: int, end: int, rate: Rational) -> str:
@@ -103,8 +115,13 @@ def render_document(project: Project) -> EditorDocument:
     return document
 
 
-def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
-    """Original sources only. Input indices are local to each independent graph."""
+def compile_graph(
+    project: Project, preset: Preset = "final", titles_dir: Path = Path("titles")
+) -> RenderGraph:
+    """Original sources only. Input indices are local to each independent graph.
+
+    Text clips read title pictures from `titles_dir`, drawn by write_titles.
+    """
     document = render_document(project)
     assets_by_id = {a.id: a for a in project.assets}
 
@@ -136,12 +153,37 @@ def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
         f"anullsrc=r={sample_rate}:cl=stereo,atrim=end_sample={samples},asetpts=PTS-STARTPTS[a0]"
     ]
     inputs: list[Path] = []
+    titles: dict[Path, Title] = {}
     audio_inputs: list[Path] = []
     warnings: list[str] = list(plan.warnings)
     assets = {a.id: a for a in project.assets}
     video_count = 0
     for clip in sorted(clips, key=lambda c: (c.layer, c.start, c.id)):
         if clip.kind == "gap":
+            continue
+        if clip.kind == "text" and clip.title:
+            # A transparent picture of the title, repeated for the clip's frames (spec 21).
+            index = len(inputs)
+            key = f"{clip.title.model_dump_json()}:{out_w}x{out_h}".encode()
+            image = titles_dir / f"{hashlib.sha256(key).hexdigest()[:24]}.png"
+            inputs.append(image)
+            titles[image] = clip.title
+            fade_in = plan.video_fade_in.get(clip.id, 0)
+            fade_out = plan.video_fade_out.get(clip.id, 0)
+            alpha = f",fade=t=in:s=0:n={fade_in}:alpha=1" if fade_in else ""
+            if fade_out:
+                alpha += f",fade=t=out:s={clip.duration - fade_out}:n={fade_out}:alpha=1"
+            video.append(
+                f"[{index}:v:0]format=rgba,loop=loop={clip.duration - 1}:size=1:start=0,"
+                f"trim=end_frame={clip.duration}{alpha},"
+                f"settb=AVTB,setpts=(N+{clip.start})*{rate.den}/{rate.num}/TB[t{index}]"
+            )
+            video.append(
+                f"[v{video_count}][t{index}]overlay=eof_action=pass:repeatlast=0:format=rgb:"
+                f"enable='{_window(clip.start, clip.start + clip.duration, rate)}'"
+                f"[v{video_count + 1}]"
+            )
+            video_count += 1
             continue
         asset = assets[clip.asset_id or ""]
         source = Path(asset.path)
@@ -285,4 +327,5 @@ def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
         samples,
         rate,
         warnings,
+        titles,
     )

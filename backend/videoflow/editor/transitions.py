@@ -157,7 +157,7 @@ def _edge_fades(plan: TransitionPlan, clip: EditorClip) -> None:
     fade_in, fade_out = min(clip.fade_in, clip.duration), min(clip.fade_out, clip.duration)
     if not (fade_in or fade_out):
         return
-    if clip.kind == "video":
+    if clip.kind in ("video", "text"):
         if fade_in:
             plan.video_fade_in[clip.id] = max(plan.video_fade_in.get(clip.id, 0), fade_in)
         if fade_out:
