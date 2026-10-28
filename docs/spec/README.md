@@ -31,6 +31,7 @@ Initial draft: 2026-10-23. Latest accepted architecture revision: 2026-10-25. Re
 | 17 | [17-transitions.md](17-transitions.md) | Cross dissolve and dips between adjacent clips: model, preview, render, OTIO/EDL export |
 | 18 | [18-retake-grouping.md](18-retake-grouping.md) | Retake grouping on import: model benchmark, MiniLM + word overlap, coverage rule |
 | 19 | [19-camtasia-export.md](19-camtasia-export.md) | Camtasia .tscproj export: template-driven writer, mapping, limits |
+| 20 | [20-camtasia-inspired-backlog.md](20-camtasia-inspired-backlog.md) | Findings from the user's Camtasia projects and the resulting feature backlog |
 
 Suggested reading order: 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 09 and 08 for current decisions, then 02, 04 and 05 for product behavior and data, 03 and 06 for implementation, and 07 for historical roadmap context.
 
