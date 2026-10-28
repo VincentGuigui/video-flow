@@ -1,6 +1,7 @@
 import {
   fps,
   layout,
+  partners,
   setSpeed,
   span,
   speedOf,
@@ -8,6 +9,8 @@ import {
   type Clip,
 } from "../model";
 import { zoomForRange, type Zoom } from "../zoom";
+import { duckRanges, sourceRange, withVolumeRanges } from "../volume";
+import { useAnalyses } from "./useAnalysis";
 import { currentRange } from "../playback";
 import { useEditor } from "../store";
 import {
@@ -326,6 +329,126 @@ export function ZoomControls({ clip }: { clip: Clip }) {
       >
         Add zoom over range
       </button>
+    </div>
+  );
+}
+
+// Mute ranges and ducking on the audio of the selected clip (spec 21).
+export function AudioControls({ clip }: { clip: Clip }) {
+  const { project, document, save, busy } = useEditor();
+  const others = document.clips.filter(
+    (c) => c.enabled && c.kind === "audio" && c.id !== clip.id && c.assetId,
+  );
+  const analyses = useAnalyses(
+    clip.kind === "audio" && !clip.linkId
+      ? [...new Set(others.map((c) => c.assetId!))]
+      : [],
+  );
+  if (!project || clip.kind === "gap") return null;
+  const rate = fps(project.settings),
+    audio = partners(document, clip.id).find((c) => c.kind === "audio");
+  if (!audio) return null;
+  const ranges = audio.volumeRanges ?? [],
+    target = sourceRange(document, audio, currentRange()),
+    mutes = ranges.filter((r) => r.kind === "mute"),
+    ducks = ranges.filter((r) => r.kind === "duck"),
+    ids = new Set([audio.id]);
+  const placed = layout(document).clips.find((c) => c.id === audio.id);
+  const time = (source: number) =>
+    timecode(
+      (placed?.start ?? 0) +
+        Math.round((source - audio.sourceIn) / speedOf(audio)),
+      rate,
+    );
+  const words = Object.fromEntries(
+    Object.entries(analyses).map(([id, a]) => [id, a?.words ?? []]),
+  );
+  const duck =
+    clip.kind === "audio" && !clip.linkId
+      ? duckRanges(document, audio.id, words, rate)
+      : [];
+  return (
+    <div className="inspector-section transition-controls">
+      <span className="overline">AUDIO</span>
+      {mutes.map((r, index) => (
+        <div key={index} className="zoom-row">
+          <span className="zoom-times">
+            Muted {time(r.start)} – {time(r.end)}
+          </span>
+          <span />
+          <span />
+          <button
+            className="icon-button"
+            aria-label={`Remove muted range ${index + 1}`}
+            disabled={busy}
+            onClick={() =>
+              void save(
+                withVolumeRanges(document, ids, (c) =>
+                  (c.volumeRanges ?? []).filter((x) => x !== r),
+                ),
+              )
+            }
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      <button
+        className="button"
+        disabled={busy || !target}
+        title="Silence the audio inside the timeline range; the picture is kept"
+        onClick={() =>
+          target &&
+          void save(
+            withVolumeRanges(document, ids, (c) => [
+              ...(c.volumeRanges ?? []),
+              {
+                ...target,
+                gainDb: -60,
+                ramp: Math.max(1, Math.round(0.1 * rate * speedOf(c))),
+                kind: "mute",
+              },
+            ]),
+          )
+        }
+      >
+        Mute range
+      </button>
+      {clip.kind === "audio" && !clip.linkId && (
+        <>
+          <button
+            className="button"
+            disabled={busy || (!duck.length && !ducks.length)}
+            title="Lower this clip by 15 dB wherever other clips have transcribed speech"
+            onClick={() =>
+              void save(
+                withVolumeRanges(document, ids, (c) => [
+                  ...(c.volumeRanges ?? []).filter((x) => x.kind !== "duck"),
+                  ...duck,
+                ]),
+              )
+            }
+          >
+            {ducks.length ? "Update ducking" : "Duck under speech"} (
+            {duck.length})
+          </button>
+          {ducks.length > 0 && (
+            <button
+              className="button"
+              disabled={busy}
+              onClick={() =>
+                void save(
+                  withVolumeRanges(document, ids, (c) =>
+                    (c.volumeRanges ?? []).filter((x) => x.kind !== "duck"),
+                  ),
+                )
+              }
+            >
+              Remove ducking ({ducks.length} ranges)
+            </button>
+          )}
+        </>
+      )}
     </div>
   );
 }

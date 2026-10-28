@@ -1,7 +1,15 @@
+import numpy as np
 import pytest
 
 from tests.render import test_render as base
-from videoflow.editor.models import EditorClip, EditorDocument, EditorTransition, Transform, Zoom
+from videoflow.editor.models import (
+    EditorClip,
+    EditorDocument,
+    EditorTransition,
+    Transform,
+    VolumeRange,
+    Zoom,
+)
 from videoflow.media import ffmpeg
 from videoflow.media.ingest import ingest_files
 from videoflow.project.commands import SetEditor
@@ -203,3 +211,41 @@ async def test_zoom_magnifies_toward_the_focus_point_and_returns(edit, tmp_path)
     after = right_quarter(await pixels(output.path, 45, tmp_path))
     assert before[2] > 200 and after[2] > 200  # blue on the right without zoom
     assert held[0] > 200 and held[2] < 60  # zoomed on the left edge: red everywhere
+
+
+async def test_mute_and_duck_ranges_shape_the_rendered_audio(edit, tmp_path):
+    red = edit.project.assets[0].id
+    doc = EditorDocument(
+        clips=[
+            EditorClip(
+                id="a",
+                kind="audio",
+                asset_id=red,
+                name="Tone",
+                start=0,
+                source_in=0,
+                source_out=75,
+                volume_ranges=[
+                    VolumeRange(start=25, end=50, ramp=0),
+                    VolumeRange(start=50, end=75, gain_db=-20, ramp=0, kind="duck"),
+                ],
+            ),
+        ]
+    )
+    project, _ = SetEditor(document=doc).apply(edit.project)
+    edit.save(project)
+    output = await render_project(edit.project, edit, hw="cpu", normalize=False)
+    pcm = tmp_path / "audio.f32"
+    dumped = await ffmpeg.run(
+        ["-y", "-i", str(output.path), "-vn", "-ac", "1", "-ar", "8000", "-f", "f32le", str(pcm)]
+    )
+    assert dumped.ok, dumped.stderr_tail
+    samples = np.frombuffer(pcm.read_bytes(), dtype="<f4")
+
+    def rms(a, b):
+        part = samples[int(a * 8000) : int(b * 8000)]
+        return float(np.sqrt(np.mean(part**2)))
+
+    loud, muted, ducked = rms(0.1, 0.9), rms(1.1, 1.9), rms(2.1, 2.9)
+    assert muted < loud * 0.01
+    assert 0.07 < ducked / loud < 0.14  # -20 dB = 0.1

@@ -86,6 +86,27 @@ class Zoom(CamelModel):
         return self
 
 
+class VolumeRange(CamelModel):
+    """Lowered or muted audio over a source range (spec 21); ramps sit outside the range."""
+
+    start: int = Field(ge=0)
+    end: int = Field(gt=0)
+    gain_db: float = Field(default=-60, ge=-60, le=0)
+    """-60 dB means silence."""
+    ramp: int = Field(default=4, ge=0)
+    kind: Literal["mute", "duck"] = "mute"
+
+    @model_validator(mode="after")
+    def valid(self) -> "VolumeRange":
+        if self.end <= self.start:
+            raise ValueError("A volume range must last at least one frame")
+        return self
+
+    @property
+    def factor(self) -> float:
+        return 0.0 if self.gain_db <= -60 else float(10 ** (self.gain_db / 20))
+
+
 class EditorClip(CamelModel):
     id: str = Field(min_length=1)
     kind: Literal["video", "audio", "gap"]
@@ -107,6 +128,7 @@ class EditorClip(CamelModel):
     fade_out: int = Field(default=0, ge=0)
     speed: float = Field(default=1.0, ge=0.1, le=10)
     zooms: list[Zoom] = Field(default_factory=list, max_length=200)
+    volume_ranges: list[VolumeRange] = Field(default_factory=list, max_length=2000)
     """Playback speed: source frames per timeline frame (spec 21)."""
 
     @model_validator(mode="after")

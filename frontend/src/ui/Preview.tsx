@@ -18,6 +18,7 @@ import { snapHandle } from "../snap";
 import { BackgroundSelector } from "./BackgroundSelector";
 import { mediaUrl } from "../desktop";
 import { zoomAt } from "../zoom";
+import { envelopeAt } from "../volume";
 import {
   clipOpacity,
   dipOpacity,
@@ -421,7 +422,10 @@ export function Preview() {
                 rate={rate}
                 playing={playing}
                 opacity={clipOpacity(plan, c, frame)}
-                gain={fadeGain(plan.audioFades.get(c.id), c, frame)}
+                gain={
+                  fadeGain(plan.audioFades.get(c.id), c, frame) *
+                  envelopeAt(c, frame)
+                }
               />
             ))}
             {plan.dips.map((dip, i) => (

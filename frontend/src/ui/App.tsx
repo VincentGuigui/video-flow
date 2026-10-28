@@ -57,6 +57,7 @@ import { Compare } from "./Compare";
 import {
   FadeControls,
   SpeedControls,
+  AudioControls,
   TransitionControls,
   ZoomControls,
 } from "./TransitionControls";
@@ -933,6 +934,7 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
           <FadeControls clip={clip} />
           <SpeedControls clip={clip} />
           <ZoomControls clip={clip} />
+          <AudioControls clip={clip} />
           <div className="inspector-tip">
             <Scissors size={17} />
             <p>

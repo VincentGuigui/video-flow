@@ -868,6 +868,14 @@
         "transform": {
           "$ref": "#/$defs/Transform"
         },
+        "volumeRanges": {
+          "items": {
+            "$ref": "#/$defs/VolumeRange"
+          },
+          "maxItems": 2000,
+          "title": "Volumeranges",
+          "type": "array"
+        },
         "zooms": {
           "items": {
             "$ref": "#/$defs/Zoom"
@@ -2700,6 +2708,50 @@
         "frameRate"
       ],
       "title": "VideoStreamInfo",
+      "type": "object"
+    },
+    "VolumeRange": {
+      "additionalProperties": true,
+      "description": "Lowered or muted audio over a source range (spec 21); ramps sit outside the range.",
+      "properties": {
+        "end": {
+          "exclusiveMinimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "gainDb": {
+          "default": -60,
+          "maximum": 0,
+          "minimum": -60,
+          "title": "Gaindb",
+          "type": "number"
+        },
+        "kind": {
+          "default": "mute",
+          "enum": [
+            "mute",
+            "duck"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "ramp": {
+          "default": 4,
+          "minimum": 0,
+          "title": "Ramp",
+          "type": "integer"
+        },
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "VolumeRange",
       "type": "object"
     },
     "Zoom": {

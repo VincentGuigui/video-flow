@@ -392,6 +392,8 @@ def export_camtasia(
         timing(media, clip)
         media.setdefault("attributes", {})["gain"] = round(10 ** (clip.gain_db / 20), 6)
         media.pop("parameters", None)  # the template's volume keyframes do not apply
+        if keyframes := _volume_keyframes(clip, ticks):
+            media["parameters"] = {"volume": {"type": "double", "keyframes": keyframes}}
         return media
 
     # One Camtasia track per editor lane: video lanes bottom-up (linked audio travels
@@ -518,6 +520,20 @@ def _bin_entry(proto: Prototypes, asset: Asset, identifier: int) -> dict[str, An
         tracks.append(track)
     entry.update(id=identifier, src=asset.path, rect=[0, 0, width, height], sourceTracks=tracks)
     return entry
+
+
+def _volume_keyframes(clip: EditorClip, ticks: Any) -> list[dict[str, Any]]:
+    """Mute and ducking ranges (spec 21) as volume keyframes in media time."""
+    keyframes = []
+    for r in sorted(clip.volume_ranges, key=lambda r: r.start):
+        if r.end + r.ramp <= clip.source_in or r.start - r.ramp >= clip.source_out:
+            continue
+        for time, value in ((r.start - r.ramp, r.factor), (r.end, 1.0)):
+            start, span = ticks(max(0, time)), ticks(r.ramp)
+            keyframes.append(
+                {"endTime": start + span, "time": start, "value": round(value, 6), "duration": span}
+            )
+    return keyframes
 
 
 def _zoom_keyframes(

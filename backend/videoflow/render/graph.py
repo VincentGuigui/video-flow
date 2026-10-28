@@ -8,6 +8,7 @@ from videoflow.core.time import Rational, frames, frames_to_samples
 from videoflow.editor.models import EditorClip, EditorDocument
 from videoflow.editor.resolve import document_for, editable_document, validate_assets
 from videoflow.editor.transitions import plan_transitions
+from videoflow.editor.volume import volume_expression
 from videoflow.editor.zoom import zoompan_expressions
 from videoflow.project.models import Project
 
@@ -47,6 +48,12 @@ def _zoompan(clip: EditorClip, w: int, h: int, fps: str) -> str:
         return ""
     z, x, y = expressions
     return f"zoompan=z='{z}':x='{x}':y='{y}':d=1:s={w}x{h}:fps={fps},"
+
+
+def _volume(clip: EditorClip, rate: Rational) -> str:
+    """Mute and ducking ranges as a per-frame gain envelope (spec 21)."""
+    expression = volume_expression(clip, rate.num / rate.den)
+    return f"volume='{expression}':eval=frame," if expression else ""
 
 
 def _retime(speed: float, fps: str) -> str:
@@ -231,7 +238,7 @@ def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
                 f"[{index}:a:0]aresample={sample_rate},"
                 f"aformat=sample_fmts=fltp:channel_layouts=stereo,"
                 f"atrim=start_sample={source_in}:end_sample={source_in + source_count},"
-                f"asetpts=PTS-STARTPTS,{_atempo(clip.speed)}"
+                f"asetpts=PTS-STARTPTS,{_atempo(clip.speed)}{_volume(clip, rate)}"
                 f"apad=whole_len={count},atrim=end_sample={count},"
                 f"{fades}volume={_number(clip.gain_db)}dB,adelay={delay}S:all=1[s{index}]"
             )

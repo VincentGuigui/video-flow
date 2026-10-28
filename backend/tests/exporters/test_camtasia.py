@@ -4,7 +4,14 @@ import pytest
 
 from tests.timeline.builders import asset
 from videoflow.core.time import Rational
-from videoflow.editor.models import EditorClip, EditorDocument, EditorTransition, Transform, Zoom
+from videoflow.editor.models import (
+    EditorClip,
+    EditorDocument,
+    EditorTransition,
+    Transform,
+    VolumeRange,
+    Zoom,
+)
 from videoflow.editor.resolve import document_for
 from videoflow.exporters import camtasia as cm
 from videoflow.exporters.service import export_project
@@ -213,3 +220,18 @@ def test_zoom_becomes_scale_and_translation_keyframes():
     # Focus at a quarter of the frame: picture moves right and down (y up) to keep it fixed.
     assert parameters["translation0"]["keyframes"][0]["value"] == 480.0
     assert parameters["translation1"]["keyframes"][0]["value"] == -270.0
+
+
+def test_volume_ranges_become_camtasia_volume_keyframes():
+    p = project()
+    doc = document_for(p)
+    mute = VolumeRange(start=20, end=30, ramp=4)
+    clips = [
+        c.model_copy(update={"volume_ranges": [mute]}) if c.id == "a1" else c for c in doc.clips
+    ]
+    p, _ = SetEditor(document=doc.model_copy(update={"clips": clips})).apply(p)
+    audio = tracks(json.loads(cm.export_camtasia(p).text))[0]["medias"][0]["audio"]
+    frames = [
+        (f["time"], f["duration"], f["value"]) for f in audio["parameters"]["volume"]["keyframes"]
+    ]
+    assert frames == [(16 * TICKS, 4 * TICKS, 0.0), (30 * TICKS, 4 * TICKS, 1.0)]

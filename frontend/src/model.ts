@@ -1,5 +1,6 @@
 import type { Transition } from "./transitions";
 import type { Zoom } from "./zoom";
+import type { VolumeRange } from "./volume";
 export interface Transform {
   x: number;
   y: number;
@@ -27,6 +28,7 @@ export interface Clip {
   heldRange?: { start: number; end: number } | null;
   speed?: number; // 1 = normal; source frames per timeline frame
   zooms?: Zoom[];
+  volumeRanges?: VolumeRange[];
   fadeIn?: number; // frames, edge fade at the clip's start (spec 21)
   fadeOut?: number;
   background?: { mode: "transparent" | "color" | "blur"; color: string };
