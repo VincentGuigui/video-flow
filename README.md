@@ -58,7 +58,7 @@ Import stacks retakes on parallel lanes: sentences are compared with the local M
 
 ## Transitions
 
-Select a video clip: Transitions in clip properties sets the cut to the previous or next clip to Cut, Cross dissolve, Dip to black or Dip to white, with a duration in seconds, or applies one transition to all cuts. Dissolves use source media beyond the cut and are shortened (with a warning) when there is not enough. Transitions show on the timeline, play in the preview and render in the MP4. Fades in clip properties fade a clip in from black and out to black (picture and sound). Speed sets a clip's playback speed (25–400 %, or fit to the timeline range); later clips move accordingly and audio keeps its pitch. Zoom & pan adds an eased zoom toward a point you click, over the timeline range.
+Select a video clip: Transitions in clip properties sets the cut to the previous or next clip to Cut, Cross dissolve, Dip to black or Dip to white, with a duration in seconds, or applies one transition to all cuts. Dissolves use source media beyond the cut and are shortened (with a warning) when there is not enough. Transitions show on the timeline, play in the preview and render in the MP4. Fades in clip properties fade a clip in from black and out to black (picture and sound). Speed sets a clip's playback speed (25–400 %, or fit to the timeline range); later clips move accordingly and audio keeps its pitch. Zoom & pan adds an eased zoom toward a point you click, over the timeline range. Audio → Mute range silences the clip's sound inside the timeline range; on a music clip (an audio clip not linked to a video), Duck under speech lowers it by 15 dB wherever other clips have transcribed speech.
 
 ## Settings and local models
 
