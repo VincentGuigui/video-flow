@@ -1,4 +1,13 @@
-import { fps, setSpeed, span, speedOf, type Clip } from "../model";
+import {
+  fps,
+  layout,
+  setSpeed,
+  span,
+  speedOf,
+  timecode,
+  type Clip,
+} from "../model";
+import { zoomForRange, type Zoom } from "../zoom";
 import { currentRange } from "../playback";
 import { useEditor } from "../store";
 import {
@@ -225,6 +234,97 @@ export function SpeedControls({ clip }: { clip: Clip }) {
         onClick={() => void save(setSpeed(document, clip.id, fit))}
       >
         Fit to range ({Math.round(fit * 100)} %)
+      </button>
+    </div>
+  );
+}
+
+const ZOOM_SCALES = [1.5, 2, 3, 4];
+
+// Zoom & pan on the selected video clip (spec 21).
+export function ZoomControls({ clip }: { clip: Clip }) {
+  const { project, document, save, busy } = useEditor();
+  if (!project || clip.kind !== "video") return null;
+  const rate = fps(project.settings),
+    zooms = clip.zooms ?? [],
+    placed = layout(document).clips.find((c) => c.id === clip.id),
+    candidate = placed ? zoomForRange(placed, currentRange(), rate) : null;
+  const update = (next: Zoom[]) =>
+    void save({
+      ...document,
+      clips: document.clips.map((c) =>
+        c.id === clip.id ? { ...c, zooms: next } : c,
+      ),
+    });
+  const time = (source: number) =>
+    timecode(
+      (placed?.start ?? 0) +
+        Math.round((source - clip.sourceIn) / speedOf(clip)),
+      rate,
+    );
+  return (
+    <div className="inspector-section transition-controls">
+      <span className="overline">ZOOM &amp; PAN</span>
+      {zooms.map((z, index) => (
+        <div key={index} className="zoom-row">
+          <span className="zoom-times">
+            {time(z.start)} – {time(z.end)}
+          </span>
+          <select
+            aria-label={`Zoom ${index + 1} scale`}
+            value={String(z.scale)}
+            disabled={busy}
+            onChange={(e) =>
+              update(
+                zooms.map((o, i) =>
+                  i === index ? { ...o, scale: Number(e.target.value) } : o,
+                ),
+              )
+            }
+          >
+            {[...new Set([...ZOOM_SCALES, z.scale])].map((s) => (
+              <option key={s} value={String(s)}>
+                {Math.round(s * 100)} %
+              </option>
+            ))}
+          </select>
+          <div
+            className="zoom-focus"
+            role="button"
+            aria-label={`Zoom ${index + 1} focus point`}
+            title="Click where to zoom"
+            onClick={(e) => {
+              const box = e.currentTarget.getBoundingClientRect();
+              const x = Math.min(
+                  1,
+                  Math.max(0, (e.clientX - box.left) / box.width),
+                ),
+                y = Math.min(
+                  1,
+                  Math.max(0, (e.clientY - box.top) / box.height),
+                );
+              update(zooms.map((o, i) => (i === index ? { ...o, x, y } : o)));
+            }}
+          >
+            <span style={{ left: `${z.x * 100}%`, top: `${z.y * 100}%` }} />
+          </div>
+          <button
+            className="icon-button"
+            aria-label={`Remove zoom ${index + 1}`}
+            disabled={busy}
+            onClick={() => update(zooms.filter((_, i) => i !== index))}
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      <button
+        className="button"
+        disabled={busy || !candidate}
+        title="Zoom 200 % on the part of the clip inside the timeline range (in 0.3 s, out 1 s)"
+        onClick={() => candidate && update([...zooms, candidate])}
+      >
+        Add zoom over range
       </button>
     </div>
   );

@@ -8,6 +8,7 @@ from videoflow.core.time import Rational, frames, frames_to_samples
 from videoflow.editor.models import EditorClip, EditorDocument
 from videoflow.editor.resolve import document_for, editable_document, validate_assets
 from videoflow.editor.transitions import plan_transitions
+from videoflow.editor.zoom import zoompan_expressions
 from videoflow.project.models import Project
 
 type Preset = Literal["draft", "final"]
@@ -37,6 +38,15 @@ def _window(start: int, end: int, rate: Rational) -> str:
         f"gte(t,{2 * start - 1}*{rate.den}/{2 * rate.num})"
         f"*lt(t,{2 * end - 1}*{rate.den}/{2 * rate.num})"
     )
+
+
+def _zoompan(clip: EditorClip, w: int, h: int, fps: str) -> str:
+    """Animated zoom toward the focus point, inside the clip's own frame (spec 21)."""
+    expressions = zoompan_expressions(clip)
+    if expressions is None:
+        return ""
+    z, x, y = expressions
+    return f"zoompan=z='{z}':x='{x}':y='{y}':d=1:s={w}x{h}:fps={fps},"
 
 
 def _retime(speed: float, fps: str) -> str:
@@ -190,7 +200,7 @@ def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
                 )
                 video_count += 1
             video.append(
-                f"[fg{index}]scale={w}:{h},"
+                f"[fg{index}]scale={w}:{h},{_zoompan(clip, w, h, fps)}"
                 f"crop={crop_w}:{crop_h}:{crop_x}:{crop_y}:exact=1,"
                 f"{timing}[p{index}]"
             )

@@ -1,4 +1,5 @@
 import type { Transition } from "./transitions";
+import type { Zoom } from "./zoom";
 export interface Transform {
   x: number;
   y: number;
@@ -25,6 +26,7 @@ export interface Clip {
   fitMode?: "fit" | "fill";
   heldRange?: { start: number; end: number } | null;
   speed?: number; // 1 = normal; source frames per timeline frame
+  zooms?: Zoom[];
   fadeIn?: number; // frames, edge fade at the clip's start (spec 21)
   fadeOut?: number;
   background?: { mode: "transparent" | "color" | "blur"; color: string };

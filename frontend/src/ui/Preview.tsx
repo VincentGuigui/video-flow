@@ -17,6 +17,7 @@ import { useEditor } from "../store";
 import { snapHandle } from "../snap";
 import { BackgroundSelector } from "./BackgroundSelector";
 import { mediaUrl } from "../desktop";
+import { zoomAt } from "../zoom";
 import {
   clipOpacity,
   dipOpacity,
@@ -70,7 +71,8 @@ function Media({
   }, [frame, rate, playing, clip, gain]);
   if (clip.kind === "audio")
     return <audio ref={ref} src={mediaUrl(clip.assetId)} preload="auto" />;
-  const t = clip.transform;
+  const t = clip.transform,
+    zoom = zoomAt(clip, frame);
   return (
     <>
       {!backdrop && clip.background?.mode === "color" && (
@@ -93,27 +95,56 @@ function Media({
           backdrop
         />
       )}
-      <video
-        ref={ref}
-        muted
-        playsInline
-        preload="auto"
-        src={mediaUrl(clip.assetId)}
-        style={{
-          position: "absolute",
-          opacity,
-          left: backdrop ? 0 : t.x,
-          top: backdrop ? 0 : t.y,
-          width: backdrop ? settings?.width : t.width,
-          height: backdrop ? settings?.height : t.height,
-          objectFit: backdrop ? "cover" : "fill",
-          filter: backdrop ? "blur(20px)" : undefined,
-          transform: backdrop ? "scale(1.08)" : undefined,
-          clipPath: backdrop
-            ? undefined
-            : `inset(${t.cropTop * 100}% ${t.cropRight * 100}% ${t.cropBottom * 100}% ${t.cropLeft * 100}%)`,
-        }}
-      />
+      {backdrop ? (
+        <video
+          ref={ref}
+          muted
+          playsInline
+          preload="auto"
+          src={mediaUrl(clip.assetId)}
+          style={{
+            position: "absolute",
+            opacity,
+            left: 0,
+            top: 0,
+            width: settings?.width,
+            height: settings?.height,
+            objectFit: "cover",
+            filter: "blur(20px)",
+            transform: "scale(1.08)",
+          }}
+        />
+      ) : (
+        // The box clips crop and zoom; zooming scales the picture toward its focus point.
+        <div
+          className="clip-box"
+          style={{
+            position: "absolute",
+            left: t.x,
+            top: t.y,
+            width: t.width,
+            height: t.height,
+            overflow: "hidden",
+            clipPath: `inset(${t.cropTop * 100}% ${t.cropRight * 100}% ${t.cropBottom * 100}% ${t.cropLeft * 100}%)`,
+          }}
+        >
+          <video
+            ref={ref}
+            muted
+            playsInline
+            preload="auto"
+            src={mediaUrl(clip.assetId)}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "fill",
+              opacity,
+              transform: zoom.factor > 1 ? `scale(${zoom.factor})` : undefined,
+              transformOrigin: `${zoom.x * 100}% ${zoom.y * 100}%`,
+            }}
+          />
+        </div>
+      )}
     </>
   );
 }

@@ -1,8 +1,9 @@
 import pytest
 
 from tests.render import test_render as base
-from videoflow.editor.models import EditorClip, EditorDocument, EditorTransition, Transform
+from videoflow.editor.models import EditorClip, EditorDocument, EditorTransition, Transform, Zoom
 from videoflow.media import ffmpeg
+from videoflow.media.ingest import ingest_files
 from videoflow.project.commands import SetEditor
 from videoflow.render.runner import render_project
 
@@ -146,3 +147,59 @@ def test_atempo_chain_stays_in_range():
     assert _atempo(1) == ""
     assert _atempo(4) == "atempo=2,atempo=2,"
     assert _atempo(0.25) == "atempo=0.5,atempo=0.5,"
+
+
+async def test_zoom_magnifies_toward_the_focus_point_and_returns(edit, tmp_path):
+    quad = tmp_path / "quad.mp4"
+    # Left half red, right half blue: zooming on the left edge fills the frame with red.
+    made = await ffmpeg.run(
+        [
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=red:s=80x90:r=25:d=3",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=blue:s=80x90:r=25:d=3",
+            "-filter_complex",
+            "[0][1]hstack",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            str(quad),
+        ]
+    )
+    assert made.ok, made.stderr_tail
+    asset = (await ingest_files([quad])).assets[0]
+    project = edit.project.model_copy(update={"assets": [*edit.project.assets, asset]})
+    doc = EditorDocument(
+        clips=[
+            EditorClip(
+                id="q",
+                kind="video",
+                asset_id=asset.id,
+                name="Quad",
+                start=0,
+                source_in=0,
+                source_out=50,
+                transform=Transform(width=160, height=90),
+                zooms=[Zoom(start=10, end=40, scale=4, x=0.0, y=0.5, ease_in=5, ease_out=5)],
+            ),
+        ]
+    )
+    project, _ = SetEditor(document=doc).apply(project)
+    edit.save(project)
+    output = await render_project(edit.project, edit, hw="cpu", normalize=False)
+    assert (await ffmpeg.probe(output.path)).video.nb_frames == 50
+
+    def right_quarter(picture):
+        return picture[:, 120:].reshape(-1, 3).mean(axis=0)
+
+    before = right_quarter(await pixels(output.path, 5, tmp_path))
+    held = right_quarter(await pixels(output.path, 25, tmp_path))
+    after = right_quarter(await pixels(output.path, 45, tmp_path))
+    assert before[2] > 200 and after[2] > 200  # blue on the right without zoom
+    assert held[0] > 200 and held[2] < 60  # zoomed on the left edge: red everywhere

@@ -58,6 +58,7 @@ import {
   FadeControls,
   SpeedControls,
   TransitionControls,
+  ZoomControls,
 } from "./TransitionControls";
 import { stackedTakes } from "../compare";
 import { useAnalysis } from "./useAnalysis";
@@ -931,6 +932,7 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
           <TransitionControls clip={clip} />
           <FadeControls clip={clip} />
           <SpeedControls clip={clip} />
+          <ZoomControls clip={clip} />
           <div className="inspector-tip">
             <Scissors size={17} />
             <p>

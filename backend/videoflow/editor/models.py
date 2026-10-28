@@ -64,6 +64,28 @@ class HeldRange(CamelModel):
         return self
 
 
+class Zoom(CamelModel):
+    """Animated zoom toward a point of the clip's picture (spec 21), in source frames.
+
+    The zoom eases in from 1 at `start` to `scale`, holds, and eases back to 1 by `end`.
+    `x`/`y` locate the focus point in the picture (0..1, top-left origin); it stays in place.
+    """
+
+    start: int = Field(ge=0)
+    end: int = Field(gt=0)
+    scale: float = Field(default=2.0, gt=1, le=8)
+    x: float = Field(default=0.5, ge=0, le=1)
+    y: float = Field(default=0.5, ge=0, le=1)
+    ease_in: int = Field(default=9, ge=0)
+    ease_out: int = Field(default=30, ge=0)
+
+    @model_validator(mode="after")
+    def valid(self) -> "Zoom":
+        if self.end <= self.start:
+            raise ValueError("A zoom must last at least one frame")
+        return self
+
+
 class EditorClip(CamelModel):
     id: str = Field(min_length=1)
     kind: Literal["video", "audio", "gap"]
@@ -84,6 +106,7 @@ class EditorClip(CamelModel):
     """Frames fading in at the clip's start (picture from what lies below, audio from silence)."""
     fade_out: int = Field(default=0, ge=0)
     speed: float = Field(default=1.0, ge=0.1, le=10)
+    zooms: list[Zoom] = Field(default_factory=list, max_length=200)
     """Playback speed: source frames per timeline frame (spec 21)."""
 
     @model_validator(mode="after")

@@ -22,6 +22,7 @@ from videoflow.core.time import frames
 from videoflow.editor.models import EditorClip
 from videoflow.editor.resolve import document_for, editable_document
 from videoflow.editor.transitions import active_transitions
+from videoflow.editor.zoom import ramps
 from videoflow.project.models import Asset, Project, ProjectSettings
 
 EDIT_RATE = 705_600_000
@@ -378,8 +379,11 @@ def export_camtasia(
         timing(media, clip)
         media.setdefault("attributes", {})["ident"] = clip.name
         parameters = media.setdefault("parameters", {})
-        for key, value in _placement(clip, assets[clip.asset_id or ""], settings).items():
+        placement = _placement(clip, assets[clip.asset_id or ""], settings)
+        for key, value in placement.items():
             _set(parameters, key, value)
+        for key, keyframes in _zoom_keyframes(clip, placement, ticks).items():
+            parameters[key]["keyframes"] = keyframes
         return media
 
     def audio_media(clip: EditorClip, model: dict[str, Any]) -> dict[str, Any]:
@@ -514,6 +518,46 @@ def _bin_entry(proto: Prototypes, asset: Asset, identifier: int) -> dict[str, An
         tracks.append(track)
     entry.update(id=identifier, src=asset.path, rect=[0, 0, width, height], sourceTracks=tracks)
     return entry
+
+
+def _zoom_keyframes(
+    clip: EditorClip, base: dict[str, float], ticks: Any
+) -> dict[str, list[dict[str, Any]]]:
+    """Zooms (spec 21) as Camtasia keyframes, in media time.
+
+    Camtasia scales a clip about its centre; translation moves so the focus point stays in
+    place. A keyframe ramps from the previous value at `time` to `value` at `endTime`.
+    """
+    result: dict[str, list[dict[str, Any]]] = {k: [] for k in base}
+    t = clip.transform
+    for zoom in sorted(clip.zooms, key=lambda z: z.start):
+        if zoom.end <= clip.source_in or zoom.start >= clip.source_out:
+            continue
+        ease_in, ease_out = ramps(zoom)
+        k = zoom.scale
+        dx = (t.width / 2 - zoom.x * t.width) * (k - 1)
+        dy = (t.height / 2 - zoom.y * t.height) * (k - 1)
+        zoomed = {
+            "scale0": base["scale0"] * k,
+            "scale1": base["scale1"] * k,
+            "translation0": base["translation0"] + dx,
+            "translation1": base["translation1"] - dy,  # Camtasia y points up
+        }
+        for time, length, values in (
+            (zoom.start, ease_in, zoomed),
+            (zoom.end - ease_out, ease_out, base),
+        ):
+            for key, value in values.items():
+                start, span = ticks(time), ticks(length)
+                result[key].append(
+                    {
+                        "endTime": start + span,
+                        "time": start,
+                        "value": round(value, 6),
+                        "duration": span,
+                    }
+                )
+    return {k: v for k, v in result.items() if v}
 
 
 def _placement(clip: EditorClip, asset: Asset, settings: ProjectSettings) -> dict[str, float]:

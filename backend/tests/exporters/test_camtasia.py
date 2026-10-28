@@ -4,7 +4,7 @@ import pytest
 
 from tests.timeline.builders import asset
 from videoflow.core.time import Rational
-from videoflow.editor.models import EditorClip, EditorDocument, EditorTransition, Transform
+from videoflow.editor.models import EditorClip, EditorDocument, EditorTransition, Transform, Zoom
 from videoflow.editor.resolve import document_for
 from videoflow.exporters import camtasia as cm
 from videoflow.exporters.service import export_project
@@ -196,3 +196,20 @@ def test_speed_becomes_camtasia_scalar():
     v2 = tracks(json.loads(cm.export_camtasia(p).text))[0]["medias"][1]
     assert v2["scalar"] == "1/2" and v2["mediaDuration"] == 50 * TICKS
     assert v2["duration"] == 25 * TICKS and v2["metadata"]["clipSpeedAttribute"] is True
+
+
+def test_zoom_becomes_scale_and_translation_keyframes():
+    p = project()
+    doc = document_for(p)
+    zoom = Zoom(start=20, end=50, scale=2, x=0.25, y=0.25, ease_in=5, ease_out=10)
+    clips = [c.model_copy(update={"zooms": [zoom]}) if c.id == "v2" else c for c in doc.clips]
+    p, _ = SetEditor(document=doc.model_copy(update={"clips": clips})).apply(p)
+    parameters = tracks(json.loads(cm.export_camtasia(p).text))[0]["medias"][1]["parameters"]
+    scale = parameters["scale0"]["keyframes"]
+    assert [(f["time"], f["duration"], f["value"]) for f in scale] == [
+        (20 * TICKS, 5 * TICKS, 2.0),
+        (40 * TICKS, 10 * TICKS, 1.0),
+    ]
+    # Focus at a quarter of the frame: picture moves right and down (y up) to keep it fixed.
+    assert parameters["translation0"]["keyframes"][0]["value"] == 480.0
+    assert parameters["translation1"]["keyframes"][0]["value"] == -270.0
