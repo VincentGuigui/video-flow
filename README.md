@@ -88,6 +88,8 @@ Word times refer to the original source. Subtitles follow the audible cut, inclu
 
 OTIO retains exact transition definitions, editing identifiers and clip settings as Video-Flow metadata. Other editors may ignore gain, fades, fit and freeze handles. OTIOZ copies source media and requires every referenced file to exist. EDL contains V1 only, uses eight-character reels with a mapping file, and approximates other transitions as dissolves. FCPXML remains planned for P1; real-editor interoperability is not yet validated.
 
+
+Camtasia: Export → Camtasia project, or `uv run videoflow export BUNDLE --camtasia`. To match your Camtasia version exactly, copy any project saved by it to `templates/camtasia.tscproj` in the application folder (or pass `--camtasia-template PATH`); its structures are cloned, its content is not. Crop, backgrounds and transition audio crossfades are not exported (see the export report).
 ## Documentation
 
 - [Specification](docs/spec/README.md), with authoritative [desktop architecture](docs/spec/10-desktop-shell.md) and [editor/settings refinements](docs/spec/11-editor-refinements.md)

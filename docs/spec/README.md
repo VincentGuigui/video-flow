@@ -30,8 +30,9 @@ Initial draft: 2026-10-23. Latest accepted architecture revision: 2026-10-25. Re
 | 16 | [16-compare-takes.md](16-compare-takes.md) | Compare takes: stacked retakes side by side, synced on a common word, divergent words, pick with 1–9 |
 | 17 | [17-transitions.md](17-transitions.md) | Cross dissolve and dips between adjacent clips: model, preview, render, OTIO/EDL export |
 | 18 | [18-retake-grouping.md](18-retake-grouping.md) | Retake grouping on import: model benchmark, MiniLM + word overlap, coverage rule |
+| 19 | [19-camtasia-export.md](19-camtasia-export.md) | Camtasia .tscproj export: template-driven writer, mapping, limits |
 
-Suggested reading order: 18, 17, 16, 15, 14, 13, 12, 11, 10, 09 and 08 for current decisions, then 02, 04 and 05 for product behavior and data, 03 and 06 for implementation, and 07 for historical roadmap context.
+Suggested reading order: 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 09 and 08 for current decisions, then 02, 04 and 05 for product behavior and data, 03 and 06 for implementation, and 07 for historical roadmap context.
 
 ## Key decisions at a glance
 

@@ -184,6 +184,8 @@ Hardware encoders are detected at startup (`ffmpeg -encoders` plus a one-frame t
 
 ### 8.3 Camtasia writer (P1)
 
+Implemented for Windows as described in [19](19-camtasia-export.md), which supersedes this section where they differ (no media pack or `.cmproj`).
+
 Camtasia project files (`.tscproj`) are JSON, undocumented and versioned. Community libraries (`camtasio`, `tscprojpy`, `camtasia`) document the structure: canvas settings, a source bin of media, and a timeline of tracks with clips, effects and transitions. On macOS a project is a `.cmproj` directory containing `project.tscproj` and media. Camtasia does not appear to import EDL, XML or OTIO, so a native writer is the only route.
 
 Strategy: **template-based generation**.

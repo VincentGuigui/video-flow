@@ -162,7 +162,7 @@ Priority: **P0** = MVP, **P1** = shortly after MVP, **P2** = later.
 | EXP-03 | CMX 3600 EDL (main video track + dissolves). | P0 |
 | EXP-04 | SRT / VTT captions from the cut transcript. | P0 |
 | EXP-05 | FCP7 XML (xmeml) for Premiere / Resolve / OpenShot. | P1 |
-| EXP-06 | Camtasia project (`.tscproj`, `.cmproj` on macOS). | P1 |
+| EXP-06 | Camtasia project (`.tscproj`, Windows; implemented, see 19). | P1 |
 | EXP-07 | Option "include alternates": alternates exported as disabled tracks (OTIO, XML, Camtasia) or as auditions (FCPXML). | P1 |
 | EXP-08 | AAF for Avid / Pro Tools. | P2 |
 | EXP-09 | Paper edit: Markdown / CSV list of selected takes with source time codes and transcript. | P0 |
