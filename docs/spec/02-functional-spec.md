@@ -117,7 +117,7 @@ Priority: **P0** = MVP, **P1** = shortly after MVP, **P2** = later.
 | TL-08 | J/L cuts (audio leads or lags video). | P2 |
 | TL-09 | Clip volume and fade in/out (implemented as edge fades, see 21). Silencing a clip uses its enable checkbox; there is no separate mute (see 13). | P0 |
 | TL-10 | Markers with notes on timeline and on assets. | P1 |
-| TL-11 | Title cards and lower thirds from text templates (rendered by FFmpeg `drawtext`). | P2 |
+| TL-11 | Title cards and lower thirds from text templates (text clips, spec 21). | P2 |
 | TL-12 | Zoom levels from whole project to frame level; timecode display (HH:MM:SS:FF at project rate). | P0 |
 
 ### 4.6 Transitions (TR)

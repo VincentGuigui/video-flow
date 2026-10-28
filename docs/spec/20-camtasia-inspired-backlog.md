@@ -24,6 +24,6 @@ Four real Camtasia projects were analysed (RayNeo IO review 1920×1080 21 min, A
 3. **Zoom & pan**: animated zoom on a region of a clip and back. Camtasia: keyframes on `scale0/1` and `translation0/1`.
 4. **Music and ducking**: background music lane with its own volume and fades, lowered automatically under transcribed speech. Camtasia: AMFile with volume keyframes.
 5. **Mute a range**: silence part of a clip from the range selector without cutting the picture. Camtasia: volume keyframes.
-6. **Titles and lower thirds**: text cards and lower thirds rendered with FFmpeg. Camtasia: text `Callout`.
+6. **Titles and lower thirds**: text cards and lower thirds composited by FFmpeg. Camtasia: text `Callout`.
 
 Each feature covers the editor, preview, MP4 render and Camtasia export, and gets its own section in a dated spec revision when built.
