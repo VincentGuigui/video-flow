@@ -120,7 +120,7 @@ def test_faster_whisper_tiny_words_have_probabilities(en):
         assert len(inside) >= 6
 
 
-@pytest.mark.parametrize("key", ["e5-small", "minilm"])
+@pytest.mark.parametrize("key", ["minilm"])
 def test_text_embeddings_dim_384_and_ranking(key):
     pytest.importorskip("onnxruntime")
     from videoflow import engines  # noqa: F401
@@ -141,19 +141,21 @@ def test_text_embeddings_dim_384_and_ranking(key):
     assert sims[0, 2] > sims[0, 3] + 0.1  # cross-lingual (EN/FR) too
 
 
-def test_e5_prefix_changes_the_embedding():
+def test_minilm_separates_french_retakes_from_related_sentences():
     pytest.importorskip("onnxruntime")
     from videoflow.engines.embed.onnx_st import OnnxTextEmbedder
 
-    e5 = OnnxTextEmbedder("multilingual-e5-small", "cpu")
-    assert e5.prefix("query") == e5.prefix("passage") == "query: "
-    raw = e5._tok.encode("query: hello world").ids
-    assert e5._tok.encode_batch(["query: hello world"])[0].ids == raw
-    plain = np.asarray(e5.encode(["hello world"]))
-    # Text already prefixed (analysis.relations.embedding_input) is not prefixed twice.
-    prefixed = np.asarray(e5.encode(["query: hello world"]))
-    assert np.allclose(plain, prefixed, atol=1e-6)
-    assert e5.profile.query_prefix == "query: " and e5.profile.model_id == "multilingual-e5-small"
+    emb = OnnxTextEmbedder(prefer="cpu")
+    v = np.asarray(
+        emb.encode(
+            [
+                "Dans la boîte on trouve le câble USB-C et le chargeur 65 watts.",
+                "Euh dans la boîte on a le câble USB-C et un chargeur de 65 watts.",
+                "Le câble USB-C se branche en bas du téléphone.",
+            ]
+        )
+    )
+    assert v[0] @ v[1] > v[0] @ v[2] + 0.2
 
 
 def test_dinov2_and_phash_separate_duplicates_from_different_shots(samples_dir, samples_manifest):

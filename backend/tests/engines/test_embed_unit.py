@@ -63,10 +63,18 @@ def embedder(monkeypatch, tmp_path):
     import tokenizers
 
     monkeypatch.setattr(tokenizers.Tokenizer, "from_file", staticmethod(lambda p: tok))
-    return st.OnnxTextEmbedder("multilingual-e5-small"), tok, sess
+    # A prefixed model (e5 style) exercises the manifest-driven prefix handling.
+    real = st.load_manifest()
+    spec = real.models["paraphrase-multilingual-minilm-l12-v2"].model_copy(
+        update={"query_prefix": "query: ", "passage_prefix": "query: "}
+    )
+    monkeypatch.setattr(
+        st, "load_manifest", lambda: SimpleNamespace(get=lambda key: spec, models=real.models)
+    )
+    return st.OnnxTextEmbedder("paraphrase-multilingual-minilm-l12-v2"), tok, sess
 
 
-def test_e5_prefix_applied_and_output_normalised(embedder):
+def test_prefix_applied_and_output_normalised(embedder):
     emb, tok, sess = embedder
     out = emb.encode(["bonjour", "hello"])
     assert tok.seen == ["query: bonjour", "query: hello"]
@@ -85,12 +93,10 @@ def test_batches_over_32(embedder):
     assert np.allclose(np.linalg.norm(out, axis=1), 1.0)
 
 
-def test_profiles_are_per_model():
-    e5 = st.threshold_profile("multilingual-e5-small")
+def test_profile_follows_the_manifest_model():
     mini = st.threshold_profile("paraphrase-multilingual-minilm-l12-v2")
-    assert e5.model_id != mini.model_id
-    assert e5.query_prefix == "query: " and mini.query_prefix == ""
-    assert e5.cosine_floor > mini.cosine_floor  # e5 cosines are compressed upward
+    assert mini.model_id == "paraphrase-multilingual-minilm-l12-v2"
+    assert mini.query_prefix == ""
 
 
 def test_prefix_is_not_doubled(embedder):

@@ -30,7 +30,7 @@ Consequences:
 
 | # | Hypothesis |
 |---|---|
-| H21 | Silero VAD, Parakeet TDT v3 encoder, e5-small and DINOv2-small run on Intel NPU via OpenVINO with static shapes and are faster or more power-efficient than iGPU. |
+| H21 | Silero VAD, Parakeet TDT v3 encoder, MiniLM-L12 and DINOv2-small run on Intel NPU via OpenVINO with static shapes and are faster or more power-efficient than iGPU. |
 | H22 | The same models run on AMD NPU (VitisAI EP, int8 quantised) and Qualcomm NPU (QNN EP, QDQ int8). |
 | H23 | Python 3.13 wheels exist for onnxruntime-qnn (win_arm64) and the Ryzen AI SDK runtime; otherwise those targets pin Python 3.12 in their install profile. |
 | H24 | FFmpeg static builds for win_arm64 provide `h264_mf` / D3D11VA usable on Snapdragon. |
@@ -75,7 +75,7 @@ Consequences:
 | Sync groups | `Asset.syncGroupId` with no entity behind it | **Change (schema only)** | Freeze `syncGroups[]`, `probe.video?`, `audioStreams[]` and `angleAssetId` in schema v1. The UI comes in Phase 2. | model/sync |
 | D-8 Engines behind Protocols | Many engines with auto-selection | **Keep, YAGNI** | One implementation per Protocol, plus a second ASR engine for Phase 0. Extras per accelerator, see §0 (`[openvino]`, `[directml]`, `[cuda]`, `[qnn]`; VitisAI via AMD Ryzen AI SDK). Torch is not in the core install. | stack/D-8, analysis/env (torch with CUDA adds 4.4 GB) |
 | Default ASR (CPU/Windows) | Whisper family | **Change → Parakeet TDT v3 ONNX int8** | RTF 0.11 against 0.55 for large-v3-turbo on 4 CPUs. Licence is CC-BY-4.0 (credit shown in About). | analysis/ASR speed |
-| Default text embedding | EmbeddingGemma among the options | **Change** | EmbeddingGemma is gated (manual approval), so automatic download fails. Default to multilingual-e5-small or MiniLM, with thresholds set per model. | analysis/HF, thresholds |
+| Default text embedding | EmbeddingGemma among the options | **Change** | EmbeddingGemma is gated (manual approval), so automatic download fails. Default to multilingual-e5-small or MiniLM, with thresholds set per model. | analysis/HF, thresholds Superseded by 18: MiniLM-L12 is the only text embedder. |
 | VISUAL_DUPLICATE edges | Allowed between speech segments | **Change** | VISUAL_DUPLICATE is a clustering edge only between non-speech segments. For speech segments, visual similarity is kept as a "same setup" attribute. | analysis/VISUAL_DUPLICATE |
 | Clustering | Agglomerative clustering with cannot-link handled as a large distance | **Change** | Use our own constrained average linkage that never merges across a cannot-link (n < 2000). | analysis/clustering: sklearn merged 2 beats at τ=0.7 |
 | GCC-PHAT acceptance | Normalised peak ≥ 0.3 on an "8 kHz onset envelope" | **Change** | Use a 100 Hz onset envelope and accept on peak-to-sidelobe ratio ≥ 4 (sidelobes taken outside ±0.5 s). Refine on raw audio within ±50 ms. Store offset and drift. | analysis/GCC-PHAT: peak 0.479 for unrelated vs 0.491 for matching; PSR 9.34 vs 1.05 |

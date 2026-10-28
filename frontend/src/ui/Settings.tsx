@@ -93,6 +93,7 @@ export function Settings({
     ) ?? [];
   const required = (m: Model) =>
     m.id === "silero-vad" ||
+    m.id === "paraphrase-multilingual-minilm-l12-v2" ||
     m.id ===
       (preferences?.asrEngine === "faster-whisper"
         ? "faster-whisper-tiny"

@@ -37,6 +37,7 @@ def required_models(preferences: Preferences) -> list[str]:
         if preferences.asr_engine == "faster-whisper"
         else "parakeet-tdt-0.6b-v3-int8",
     ]
+    result.append("paraphrase-multilingual-minilm-l12-v2")
     if preferences.summary_engine == "qwen":
         result.append("qwen2.5-0.5b-instruct")
     return result

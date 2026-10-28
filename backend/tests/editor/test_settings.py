@@ -89,7 +89,12 @@ def test_qwen_json_validation_and_keywords():
 
 def test_required_models_follow_engine_selection():
     selected = required_models(Preferences(asr_engine="faster-whisper", summary_engine="qwen"))
-    assert selected == ["silero-vad", "faster-whisper-tiny", "qwen2.5-0.5b-instruct"]
+    assert selected == [
+        "silero-vad",
+        "faster-whisper-tiny",
+        "paraphrase-multilingual-minilm-l12-v2",
+        "qwen2.5-0.5b-instruct",
+    ]
 
 
 def test_import_waits_for_download_consent_and_can_be_cancelled(local_root):
@@ -119,12 +124,12 @@ def test_models_unused_by_the_editor_are_hidden_and_not_downloadable():
     downloads = ModelDownloads()
     listed = {m["id"] for m in downloads.status(Preferences())["models"]}
     hidden = {k for k, s in load_manifest().models.items() if not s.in_editor}
-    assert hidden == {
-        "multilingual-e5-small",
-        "paraphrase-multilingual-minilm-l12-v2",
-        "dinov2-small",
-    }
+    assert hidden == {"dinov2-small"}
     assert not listed & hidden
-    assert {"silero-vad", "parakeet-tdt-0.6b-v3-int8"} <= listed
+    assert {
+        "silero-vad",
+        "parakeet-tdt-0.6b-v3-int8",
+        "paraphrase-multilingual-minilm-l12-v2",
+    } <= listed
     with pytest.raises(ValueError, match="not used by the editor"):
         downloads.submit("dinov2-small")

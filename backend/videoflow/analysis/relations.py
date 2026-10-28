@@ -46,13 +46,6 @@ PROFILES: dict[str, ThresholdProfile] = {
     p.model_id: p
     for p in (
         ThresholdProfile(
-            model_id="intfloat/multilingual-e5-small",
-            query_prefix="query: ",
-            cosine_floor=0.78,
-            theta_text=0.55,
-            tau=0.5,
-        ),
-        ThresholdProfile(
             model_id="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
             cosine_floor=0.2,
             theta_text=0.55,
@@ -65,7 +58,6 @@ PROFILES: dict[str, ThresholdProfile] = {
 PROFILES |= {
     key: PROFILES[repo].model_copy(update={"model_id": key})
     for key, repo in (
-        ("multilingual-e5-small", "intfloat/multilingual-e5-small"),
         (
             "paraphrase-multilingual-minilm-l12-v2",
             "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",

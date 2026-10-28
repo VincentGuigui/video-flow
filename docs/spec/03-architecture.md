@@ -156,7 +156,7 @@ Default engine selection:
 |--------|---------------|--------|----------|
 | ASR | whisper.cpp (Metal) or MLX Whisper, large-v3-turbo; or Parakeet v3 (MLX port) | faster-whisper large-v3-turbo (CUDA) + WhisperX alignment, or Parakeet v3 (NeMo) | Parakeet v3 (ONNX, int8) or faster-whisper `small`/`medium` int8 |
 | VAD | Silero VAD | Silero VAD | Silero VAD |
-| Text embeddings | multilingual small model (e.g. EmbeddingGemma 300M, multilingual-e5-small, Qwen3-Embedding-0.6B) | same | same |
+| Text embeddings | paraphrase-multilingual-MiniLM-L12-v2 (chosen by benchmark, see 18) | same | same |
 | Visual embeddings | DINOv2-small (near-duplicate shots) | same | same, lower sampling rate |
 | LLM | Ollama with a ~2B to 4B instruct model (Gemma 4 E2B/E4B or Qwen3 class) | same | same, smallest size |
 

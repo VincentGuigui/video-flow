@@ -14,7 +14,11 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_shipped_manifest_is_pinned_and_open():
     man = mf.load_manifest()
-    assert {"silero-vad", "parakeet-tdt-0.6b-v3-int8", "multilingual-e5-small"} <= set(man.models)
+    assert {
+        "silero-vad",
+        "parakeet-tdt-0.6b-v3-int8",
+        "paraphrase-multilingual-minilm-l12-v2",
+    } <= set(man.models)
     for key, spec in man.models.items():
         man.get(key)  # raises when gated, unpinned or not permissively licensed
         assert re.fullmatch(r"[0-9a-f]{40}", spec.revision), key
@@ -22,10 +26,10 @@ def test_shipped_manifest_is_pinned_and_open():
         assert not spec.gated
 
 
-def test_e5_has_query_prefix_and_dim():
-    spec = mf.load_manifest().get("multilingual-e5-small")
-    assert spec.query_prefix == "query: "
-    assert spec.dim == 384
+def test_single_sentence_model_has_no_prefix_and_dim_384():
+    texts = [s for s in mf.load_manifest().models.values() if s.purpose == "text-embed"]
+    assert [s.key for s in texts] == ["paraphrase-multilingual-minilm-l12-v2"]
+    assert texts[0].query_prefix == "" and texts[0].dim == 384
 
 
 BASE = """

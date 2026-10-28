@@ -56,12 +56,6 @@ def _faster_whisper(prefer: Prefer) -> Any:
     return FasterWhisperAsr(prefer)
 
 
-def _e5(prefer: Prefer) -> Any:
-    from videoflow.engines.embed.onnx_st import OnnxTextEmbedder
-
-    return OnnxTextEmbedder("multilingual-e5-small", prefer)
-
-
 def _minilm(prefer: Prefer) -> Any:
     from videoflow.engines.embed.onnx_st import OnnxTextEmbedder
 
@@ -102,7 +96,6 @@ _SPECS: tuple[EngineSpec, ...] = (
         ai_device=False,
     ),  # fmt: skip
     EngineSpec("asr", "fake", lambda _: protocols.FakeAsrEngine(), ai_device=False),
-    EngineSpec("text_embed", "e5-small", _e5, (*_ORT, "tokenizers", "huggingface_hub"), _ML),
     EngineSpec("text_embed", "minilm", _minilm, (*_ORT, "tokenizers", "huggingface_hub"), _ML),
     EngineSpec("text_embed", "fake", lambda _: protocols.FakeTextEmbedder(), ai_device=False),
     EngineSpec("visual_embed", "phash-hist", _phash, (), None, ai_device=False),
@@ -117,7 +110,7 @@ REGISTRY: dict[tuple[str, str], EngineSpec] = {(s.kind, s.name): s for s in _SPE
 DEFAULTS: dict[Kind, str] = {
     "vad": "silero",
     "asr": "parakeet",
-    "text_embed": "e5-small",
+    "text_embed": "minilm",
     "visual_embed": "dinov2",
     "shots": "scenedetect",
 }

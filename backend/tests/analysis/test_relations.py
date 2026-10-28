@@ -28,8 +28,8 @@ def _segments(utts: list[str], lang: str, gaps: list[int] | None = None):
 
 
 def test_profiles_are_per_model() -> None:
-    e5 = profile_for("intfloat/multilingual-e5-small")
-    assert e5.query_prefix == "query: "
+    # An e5-style profile: prefixed inputs, cosines compressed upward.
+    e5 = ThresholdProfile(model_id="e5-like", query_prefix="query: ", cosine_floor=0.78)
     assert embedding_input("bonjour", e5) == "query: bonjour"
     # e5 scores unrelated texts ~0.8: rescaled below 0.1, while MiniLM 0.8 stays high
     assert rescale_cosine(0.80, e5) < 0.1
@@ -37,8 +37,9 @@ def test_profiles_are_per_model() -> None:
     assert rescale_cosine(0.80, mini) > 0.7
     assert embedding_input("query: bonjour", e5) == "query: bonjour"
     # engines report manifest keys as model ids
-    assert profile_for("multilingual-e5-small").cosine_floor == e5.cosine_floor
-    assert profile_for("multilingual-e5-small").model_id == "multilingual-e5-small"
+    key = "paraphrase-multilingual-minilm-l12-v2"
+    assert profile_for(key).cosine_floor == mini.cosine_floor
+    assert profile_for(key).model_id == key
     unknown = profile_for("some/new-model")
     assert unknown.model_id == "some/new-model" and unknown.theta_text == 0.55
 

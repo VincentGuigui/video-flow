@@ -32,23 +32,8 @@ license = "mit"
 gated = false
 files = ["config.json", "model.bin", "tokenizer.json", "vocabulary.txt"]
 
-[models.multilingual-e5-small]
-goal = "Matches similar sentences to group retakes."
-in_editor = false  # pipeline/CLI only: hidden from Settings downloads
-purpose = "text-embed"
-repo = "intfloat/multilingual-e5-small"
-revision = "614241f622f53c4eeff9890bdc4f31cfecc418b3"
-license = "mit"
-gated = false
-files = ["onnx/model_qint8_avx512_vnni.onnx", "onnx/tokenizer.json"]
-dim = 384
-query_prefix = "query: "
-passage_prefix = "query: "  # e5 symmetric tasks (paraphrase detection) use "query: " on both sides
-max_length = 128
-
 [models.paraphrase-multilingual-minilm-l12-v2]
-goal = "Matches similar sentences (alternative)."
-in_editor = false  # pipeline/CLI only: hidden from Settings downloads
+goal = "Groups retakes by matching similar sentences across clips."
 purpose = "text-embed"
 repo = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 revision = "e8f8c211226b894fcb81acc59f3b34ba3efd5f42"

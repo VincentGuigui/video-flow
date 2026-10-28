@@ -1,4 +1,4 @@
-"""Sentence-transformer style text embedders (ONNX): multilingual e5-small, MiniLM.
+"""Sentence-transformer style text embedder (ONNX): multilingual MiniLM-L12.
 
 Mean pooling over the attention mask, L2 normalisation. The e5 family needs a ``query: `` prefix
 on every input; it comes from the manifest so a model swap cannot forget it. Absolute cosine
@@ -18,7 +18,7 @@ from videoflow.engines.manifest import ModelSpec, fetch, load_manifest
 from videoflow.engines.protocols import Embeddings, TextRole
 from videoflow.hw.ai import Prefer, make_session
 
-DEFAULT_MODEL = "multilingual-e5-small"
+DEFAULT_MODEL = "paraphrase-multilingual-minilm-l12-v2"
 BATCH = 32
 
 
