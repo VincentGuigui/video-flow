@@ -58,7 +58,7 @@ Import stacks retakes on parallel lanes: sentences are compared with the local M
 
 ## Transitions
 
-Select a video clip: Transitions in clip properties sets the cut to the previous or next clip to Cut, Cross dissolve, Dip to black or Dip to white, with a duration in seconds, or applies one transition to all cuts. Dissolves use source media beyond the cut and are shortened (with a warning) when there is not enough. Transitions show on the timeline, play in the preview and render in the MP4.
+Select a video clip: Transitions in clip properties sets the cut to the previous or next clip to Cut, Cross dissolve, Dip to black or Dip to white, with a duration in seconds, or applies one transition to all cuts. Dissolves use source media beyond the cut and are shortened (with a warning) when there is not enough. Transitions show on the timeline, play in the preview and render in the MP4. Fades in clip properties fade a clip in from black and out to black (picture and sound).
 
 ## Settings and local models
 
