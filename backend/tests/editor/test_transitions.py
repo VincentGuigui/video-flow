@@ -101,3 +101,28 @@ def test_edge_fade_merges_with_a_dissolve():
     doc = document(EditorTransition(id="t", left_id="l", right_id="r", duration=10))
     doc.clips[2] = doc.clips[2].model_copy(update={"fade_in": 4})
     assert plan_transitions(doc, frames).video_fade_in == {"r": 10}
+
+
+def test_speed_changes_timeline_length_and_handles():
+    fast = clip("f", 0).model_copy(update={"speed": 2.0})
+    slow = clip("s", 0).model_copy(update={"speed": 0.5})
+    assert (fast.span, fast.duration, slow.duration) == (25, 13, 50)
+    assert fast.source_frames(5) == 10 and fast.timeline_frames(10) == 5
+    doc = document(EditorTransition(id="t", left_id="l", right_id="r", duration=30))
+    doc.clips[2] = doc.clips[2].model_copy(update={"speed": 2.0})
+    doc.clips[3] = doc.clips[3].model_copy(update={"speed": 2.0})
+    (item,) = plan_transitions(doc, frames).active
+    assert item.before == 5  # 10 source frames of head handle at 2x
+
+
+def test_linked_clips_must_share_speed():
+    import pytest
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError, match="speed"):
+        EditorDocument(
+            clips=[
+                clip("v", 0, link="p").model_copy(update={"speed": 2.0}),
+                clip("a", 0, kind="audio", link="p"),
+            ]
+        )

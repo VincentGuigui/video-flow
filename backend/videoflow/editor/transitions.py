@@ -73,8 +73,12 @@ def active_transitions(
         seen.add((t.left_id, t.right_id))
         half = t.duration // 2
         if t.type == "dissolve":
-            before = min(half, right.source_in, left.duration)
-            after = min(t.duration - half, source_frames(left) - left.source_out, right.duration)
+            before = min(half, right.timeline_frames(right.source_in), left.duration)
+            after = min(
+                t.duration - half,
+                left.timeline_frames(source_frames(left) - left.source_out),
+                right.duration,
+            )
         else:
             before = min(half, left.duration)
             after = min(t.duration - half, right.duration)
@@ -136,8 +140,9 @@ def plan_transitions(
             c.model_copy(
                 update={
                     "start": c.start + delta.get("start", 0),
-                    "source_in": c.source_in + delta.get("source_in", 0),
-                    "source_out": c.source_out + delta.get("source_out", 0),
+                    # Deltas are timeline frames; sources move by them at the clip's speed.
+                    "source_in": c.source_in + c.source_frames(delta.get("source_in", 0)),
+                    "source_out": c.source_out + c.source_frames(delta.get("source_out", 0)),
                 }
             )
             if delta

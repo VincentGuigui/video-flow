@@ -3,6 +3,8 @@ import {
   duration,
   layout,
   partners,
+  toSource,
+  toTimeline,
   uid,
   type Clip,
   type Document,
@@ -72,10 +74,14 @@ export function activeTransitions(
     const half = Math.floor(t.duration / 2);
     let before: number, after: number;
     if (t.type === "dissolve") {
-      before = Math.min(half, right!.sourceIn, duration(left!));
+      before = Math.min(
+        half,
+        toTimeline(right!, right!.sourceIn),
+        duration(left!),
+      );
       after = Math.min(
         t.duration - half,
-        sourceFrames(left!) - left!.sourceOut,
+        toTimeline(left!, sourceFrames(left!) - left!.sourceOut),
         duration(right!),
       );
     } else {
@@ -171,8 +177,9 @@ export function planTransitions(
       ? {
           ...c,
           start: c.start + s.start,
-          sourceIn: c.sourceIn + s.sourceIn,
-          sourceOut: c.sourceOut + s.sourceOut,
+          // Shifts are timeline frames; sources move at the clip's speed.
+          sourceIn: c.sourceIn + toSource(c, s.sourceIn),
+          sourceOut: c.sourceOut + toSource(c, s.sourceOut),
         }
       : c;
   });

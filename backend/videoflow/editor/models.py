@@ -83,6 +83,8 @@ class EditorClip(CamelModel):
     fade_in: int = Field(default=0, ge=0)
     """Frames fading in at the clip's start (picture from what lies below, audio from silence)."""
     fade_out: int = Field(default=0, ge=0)
+    speed: float = Field(default=1.0, ge=0.1, le=10)
+    """Playback speed: source frames per timeline frame (spec 21)."""
 
     @model_validator(mode="after")
     def valid(self) -> "EditorClip":
@@ -95,8 +97,22 @@ class EditorClip(CamelModel):
         return self
 
     @property
-    def duration(self) -> int:
+    def span(self) -> int:
+        """Source frames used by the clip."""
         return self.source_out - self.source_in
+
+    @property
+    def duration(self) -> int:
+        """Timeline frames: the source span played at `speed`."""
+        # Half up, like the editor's Math.round.
+        return self.span if self.speed == 1 else max(1, int(self.span / self.speed + 0.5))
+
+    def timeline_frames(self, source_frames: int) -> int:
+        """Timeline length of `source_frames` of this clip's source (rounded down)."""
+        return int(source_frames // self.speed) if self.speed != 1 else source_frames
+
+    def source_frames(self, timeline_frames: int) -> int:
+        return timeline_frames if self.speed == 1 else int(timeline_frames * self.speed + 0.5)
 
 
 type TransitionType = Literal["dissolve", "dip_black", "dip_white"]
@@ -134,8 +150,8 @@ class EditorDocument(CamelModel):
             if len(pair) != 2 or {c.kind for c in pair} != {"video", "audio"}:
                 raise ValueError("A link must join one video and one audio clip")
             a, b = pair
-            if (a.start, a.duration) != (b.start, b.duration):
-                raise ValueError("Linked clips must have the same timing")
+            if (a.start, a.duration, a.speed) != (b.start, b.duration, b.speed):
+                raise ValueError("Linked clips must have the same timing and speed")
         return self
 
 

@@ -155,8 +155,10 @@ def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeli
                         source_in_frame=clip.source_in,
                         source_in_us=frame_to_us(clip.source_in, rate),
                         source_out_us=frame_to_us(clip.source_out, rate),
-                        available_before=clip.source_in,
-                        available_after=max(0, source_duration - clip.source_out),
+                        available_before=clip.timeline_frames(clip.source_in),
+                        available_after=clip.timeline_frames(
+                            max(0, source_duration - clip.source_out)
+                        ),
                         audio=ResolvedAudio(
                             mode="muted" if clip.kind != "audio" else "linked",
                             asset_id=clip.asset_id,
@@ -169,11 +171,19 @@ def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeli
                             else 0,
                         ),
                         kind="gap" if clip.kind == "gap" else "media",
+                        **({"speed": clip.speed} if clip.speed != 1 else {}),
                         transform=clip.transform.dump(),
                         layer=clip.layer,
                     )
                 )
             tracks.append(ResolvedTrack(id=track_id, kind=kind, clips=resolved))
+    if any(c.speed != 1 for c in clips):
+        warnings.append(
+            TimelineWarning(
+                code="editor_speed",
+                message="Clip speed is rendered; OTIO and EDL carry it as metadata only.",
+            )
+        )
     if any(c.kind == "video" for c in clips):
         warnings.append(
             TimelineWarning(

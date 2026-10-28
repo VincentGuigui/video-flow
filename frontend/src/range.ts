@@ -3,7 +3,9 @@ import {
   layout,
   pack,
   remove,
+  speedOf,
   split,
+  toTimeline,
   trim,
   type Document,
 } from "./model";
@@ -154,7 +156,7 @@ export function autoTrim(
   const placed = layout(pack(doc)).clips.find((c) => c.id === id);
   if (!placed || last <= first) return null;
   return trimToRange(doc, id, {
-    start: placed.start + first - clip.sourceIn,
-    end: placed.start + last - clip.sourceIn,
+    start: placed.start + toTimeline(clip, first - clip.sourceIn),
+    end: placed.start + Math.ceil((last - clip.sourceIn) / speedOf(clip)),
   });
 }

@@ -17,6 +17,7 @@ import {
   partners,
   remove,
   resize,
+  setSpeed,
   split,
   trim,
   zoomAt,
@@ -349,4 +350,36 @@ it("moves retained audio time with later clips during video ripple trimming", ()
     heldRange: { start: 90, end: 190 },
   });
   expect(layout(result).total).toBe(190);
+});
+
+describe("clip speed", () => {
+  const base = (): Document => ({
+    version: 1,
+    clips: [
+      c("v", 0, "video", "pair"),
+      c("a", 0, "audio", "pair"),
+      c("next", 100),
+    ],
+  });
+  it("changes timeline length, ripples and keeps linked clips together", () => {
+    const doc = setSpeed(base(), "v", 2);
+    expect(partners(doc, "v").map((p) => [p.speed, duration(p)])).toEqual([
+      [2, 50],
+      [2, 50],
+    ]);
+    expect(doc.clips.find((p) => p.id === "next")!.start).toBe(50);
+    expect(layout(setSpeed(base(), "a", 0.5)).total).toBe(300);
+  });
+  it("splits and trims in source frames at the clip's speed", () => {
+    const fast = setSpeed(base(), "v", 2);
+    const parts = split(fast, "v", 20).clips.filter(
+      (p) => p.kind === "video" && p.layer === 0 && p.start < 50,
+    );
+    expect(parts.map((p) => [p.start, p.sourceIn, p.sourceOut])).toEqual([
+      [0, 10, 50],
+      [20, 50, 110],
+    ]);
+    const trimmed = trim(fast, "v", "in", 5, true, 200);
+    expect(trimmed.clips.find((p) => p.id === "v")!.sourceIn).toBe(20);
+  });
 });

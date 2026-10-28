@@ -221,13 +221,11 @@ def _tracks(template: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _medias(template: dict[str, Any]) -> list[dict[str, Any]]:
-    found: list[dict[str, Any]] = []
-    for track in _tracks(template):
-        for media in track.get("medias", []):
-            found.append(media)
-            # UnifiedMedia pairs a VMFile with an AMFile.
-            found.extend(media[k] for k in ("video", "audio") if isinstance(media.get(k), dict))
-    return found
+    """Top-level medias first, so standalone prototypes are not taken from inside a pair."""
+    top = [media for track in _tracks(template) for media in track.get("medias", [])]
+    # UnifiedMedia pairs a VMFile with an AMFile.
+    inner = [m[k] for m in top for k in ("video", "audio") if isinstance(m.get(k), dict)]
+    return top + inner
 
 
 def prototypes(template: dict[str, Any]) -> Prototypes:
@@ -318,13 +316,18 @@ def export_camtasia(
         return round(frame_count * ticks_per_frame)
 
     def timing(media: dict[str, Any], clip: EditorClip) -> None:
+        duration, media_duration = ticks(clip.duration), ticks(clip.span)
+        # Speed (spec 21): Camtasia's scalar is timeline length over media length.
+        scalar = Fraction(duration, media_duration)
         media.update(
             start=ticks(clip.start),
-            duration=ticks(clip.duration),
+            duration=duration,
             mediaStart=ticks(clip.source_in),
-            mediaDuration=ticks(clip.duration),
-            scalar=1,
+            mediaDuration=media_duration,
+            scalar=1 if scalar == 1 else f"{scalar.numerator}/{scalar.denominator}",
         )
+        if scalar != 1 and isinstance(media.get("metadata"), dict):
+            media["metadata"]["clipSpeedAttribute"] = True
 
     document = document_for(project) or editable_document(project)
     assets = {a.id: a for a in project.assets}

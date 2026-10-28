@@ -853,6 +853,13 @@
           "title": "Sourceout",
           "type": "integer"
         },
+        "speed": {
+          "default": 1.0,
+          "maximum": 10,
+          "minimum": 0.1,
+          "title": "Speed",
+          "type": "number"
+        },
         "start": {
           "minimum": 0,
           "title": "Start",

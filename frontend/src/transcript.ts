@@ -1,4 +1,4 @@
-import { layout, type Document } from "./model";
+import { layout, toTimeline, type Document } from "./model";
 
 export interface Sentence {
   startUs: number;
@@ -39,7 +39,7 @@ export function assemblyFrame(
   if (!clip || !placed) return null;
   const frame = sourceFrame(us, rate);
   if (frame < clip.sourceIn || frame >= clip.sourceOut) return null;
-  return placed.start + frame - clip.sourceIn;
+  return placed.start + toTimeline(clip, frame - clip.sourceIn);
 }
 
 // Assembly range covered by a source range, clamped to the clip's trimmed range.
@@ -57,7 +57,7 @@ export function assemblyRange(
     b = Math.min(clip.sourceOut, sourceFrame(endUs, rate));
   if (b <= a) return null;
   return {
-    start: placed.start + a - clip.sourceIn,
-    end: placed.start + b - clip.sourceIn,
+    start: placed.start + toTimeline(clip, a - clip.sourceIn),
+    end: placed.start + toTimeline(clip, b - clip.sourceIn),
   };
 }

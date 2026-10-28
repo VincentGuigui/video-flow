@@ -54,7 +54,11 @@ import { Flow } from "./Flow";
 import { Transport } from "./Transport";
 import { Transcript } from "./Transcript";
 import { Compare } from "./Compare";
-import { FadeControls, TransitionControls } from "./TransitionControls";
+import {
+  FadeControls,
+  SpeedControls,
+  TransitionControls,
+} from "./TransitionControls";
 import { stackedTakes } from "../compare";
 import { useAnalysis } from "./useAnalysis";
 import { currentRange, currentWindow, togglePlay } from "../playback";
@@ -926,6 +930,7 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
           )}
           <TransitionControls clip={clip} />
           <FadeControls clip={clip} />
+          <SpeedControls clip={clip} />
           <div className="inspector-tip">
             <Scissors size={17} />
             <p>

@@ -31,7 +31,8 @@ export function Waveform({ clip, rate }: { clip: Clip; rate: number }) {
   const values = Array.from({ length: 80 }, (_, i) => {
     if (!peaks) return 0;
     const index = Math.floor(
-      ((clip.sourceIn + (duration(clip) * i) / 80) / rate) * peaks.pps,
+      ((clip.sourceIn + ((clip.sourceOut - clip.sourceIn) * i) / 80) / rate) *
+        peaks.pps,
     );
     return Math.min(1, Math.sqrt(peaks.rms[index] ?? 0));
   });

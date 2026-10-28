@@ -1,4 +1,5 @@
-import { fps, type Clip } from "../model";
+import { fps, setSpeed, span, speedOf, type Clip } from "../model";
+import { currentRange } from "../playback";
 import { useEditor } from "../store";
 import {
   activeDuration,
@@ -178,6 +179,53 @@ export function FadeControls({ clip }: { clip: Clip }) {
           </span>
         </label>
       ))}
+    </div>
+  );
+}
+
+const SPEEDS = [0.25, 1 / 3, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
+
+// Clip speed (and its linked partner); later clips ripple by the change.
+export function SpeedControls({ clip }: { clip: Clip }) {
+  const { project, document, save, busy } = useEditor();
+  if (!project || clip.kind === "gap") return null;
+  const current = speedOf(clip),
+    range = currentRange(),
+    target = range.end - range.start,
+    fit = target > 0 ? span(clip) / target : 0;
+  const options = SPEEDS.some((s) => Math.abs(s - current) < 0.001)
+    ? SPEEDS
+    : [...SPEEDS, current].toSorted((a, b) => a - b);
+  return (
+    <div className="inspector-section transition-controls">
+      <span className="overline">SPEED</span>
+      <label className="transition-row">
+        <span>Playback speed</span>
+        <select
+          aria-label="Clip speed"
+          value={String(options.find((s) => Math.abs(s - current) < 0.001))}
+          disabled={busy}
+          onChange={(e) =>
+            void save(setSpeed(document, clip.id, Number(e.target.value)))
+          }
+        >
+          {options.map((s) => (
+            <option key={s} value={String(s)}>
+              {Math.round(s * 100)} %
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        className="button"
+        disabled={
+          busy || fit < 0.1 || fit > 10 || Math.abs(fit - current) < 0.001
+        }
+        title="Change the speed so the clip exactly fills the timeline range"
+        onClick={() => void save(setSpeed(document, clip.id, fit))}
+      >
+        Fit to range ({Math.round(fit * 100)} %)
+      </button>
     </div>
   );
 }

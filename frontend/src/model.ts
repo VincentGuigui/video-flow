@@ -24,6 +24,7 @@ export interface Clip {
   transform: Transform;
   fitMode?: "fit" | "fill";
   heldRange?: { start: number; end: number } | null;
+  speed?: number; // 1 = normal; source frames per timeline frame
   fadeIn?: number; // frames, edge fade at the clip's start (spec 21)
   fadeOut?: number;
   background?: { mode: "transparent" | "color" | "blur"; color: string };
@@ -57,7 +58,16 @@ export interface Project {
   assets: Asset[];
 }
 export const uid = () => crypto.randomUUID();
-export const duration = (c: Clip) => c.sourceOut - c.sourceIn;
+// Speed (spec 21): source frames per timeline frame; timeline length is span / speed.
+export const speedOf = (c: Clip) => c.speed ?? 1;
+export const span = (c: Clip) => c.sourceOut - c.sourceIn;
+export const duration = (c: Clip) =>
+  speedOf(c) === 1 ? span(c) : Math.max(1, Math.round(span(c) / speedOf(c)));
+// Source frames covered by `frames` of timeline, and the reverse (rounded down).
+export const toSource = (c: Clip, frames: number) =>
+  speedOf(c) === 1 ? frames : Math.round(frames * speedOf(c));
+export const toTimeline = (c: Clip, frames: number) =>
+  speedOf(c) === 1 ? frames : Math.floor(frames / speedOf(c));
 export const clone = <T>(value: T): T => structuredClone(value);
 export const fps = (s: Settings) => s.frameRate.num / s.frameRate.den;
 export const defaultTransform = (): Transform => ({
@@ -161,7 +171,7 @@ export function split(doc: Document, id: string, frame: number): Document {
     rightLink = c.linkId ? uid() : null;
   result.clips = result.clips.flatMap((p) => {
     if (!ids.has(p.id)) return [p];
-    const boundary = p.sourceIn + frame - p.start;
+    const boundary = p.sourceIn + toSource(p, frame - p.start);
     return [
       {
         ...p,
@@ -239,10 +249,13 @@ export function trimAudio(
   delta =
     edge === "in"
       ? Math.max(
-          -Math.min(c.start, ...selected.map((p) => p.sourceIn)),
+          -Math.min(c.start, ...selected.map((p) => toTimeline(p, p.sourceIn))),
           Math.min(duration(c) - 1, delta),
         )
-      : Math.max(1 - duration(c), Math.min(maxFrames - c.sourceOut, delta));
+      : Math.max(
+          1 - duration(c),
+          Math.min(toTimeline(c, maxFrames - c.sourceOut), delta),
+        );
   if (!delta) return doc;
   const ids = new Set(selected.map((c) => c.id));
   const [start, end] = occupied(c);
@@ -252,8 +265,8 @@ export function trimAudio(
       ids.has(p.id)
         ? {
             ...p,
-            sourceIn: p.sourceIn + (edge === "in" ? delta : 0),
-            sourceOut: p.sourceOut + (edge === "out" ? delta : 0),
+            sourceIn: p.sourceIn + (edge === "in" ? toSource(p, delta) : 0),
+            sourceOut: p.sourceOut + (edge === "out" ? toSource(p, delta) : 0),
             start: p.start + (edge === "in" ? delta : 0),
             heldRange: p.id === id ? { start, end } : p.heldRange,
           }
@@ -424,10 +437,13 @@ export function trim(
   delta =
     edge === "in"
       ? Math.max(
-          -Math.min(...selected.map((p) => p.sourceIn)),
+          -Math.min(...selected.map((p) => toTimeline(p, p.sourceIn))),
           Math.min(d - 1, delta),
         )
-      : Math.max(1 - d, Math.min(maxFrames - c.sourceOut, delta));
+      : Math.max(
+          1 - d,
+          Math.min(toTimeline(c, maxFrames - c.sourceOut), delta),
+        );
   if (!delta) return doc;
   const next = clone(doc);
   const end = c.start + d;
@@ -438,7 +454,7 @@ export function trim(
         ids.has(p.id)
           ? {
               ...p,
-              sourceIn: p.sourceIn + delta,
+              sourceIn: p.sourceIn + toSource(p, delta),
               heldRange: p.heldRange
                 ? { ...p.heldRange, end: p.heldRange.end - delta }
                 : p.heldRange,
@@ -470,7 +486,11 @@ export function trim(
       }
       next.clips = next.clips.map((p) =>
         ids.has(p.id)
-          ? { ...p, sourceIn: p.sourceIn + delta, start: p.start + headShift }
+          ? {
+              ...p,
+              sourceIn: p.sourceIn + toSource(p, delta),
+              start: p.start + headShift,
+            }
           : overflow && p.start >= end
             ? shifted(p, overflow)
             : p,
@@ -483,7 +503,7 @@ export function trim(
       ids.has(p.id)
         ? {
             ...p,
-            sourceOut: p.sourceOut + delta,
+            sourceOut: p.sourceOut + toSource(p, delta),
             heldRange:
               ripple && p.heldRange
                 ? { ...p.heldRange, end: p.heldRange.end + delta }
@@ -678,4 +698,24 @@ export function keyboardStep(
       (ctrl ? Math.round(rate * 10) : shift ? Math.round(rate) : 1)
     );
   return null;
+}
+// Change the speed of a clip and its linked partner; later clips ripple by the change.
+export function setSpeed(doc: Document, id: string, speed: number): Document {
+  const selected = partners(doc, id),
+    c = selected[0];
+  speed = Math.min(10, Math.max(0.1, Math.round(speed * 1000) / 1000));
+  if (!c || c.kind === "gap" || speed === speedOf(c)) return doc;
+  const ids = new Set(selected.map((p) => p.id)),
+    end = c.start + duration(c),
+    delta = duration({ ...c, speed }) - duration(c);
+  return pack({
+    ...doc,
+    clips: doc.clips.map((p) =>
+      ids.has(p.id)
+        ? { ...p, speed }
+        : p.start >= end && delta
+          ? shifted(p, delta)
+          : p,
+    ),
+  });
 }

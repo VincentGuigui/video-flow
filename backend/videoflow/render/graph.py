@@ -39,6 +39,28 @@ def _window(start: int, end: int, rate: Rational) -> str:
     )
 
 
+def _retime(speed: float, fps: str) -> str:
+    """Restart timestamps; at another speed, stretch them and resample to the project rate."""
+    if speed == 1:
+        return "setpts=PTS-STARTPTS,"
+    return f"setpts=(PTS-STARTPTS)/{_number(speed)},fps={fps}:round=near,"
+
+
+def _atempo(speed: float) -> str:
+    """Pitch-preserving tempo change; atempo factors are chained within [0.5, 2]."""
+    if speed == 1:
+        return ""
+    factors, rest = [], speed
+    while rest > 2:
+        factors.append(2.0)
+        rest /= 2
+    while rest < 0.5:
+        factors.append(0.5)
+        rest /= 0.5
+    factors.append(rest)
+    return "".join(f"atempo={_number(f)}," for f in factors)
+
+
 def _number(value: float) -> str:
     return f"{value:.8f}".rstrip("0").rstrip(".") or "0"
 
@@ -133,7 +155,7 @@ def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
             prepare = (
                 f"[{index}:v:0]fps={fps}:round=near,"
                 f"trim=start_frame={clip.source_in}:end_frame={clip.source_out},"
-                f"setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop={clip.duration},"
+                f"{_retime(clip.speed, fps)}tpad=stop_mode=clone:stop={clip.duration},"
                 f"trim=end_frame={clip.duration},{tone}setsar=1,format=rgba"
             )
             fade_in = plan.video_fade_in.get(clip.id, 0)
@@ -183,6 +205,7 @@ def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
             index = len(audio_inputs)
             audio_inputs.append(source)
             source_in = frames_to_samples(clip.source_in, rate, sample_rate)
+            source_count = frames_to_samples(clip.span, rate, sample_rate)
             count = frames_to_samples(
                 clip.start + clip.duration, rate, sample_rate
             ) - frames_to_samples(clip.start, rate, sample_rate)
@@ -197,8 +220,9 @@ def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
             audio.append(
                 f"[{index}:a:0]aresample={sample_rate},"
                 f"aformat=sample_fmts=fltp:channel_layouts=stereo,"
-                f"atrim=start_sample={source_in}:end_sample={source_in + count},"
-                f"asetpts=PTS-STARTPTS,apad=whole_len={count},atrim=end_sample={count},"
+                f"atrim=start_sample={source_in}:end_sample={source_in + source_count},"
+                f"asetpts=PTS-STARTPTS,{_atempo(clip.speed)}"
+                f"apad=whole_len={count},atrim=end_sample={count},"
                 f"{fades}volume={_number(clip.gain_db)}dB,adelay={delay}S:all=1[s{index}]"
             )
     for number, dip in enumerate(plan.dips):

@@ -185,3 +185,14 @@ def test_edge_fades_become_one_sided_fades_without_duplicating_transitions():
     assert sum(1 for left, _, _ in sides if left == v1["id"]) == 1  # the dissolve keeps the edge
     (edge,) = pip["transitions"]
     assert edge["leftMedia"] == pip["medias"][0]["id"] and "rightMedia" not in edge
+
+
+def test_speed_becomes_camtasia_scalar():
+    p = project()
+    doc = document_for(p)
+    clips = [c.model_copy(update={"speed": 2.0}) if c.id in ("v2",) else c for c in doc.clips]
+    doc = doc.model_copy(update={"clips": clips, "transitions": []})
+    p, _ = SetEditor(document=doc).apply(p)
+    v2 = tracks(json.loads(cm.export_camtasia(p).text))[0]["medias"][1]
+    assert v2["scalar"] == "1/2" and v2["mediaDuration"] == 50 * TICKS
+    assert v2["duration"] == 25 * TICKS and v2["metadata"]["clipSpeedAttribute"] is True

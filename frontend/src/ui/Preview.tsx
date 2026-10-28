@@ -47,7 +47,9 @@ function Media({
   useEffect(() => {
     const media = ref.current;
     if (!media) return;
-    const target = (clip.sourceIn + frame - clip.start) / rate;
+    const target =
+      (clip.sourceIn + (frame - clip.start) * (clip.speed ?? 1)) / rate;
+    media.playbackRate = clip.speed ?? 1;
     const sync = () => {
       if (Math.abs(media.currentTime - target) > (playing ? 0.12 : 0.005))
         media.currentTime = Math.max(0, target);
