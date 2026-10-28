@@ -62,32 +62,49 @@ def tracks(data):
     return data["timeline"]["sceneTrack"]["scenes"][0]["csml"]["tracks"]
 
 
-def test_lanes_clips_and_exact_ticks():
+def ident(media):
+    inner = media.get("video", media)
+    return inner["attributes"]["ident"]
+
+
+def value(parameters, key):
+    return parameters[key]["defaultValue"]
+
+
+def test_lanes_linked_pairs_and_exact_ticks():
     result = cm.export_camtasia(project())
     data = json.loads(result.text)
     assert (data["width"], data["height"], data["videoFormatFrameRate"]) == (1920.0, 1080.0, 25)
+    assert data["title"] == "Camtasia" and data["version"] == "7.0"
     assert [b["src"] for b in data["sourceBin"]] == ["/media/a.mp4", "/media/b.mp4"]
-    names = [[m["attributes"]["ident"] for m in t["medias"]] for t in tracks(data)]
-    assert names == [["v1", "v2"], ["pip"], ["a1"]]
-    v1 = tracks(data)[0]["medias"][0]
-    assert (v1["start"], v1["duration"], v1["mediaStart"]) == (0, 50 * TICKS, 10 * TICKS)
-    assert v1["_type"] == "VMFile" and tracks(data)[2]["medias"][0]["_type"] == "AMFile"
-    assert tracks(data)[2]["medias"][0]["parameters"]["volume"] == round(10 ** (-6 / 20), 6)
+    assert [[ident(m) for m in t["medias"]] for t in tracks(data)] == [["v1", "v2"], ["pip"]]
+    v1, v2 = tracks(data)[0]["medias"]
+    assert v1["_type"] == "UnifiedMedia" and v2["_type"] == "VMFile"
+    for media in (v1, v1["video"], v1["audio"]):
+        assert (media["start"], media["duration"], media["mediaStart"]) == (
+            0,
+            50 * TICKS,
+            10 * TICKS,
+        )
+    assert v1["audio"]["attributes"]["gain"] == round(10 ** (-6 / 20), 6)
+    assert "parameters" not in v1["audio"]
     pip = tracks(data)[1]["medias"][0]["parameters"]
-    assert (pip["translation0"], pip["translation1"], pip["scale0"]) == (720.0, 405.0, 0.25)
-    ids = [b["id"] for b in data["sourceBin"]] + [
-        m["id"] for t in tracks(data) for m in t["medias"]
-    ]
-    assert len(ids) == len(set(ids + [data["timeline"]["id"]])) - 1
-    assert {m["src"] for t in tracks(data) for m in t["medias"]} <= {
-        b["id"] for b in data["sourceBin"]
-    }
-    assert [a["ident"] for a in data["timeline"]["trackAttributes"]] == [
-        "Video 1",
-        "Video 2",
-        "Audio 1",
-    ]
-    assert "Camtasia template: built-in." in result.warnings
+    assert (value(pip, "translation0"), value(pip, "translation1"), value(pip, "scale0")) == (
+        720.0,
+        405.0,
+        0.25,
+    )
+    ids = [b["id"] for b in data["sourceBin"]]
+    for t in tracks(data):
+        for m in t["medias"]:
+            ids += [m["id"]] + [m[k]["id"] for k in ("video", "audio") if k in m]
+    assert len(ids) == len(set(ids)) and data["timeline"]["id"] not in ids
+    bin_ids = {b["id"] for b in data["sourceBin"]}
+    assert v1["video"]["src"] in bin_ids and v1["audio"]["src"] == v1["video"]["src"]
+    video_track = data["sourceBin"][0]["sourceTracks"][0]
+    assert video_track["range"] == [0, 10 * video_track["editRate"]]
+    assert [a["ident"] for a in data["timeline"]["trackAttributes"]] == ["Video 1", "Video 2"]
+    assert result.warnings[0] == "Camtasia template: built-in."
 
 
 def test_dissolve_becomes_a_fade_between_adjacent_medias():
@@ -98,20 +115,30 @@ def test_dissolve_becomes_a_fade_between_adjacent_medias():
     assert (transition["leftMedia"], transition["rightMedia"]) == (first["id"], second["id"])
 
 
-def test_user_template_structures_are_cloned():
+def test_user_template_structures_are_cloned_and_private_metadata_dropped():
     template = json.loads(json.dumps(cm.DEFAULT_TEMPLATE))
-    media = tracks(template)[0]["medias"][0]
-    media["customKey"] = "kept"
+    unified = tracks(template)[0]["medias"][0]
+    unified["customKey"] = "kept"
+    unified["video"]["parameters"]["scale0"] = {
+        "type": "double",
+        "defaultValue": 1.0,
+        "interp": "eioe",
+        "keyframes": [{"time": 0, "value": 2.0}],
+    }
     tracks(template)[0]["transitions"].append(
         dict(tracks(template)[0]["transitions"][0], name="FadeThroughBlack", custom=1)
     )
     template["sourceBin"][0]["extra"] = True
+    template["metadata"] = {"AutoSaveFile": "C:/secret.tscproj", "CanvasZoom": 50}
     result = cm.export_camtasia(project("dip_black"), template, "user.tscproj")
     data = json.loads(result.text)
-    assert all(m.get("customKey") == "kept" for m in tracks(data)[0]["medias"])
+    v1 = tracks(data)[0]["medias"][0]
+    assert v1["customKey"] == "kept"
+    assert "keyframes" not in v1["video"]["parameters"]["scale0"]
     assert tracks(data)[0]["transitions"][0]["name"] == "FadeThroughBlack"
     assert tracks(data)[0]["transitions"][0]["custom"] == 1
     assert all(b["extra"] for b in data["sourceBin"])
+    assert data["metadata"] == {"CanvasZoom": 50}
     assert not any("exported as" in w for w in result.warnings)
 
 

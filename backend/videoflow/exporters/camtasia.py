@@ -1,11 +1,14 @@
 """Camtasia project (.tscproj) writer, template-driven (spec 19).
 
-The .tscproj JSON format is undocumented and versioned. The writer never invents
-structure it can take from a template: media, track, transition and source-bin objects
-are cloned from a template project saved by the user's Camtasia, then filled with paths,
-positions and source ranges from the edit. Without a user template it uses
-DEFAULT_TEMPLATE, modelled on Camtasia 2024 (Windows) as documented by community tools;
-that default is unverified until opened in Camtasia.
+The .tscproj JSON format is undocumented and versioned. The writer takes every structure
+it can from a template project saved by the user's Camtasia (UnifiedMedia, VMFile, AMFile,
+transitions, track attributes, source-bin entries), then fills in paths, positions and
+source ranges from the edit. DEFAULT_TEMPLATE reproduces the structures of a real Camtasia
+2023.4.3 (Windows, format 7.0) project with neutral values.
+
+Units: clip start, duration and mediaStart are project ticks (EDIT_RATE per second); a
+source track's range uses that track's own editRate. Parameters are in pixels from the
+canvas centre (translation, y up) and relative to the source size (scale).
 """
 
 import copy
@@ -19,66 +22,120 @@ from videoflow.core.time import frames
 from videoflow.editor.models import EditorClip
 from videoflow.editor.resolve import document_for, editable_document
 from videoflow.editor.transitions import active_transitions
-from videoflow.project.models import Asset, Project
+from videoflow.project.models import Asset, Project, ProjectSettings
 
 EDIT_RATE = 705_600_000
 """Camtasia ticks per second (divisible by every common frame rate)."""
 
 TEMPLATE_NAME = "camtasia.tscproj"
 TRANSITION_NAMES = {"dissolve": "Fade", "dip_black": "FadeThroughBlack", "dip_white": "Fade"}
+NEUTRAL_METADATA = ("CanvasZoom", "Fit", "Language", "ProfileName")
+"""Project metadata kept from a template; the rest (autosave path, thumbnail...) is dropped."""
+CROP_KEYS = ("crop_left", "crop_right", "crop_top", "crop_bottom")
+
+
+def _param(value: float) -> dict[str, Any]:
+    return {"type": "double", "defaultValue": value, "interp": "eioe"}
+
+
+_MEDIA_METADATA = {"audiateLinkedSession": "", "clipSpeedAttribute": False}
+_VIDEO: dict[str, Any] = {
+    "id": 0,
+    "_type": "VMFile",
+    "src": 0,
+    "trackNumber": 0,
+    "attributes": {"ident": ""},
+    "parameters": {f"geometryCrop{i}": _param(0.0) for i in range(4)},
+    "effects": [],
+    "start": 0,
+    "duration": 0,
+    "mediaStart": 0,
+    "mediaDuration": 0,
+    "scalar": 1,
+    "metadata": dict(_MEDIA_METADATA),
+    "animationTracks": {},
+}
+_AUDIO: dict[str, Any] = {
+    "id": 0,
+    "_type": "AMFile",
+    "src": 0,
+    "trackNumber": 1,
+    "attributes": {
+        "ident": "",
+        "gain": 1.0,
+        "mixToMono": False,
+        "loudnessNormalization": True,
+        "sourceFileOffset": 0,
+    },
+    "channelNumber": "0,1",
+    "effects": [],
+    "start": 0,
+    "duration": 0,
+    "mediaStart": 0,
+    "mediaDuration": 0,
+    "scalar": 1,
+    "metadata": dict(_MEDIA_METADATA),
+    "animationTracks": {},
+}
+_UNIFIED: dict[str, Any] = {
+    "id": 0,
+    "_type": "UnifiedMedia",
+    "video": {k: v for k, v in _VIDEO.items() if k != "metadata"},
+    "audio": {k: v for k, v in _AUDIO.items() if k != "metadata"},
+    "start": 0,
+    "duration": 0,
+    "mediaStart": 0,
+    "mediaDuration": 0,
+    "scalar": 1,
+    "metadata": dict(_MEDIA_METADATA),
+}
+_SOURCE_TRACK = {
+    "range": [0, 0],
+    "trackRect": [0, 0, 0, 0],
+    "bitDepth": 24,
+    "numChannels": 0,
+    "integratedLUFS": 100.0,
+    "peakLevel": -1.0,
+    "metaData": "",
+}
 
 DEFAULT_TEMPLATE: dict[str, Any] = {
     "title": "",
     "description": "",
     "author": "",
     "targetLoudness": -18.0,
-    "shouldApplyLoudnessNormalization": False,
+    "shouldApplyLoudnessNormalization": True,
     "videoFormatFrameRate": 30,
-    "audioFormatSampleRate": 48000,
+    "audioFormatSampleRate": 44100,
     "allowSubFrameEditing": False,
     "width": 1920.0,
     "height": 1080.0,
-    "version": "9.0",
+    "version": "7.0",
     "editRate": EDIT_RATE,
-    "authoringClientName": {"name": "Camtasia", "platform": "Windows", "version": "24.0"},
+    "authoringClientName": {"name": "Camtasia", "platform": "Windows", "version": "2023.4.3"},
     "sourceBin": [
         {
-            "id": 1,
+            "id": 0,
             "src": "",
             "rect": [0, 0, 1920, 1080],
             "lastMod": "19700101T000000",
-            "loudnessNormalization": False,
+            "loudnessNormalization": True,
             "sourceTracks": [
+                {**_SOURCE_TRACK, "type": 0, "editRate": 90000, "sampleRate": "30/1"},
                 {
-                    "range": [0, 0],
-                    "type": 0,
-                    "editRate": EDIT_RATE,
-                    "trackRect": [0, 0, 1920, 1080],
-                    "sampleRate": 30,
-                    "bitDepth": 24,
-                    "numChannels": 0,
-                    "integratedLUFS": 100.0,
-                    "peakLevel": -1.0,
-                    "metaData": "",
-                },
-                {
-                    "range": [0, 0],
+                    **_SOURCE_TRACK,
                     "type": 2,
-                    "editRate": EDIT_RATE,
-                    "trackRect": [0, 0, 0, 0],
+                    "editRate": 10000,
                     "sampleRate": 48000,
                     "bitDepth": 16,
                     "numChannels": 2,
-                    "integratedLUFS": -23.0,
-                    "peakLevel": -1.0,
-                    "metaData": "",
                 },
             ],
             "metadata": {"timeAdded": "19700101T000000"},
         }
     ],
     "timeline": {
-        "id": 2,
+        "id": 0,
         "sceneTrack": {
             "scenes": [
                 {
@@ -86,52 +143,13 @@ DEFAULT_TEMPLATE: dict[str, Any] = {
                         "tracks": [
                             {
                                 "trackIndex": 0,
-                                "medias": [
-                                    {
-                                        "id": 3,
-                                        "_type": "VMFile",
-                                        "src": 1,
-                                        "trackNumber": 0,
-                                        "attributes": {"ident": ""},
-                                        "parameters": {
-                                            "translation0": 0.0,
-                                            "translation1": 0.0,
-                                            "scale0": 1.0,
-                                            "scale1": 1.0,
-                                        },
-                                        "effects": [],
-                                        "start": 0,
-                                        "duration": 0,
-                                        "mediaStart": 0,
-                                        "mediaDuration": 0,
-                                        "scalar": 1,
-                                        "metadata": {"clipSpeedAttribute": False},
-                                        "animationTracks": {},
-                                    },
-                                    {
-                                        "id": 4,
-                                        "_type": "AMFile",
-                                        "src": 1,
-                                        "trackNumber": 1,
-                                        "attributes": {"ident": "", "gain": 1.0},
-                                        "channelNumber": "0,1",
-                                        "parameters": {"volume": 1.0},
-                                        "effects": [],
-                                        "start": 0,
-                                        "duration": 0,
-                                        "mediaStart": 0,
-                                        "mediaDuration": 0,
-                                        "scalar": 1,
-                                        "metadata": {"clipSpeedAttribute": False},
-                                        "animationTracks": {},
-                                    },
-                                ],
+                                "medias": [_UNIFIED, _VIDEO, _AUDIO],
                                 "transitions": [
                                     {
                                         "name": "Fade",
                                         "duration": 0,
-                                        "leftMedia": 3,
-                                        "rightMedia": 3,
+                                        "leftMedia": 0,
+                                        "rightMedia": 0,
                                         "attributes": {
                                             "bypass": False,
                                             "reverse": False,
@@ -158,9 +176,24 @@ DEFAULT_TEMPLATE: dict[str, Any] = {
                 "metadata": {"IsLocked": "False", "WinTrackHeight": "56"},
             }
         ],
+        "captionAttributes": {
+            "enabled": True,
+            "fontName": "Arial",
+            "fontSize": 64,
+            "backgroundColor": [0, 0, 0, 191],
+            "foregroundColor": [255, 255, 255, 255],
+            "lang": "en",
+            "alignment": 0,
+            "defaultFontSize": True,
+            "opacity": 0.5,
+            "backgroundEnabled": True,
+            "backgroundOnlyAroundText": True,
+        },
         "gain": 1.0,
+        "legacyAttenuateAudioMix": False,
         "backgroundColor": [0, 0, 0, 255],
     },
+    "metadata": {"CanvasZoom": 25, "Fit": 0, "Language": "ENU", "ProfileName": ""},
 }
 
 
@@ -168,6 +201,7 @@ DEFAULT_TEMPLATE: dict[str, Any] = {
 class Prototypes:
     """Objects cloned from the template; each fills a part of the output."""
 
+    unified: dict[str, Any]
     video: dict[str, Any]
     audio: dict[str, Any]
     transitions: dict[str, dict[str, Any]]
@@ -178,19 +212,6 @@ class Prototypes:
     warnings: list[str] = field(default_factory=list)
 
 
-def _walk_medias(template: dict[str, Any]) -> list[dict[str, Any]]:
-    found: list[dict[str, Any]] = []
-    for scene in template.get("timeline", {}).get("sceneTrack", {}).get("scenes", []):
-        for track in scene.get("csml", {}).get("tracks", []):
-            for media in track.get("medias", []):
-                found.append(media)
-                # UnifiedMedia pairs a VMFile with an AMFile.
-                for key in ("video", "audio"):
-                    if isinstance(media.get(key), dict):
-                        found.append(media[key])
-    return found
-
-
 def _tracks(template: dict[str, Any]) -> list[dict[str, Any]]:
     return [
         track
@@ -199,38 +220,50 @@ def _tracks(template: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def _medias(template: dict[str, Any]) -> list[dict[str, Any]]:
+    found: list[dict[str, Any]] = []
+    for track in _tracks(template):
+        for media in track.get("medias", []):
+            found.append(media)
+            # UnifiedMedia pairs a VMFile with an AMFile.
+            found.extend(media[k] for k in ("video", "audio") if isinstance(media.get(k), dict))
+    return found
+
+
 def prototypes(template: dict[str, Any]) -> Prototypes:
-    default = DEFAULT_TEMPLATE
-    medias, fallback = _walk_medias(template), _walk_medias(default)
-
-    def pick(kind: str, pool: list[dict[str, Any]]) -> dict[str, Any] | None:
-        return next((m for m in pool if m.get("_type") == kind), None)
-
+    medias, fallback = _medias(template), _medias(DEFAULT_TEMPLATE)
     warnings: list[str] = []
-    video = pick("VMFile", medias)
-    audio = pick("AMFile", medias)
-    if template is not default and (video is None or audio is None):
-        warnings.append("Template lacks a video or audio clip; using built-in defaults for it.")
+
+    def pick(kind: str) -> dict[str, Any]:
+        own = next((m for m in medias if m.get("_type") == kind), None)
+        if own is None and template is not DEFAULT_TEMPLATE:
+            warnings.append(f"Template has no {kind}; using the built-in structure.")
+        return own or next(m for m in fallback if m.get("_type") == kind)
+
+    unified, video, audio = pick("UnifiedMedia"), pick("VMFile"), pick("AMFile")
     transitions: dict[str, dict[str, Any]] = {}
-    for source in (default, template):
+    for source in (DEFAULT_TEMPLATE, template):
         for track in _tracks(source):
             for transition in track.get("transitions", []):
                 transitions[str(transition.get("name"))] = transition
-    bins = template.get("sourceBin") or default["sourceBin"]
+    bins = template.get("sourceBin") or DEFAULT_TEMPLATE["sourceBin"]
     bin_tracks = {
         int(t.get("type", -1)): t
-        for entry in (*default["sourceBin"], *bins)
+        for entry in (*DEFAULT_TEMPLATE["sourceBin"], *bins)
         for t in entry.get("sourceTracks", [])
     }
-    track = (_tracks(template) or _tracks(default))[0]
+    bin_entry = next(
+        (b for b in bins if any(t.get("type") == 0 for t in b.get("sourceTracks", []))), bins[0]
+    )
     attributes = (template.get("timeline", {}).get("trackAttributes") or [None])[0]
     return Prototypes(
-        video=video or pick("VMFile", fallback) or {},
-        audio=audio or pick("AMFile", fallback) or {},
+        unified=unified,
+        video=video,
+        audio=audio,
         transitions=transitions,
-        track=track,
-        track_attributes=attributes or default["timeline"]["trackAttributes"][0],
-        bin_entry=bins[0],
+        track=(_tracks(template) or _tracks(DEFAULT_TEMPLATE))[0],
+        track_attributes=attributes or DEFAULT_TEMPLATE["timeline"]["trackAttributes"][0],
+        bin_entry=bin_entry,
         bin_tracks=bin_tracks,
         warnings=warnings,
     )
@@ -252,13 +285,23 @@ def load_template(path: Path | None = None) -> tuple[dict[str, Any], str]:
         return data, str(candidate)
     if path is not None:
         raise FileNotFoundError(f"Camtasia template not found: {path}")
-    return DEFAULT_TEMPLATE, "built-in (unverified)"
+    return DEFAULT_TEMPLATE, "built-in (Camtasia 2023.4 structure)"
 
 
 @dataclass
 class CamtasiaExport:
     text: str
     warnings: list[str]
+
+
+def _set(parameters: dict[str, Any], key: str, value: float) -> None:
+    """Static parameter value, keeping the object form when the template uses it."""
+    current = parameters.get(key)
+    if isinstance(current, dict):
+        current.pop("keyframes", None)
+        current["defaultValue"] = value
+    else:
+        parameters[key] = _param(value)
 
 
 def export_camtasia(
@@ -274,6 +317,15 @@ def export_camtasia(
     def ticks(frame_count: int) -> int:
         return round(frame_count * ticks_per_frame)
 
+    def timing(media: dict[str, Any], clip: EditorClip) -> None:
+        media.update(
+            start=ticks(clip.start),
+            duration=ticks(clip.duration),
+            mediaStart=ticks(clip.source_in),
+            mediaDuration=ticks(clip.duration),
+            scalar=1,
+        )
+
     document = document_for(project) or editable_document(project)
     assets = {a.id: a for a in project.assets}
 
@@ -285,11 +337,24 @@ def export_camtasia(
     media_clips = [c for c in clips if c.kind != "gap" and c.asset_id in assets]
     if not media_clips:
         raise ValueError("The edit has no enabled media clips to export")
+    by_id = {c.id: c for c in media_clips}
+    partner = {
+        c.id: o.id
+        for c in media_clips
+        for o in media_clips
+        if c.link_id and o.link_id == c.link_id and o.id != c.id
+    }
 
     output = copy.deepcopy(template)
-    output["width"], output["height"] = float(settings.width), float(settings.height)
-    output["videoFormatFrameRate"] = round(rate.num / rate.den)
-    output["editRate"] = EDIT_RATE
+    output.update(
+        title=project.name,
+        width=float(settings.width),
+        height=float(settings.height),
+        videoFormatFrameRate=round(rate.num / rate.den),
+        editRate=EDIT_RATE,
+    )
+    metadata = output.get("metadata") or {}
+    output["metadata"] = {k: metadata[k] for k in NEUTRAL_METADATA if k in metadata}
     next_id = 1
 
     def new_id() -> int:
@@ -297,75 +362,84 @@ def export_camtasia(
         next_id += 1
         return next_id - 1
 
-    # Source bin: one entry per used asset.
     bin_ids: dict[str, int] = {}
     entries = []
     for asset_id in dict.fromkeys(c.asset_id or "" for c in media_clips):
         bin_ids[asset_id] = new_id()
-        entries.append(_bin_entry(proto, assets[asset_id], bin_ids[asset_id], ticks))
+        entries.append(_bin_entry(proto, assets[asset_id], bin_ids[asset_id]))
     output["sourceBin"] = entries
 
-    # One Camtasia track per editor lane: video lanes bottom-up, then audio lanes.
+    def video_media(clip: EditorClip, model: dict[str, Any]) -> dict[str, Any]:
+        media = copy.deepcopy(model)
+        media.update(id=new_id(), src=bin_ids[clip.asset_id or ""], trackNumber=0)
+        timing(media, clip)
+        media.setdefault("attributes", {})["ident"] = clip.name
+        parameters = media.setdefault("parameters", {})
+        for key, value in _placement(clip, assets[clip.asset_id or ""], settings).items():
+            _set(parameters, key, value)
+        return media
+
+    def audio_media(clip: EditorClip, model: dict[str, Any]) -> dict[str, Any]:
+        media = copy.deepcopy(model)
+        media.update(id=new_id(), src=bin_ids[clip.asset_id or ""], trackNumber=1)
+        timing(media, clip)
+        media.setdefault("attributes", {})["gain"] = round(10 ** (clip.gain_db / 20), 6)
+        media.pop("parameters", None)  # the template's volume keyframes do not apply
+        return media
+
+    # One Camtasia track per editor lane: video lanes bottom-up (linked audio travels
+    # inside UnifiedMedia), then lanes of independent audio.
     lanes = sorted({("video", c.layer) for c in media_clips if c.kind == "video"}) + sorted(
-        {("audio", c.layer) for c in media_clips if c.kind == "audio"}
+        {("audio", c.layer) for c in media_clips if c.kind == "audio" and c.id not in partner}
     )
     tracks, media_ids = [], {}
     for index, (kind, layer) in enumerate(lanes):
         medias = []
-        for clip in sorted(
-            (c for c in media_clips if c.kind == kind and c.layer == layer), key=lambda c: c.start
-        ):
-            media = copy.deepcopy(proto.video if kind == "video" else proto.audio)
-            media_ids[clip.id] = media["id"] = new_id()
-            media.update(
-                src=bin_ids[clip.asset_id or ""],
-                trackNumber=0 if kind == "video" else 1,
-                start=ticks(clip.start),
-                duration=ticks(clip.duration),
-                mediaStart=ticks(clip.source_in),
-                mediaDuration=ticks(clip.duration),
-                scalar=1,
-            )
-            media.setdefault("attributes", {})["ident"] = clip.name
-            parameters = media.setdefault("parameters", {})
-            if kind == "video":
-                parameters.update(_placement(clip, assets[clip.asset_id or ""], settings))
+        lane = sorted(
+            (
+                c
+                for c in media_clips
+                if c.kind == kind and c.layer == layer and not (kind == "audio" and c.id in partner)
+            ),
+            key=lambda c: c.start,
+        )
+        for clip in lane:
+            if kind == "video" and clip.id in partner:
+                media = copy.deepcopy(proto.unified)
+                media["video"] = video_media(clip, proto.unified.get("video") or proto.video)
+                media["audio"] = audio_media(
+                    by_id[partner[clip.id]], proto.unified.get("audio") or proto.audio
+                )
+                media["id"] = new_id()
+                timing(media, clip)
+            elif kind == "video":
+                media = video_media(clip, proto.video)
             else:
-                parameters["volume"] = round(10 ** (clip.gain_db / 20), 6)
+                media = audio_media(clip, proto.audio)
+            media_ids[clip.id] = media["id"]
             medias.append(media)
         track = copy.deepcopy(proto.track)
         track.update(trackIndex=index, medias=medias, transitions=[])
         tracks.append(track)
-    if any(
-        c.transform.crop_left
-        or c.transform.crop_right
-        or c.transform.crop_top
-        or c.transform.crop_bottom
-        for c in media_clips
-        if c.kind == "video"
-    ):
+    videos = [c for c in media_clips if c.kind == "video"]
+    if any(getattr(c.transform, k) for c in videos for k in CROP_KEYS):
         warnings.append("Crop is not exported to Camtasia; clips are placed uncropped.")
-    if any(c.background.mode != "transparent" for c in media_clips if c.kind == "video"):
+    if any(c.background.mode != "transparent" for c in videos):
         warnings.append("Clip backgrounds (colour, blur) are not exported to Camtasia.")
 
     for item in active:
         t = item.transition
         name = TRANSITION_NAMES[t.type]
-        prototype = proto.transitions.get(name) or proto.transitions.get("Fade")
-        if prototype is None:
-            warnings.append(f"Transition {t.id}: no transition in the template; exported as a cut.")
-            continue
-        if t.type == "dip_white" or prototype.get("name") != name:
+        prototype = proto.transitions.get(name) or proto.transitions["Fade"]
+        if prototype.get("name") != name or t.type == "dip_white":
             warnings.append(f"Transition {t.id}: {t.type} exported as {prototype.get('name')}.")
-        left = next(c for c in media_clips if c.id == t.left_id)
-        track = tracks[lanes.index(("video", left.layer))]
         transition = copy.deepcopy(prototype)
         transition.update(
             duration=ticks(item.duration),
             leftMedia=media_ids[t.left_id],
             rightMedia=media_ids[t.right_id],
         )
-        track["transitions"].append(transition)
+        tracks[lanes.index(("video", by_id[t.left_id].layer))]["transitions"].append(transition)
     if active:
         warnings.append("Camtasia transitions do not carry the audio crossfades of the edit.")
 
@@ -383,28 +457,42 @@ def export_camtasia(
     return CamtasiaExport(json.dumps(output, ensure_ascii=False, indent=2) + "\n", warnings)
 
 
-def _bin_entry(proto: Prototypes, asset: Asset, identifier: int, ticks: Any) -> dict[str, Any]:
+def _bin_entry(proto: Prototypes, asset: Asset, identifier: int) -> dict[str, Any]:
     entry = copy.deepcopy(proto.bin_entry)
     video = asset.probe.video
     width, height = (video.width, video.height) if video else (0, 0)
     if video and video.rotation in (90, 270):
         width, height = height, width
-    length = round(Fraction(asset.probe.duration_us, 1_000_000) * EDIT_RATE)
+    seconds = Fraction(asset.probe.duration_us, 1_000_000)
+    name = Path(asset.path.replace("\\", "/")).name + ";"
     tracks = []
     if video:
-        track = copy.deepcopy(proto.bin_tracks.get(0, {}))
-        track.update(range=[0, length], trackRect=[0, 0, width, height], editRate=EDIT_RATE)
+        track = copy.deepcopy(proto.bin_tracks.get(0) or {"editRate": 90000})
+        track.update(
+            type=0,
+            range=[0, round(seconds * int(track.get("editRate", 90000)))],
+            trackRect=[0, 0, width, height],
+            sampleRate=f"{video.frame_rate.num}/{video.frame_rate.den}",
+            metaData=name,
+        )
         tracks.append(track)
     if asset.probe.has_audio:
-        track = copy.deepcopy(proto.bin_tracks.get(2, {}))
-        track.update(range=[0, length], editRate=EDIT_RATE)
+        track = copy.deepcopy(proto.bin_tracks.get(2) or {"editRate": 10000})
+        stream = asset.probe.audio_streams[0] if asset.probe.audio_streams else None
+        track.update(
+            type=2,
+            range=[0, round(seconds * int(track.get("editRate", 10000)))],
+            sampleRate=stream.sample_rate if stream else 48000,
+            numChannels=stream.channels if stream else 2,
+            metaData=name,
+        )
         tracks.append(track)
     entry.update(id=identifier, src=asset.path, rect=[0, 0, width, height], sourceTracks=tracks)
     return entry
 
 
-def _placement(clip: EditorClip, asset: Asset, settings: Any) -> dict[str, float]:
-    """Centre offset (Camtasia y points up) and scale relative to the source size."""
+def _placement(clip: EditorClip, asset: Asset, settings: ProjectSettings) -> dict[str, float]:
+    """Centre offset (y up) and scale relative to the source size."""
     video = asset.probe.video
     width, height = (video.width, video.height) if video else (settings.width, settings.height)
     if video and video.rotation in (90, 270):
