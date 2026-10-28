@@ -54,7 +54,7 @@ Analysed imports get a short summary and topic sections (start/end time and a ti
 
 ## Compare takes
 
-Import stacks similar retakes on parallel lanes. Select one and click Compare takes in clip properties: the takes play side by side, synced on their first common word, with words said in only one take highlighted. Pick a take with its button or keys 1–9; it is enabled and the other takes are disabled.
+Import stacks retakes on parallel lanes: sentences are compared with the local MiniLM model plus word overlap (word overlap alone until the model is downloaded in Settings). Select one and click Compare takes in clip properties: the takes play side by side, synced on their first common word, with words said in only one take highlighted. Pick a take with its button or keys 1–9; it is enabled and the other takes are disabled.
 
 ## Transitions
 

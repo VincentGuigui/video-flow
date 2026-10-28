@@ -26,7 +26,7 @@ Files dropped on the flow (or picked with Import) open an analyse/skip choice. P
 
 Use `<source stem>.json` beside the source, containing a version, source fingerprint, timecoded words (integer microseconds), summary, keywords and topic sections (see 14). Read compatible existing analysis before loading models. Native drops and the native file picker reference the original file by path, without uploading or copying its contents into the bundle. Check the sidecar next to that original source, generating it there when analysis is requested and absent; read-only locations use the bundle-cache fallback specified in 10. The app never overwrites incompatible/unrelated JSON. Sidecar publication is atomic. Summaries/keywords use a local deterministic text fallback; transcription uses the existing real ASR engine. No pretend transcripts on failure.
 
-Use transcript and keyword similarity to place matching clips at the same assembly position on different layers; otherwise append. Grouping is a suggestion the user can change. Silent files remain importable; they have empty transcripts. AI model downloads may be necessary on the first analysed import and are shown as an analysis phase.
+Use sentence similarity (see 18) to place matching clips at the same assembly position on different layers; otherwise append. Grouping is a suggestion the user can change. Silent files remain importable; they have empty transcripts. AI model downloads may be necessary on the first analysed import and are shown as an analysis phase.
 
 ## Data and implementation contract
 
