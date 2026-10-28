@@ -10,10 +10,21 @@ from pydantic import Field
 from videoflow.core.base import CamelModel
 from videoflow.core.ids import new_id
 from videoflow.core.time import frames
-from videoflow.editor.analysis import AnalysisFile, describe, load_analysis, similar, store_analysis
+from videoflow.editor.analysis import AnalysisFile, describe, load_analysis, store_analysis
+from videoflow.editor.grouping import (
+    MODEL as GROUPING_MODEL,
+)
+from videoflow.editor.grouping import (
+    ClipText,
+    best_match,
+    clip_sentences,
+    encode_vectors,
+    read_vectors,
+    vectors_path,
+)
 from videoflow.editor.models import EditorClip, EditorDocument, layout
 from videoflow.editor.resolve import editable_document, fit_transform
-from videoflow.engines.downloads import missing_models
+from videoflow.engines.downloads import missing_models, model_state
 from videoflow.jobs.workers import EngineSpec, WorkerPool
 from videoflow.media import ffmpeg
 from videoflow.media.ingest import ingest_files
@@ -21,7 +32,7 @@ from videoflow.media.proxy import build_proxy
 from videoflow.preferences import Preferences, load_preferences
 from videoflow.project.commands import AddAsset, SetEditor
 from videoflow.project.models import Asset
-from videoflow.project.store import Bundle
+from videoflow.project.store import Bundle, save_atomic
 
 
 class ImportJob(CamelModel):
@@ -194,7 +205,11 @@ class Imports:
                         job.analysis_path = str(location)
                 job.progress, job.phase = 0.9, "Adding to flow"
                 if not duplicate:
-                    job.inverses = self._publish(asset, analysis)
+                    match = None
+                    if analysis and analysis.words:
+                        job.phase, job.progress = "Matching retakes", 0.9
+                        match = await self._match(asset, analysis)
+                    job.inverses = self._publish(asset, match)
                 job.asset_id, job.state, job.progress, job.phase = asset.id, "done", 1, "Ready"
         except asyncio.CancelledError:
             job.state, job.phase = "cancelled", "Cancelled"
@@ -202,20 +217,48 @@ class Imports:
         except Exception as exc:
             job.state, job.phase, job.error = "failed", "Import failed", str(exc)
 
-    def _publish(self, asset: Asset, analysis: AnalysisFile | None) -> list[dict[str, Any]]:
+    async def _clip_text(self, asset: Asset, analysis: AnalysisFile, embed: bool) -> ClipText:
+        """Sentences of one source, with cached (or freshly computed) vectors."""
+        texts = clip_sentences(analysis.words)
+        if not embed or not texts:
+            return ClipText(asset.id, texts)
+        path = vectors_path(self.bundle.features_dir, asset.content_hash)
+        vectors = read_vectors(path, len(texts))
+        if vectors is None:
+            vectors = await self.workers.call("transcriber", "embed", texts)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            save_atomic(path, encode_vectors(vectors))
+        return ClipText(asset.id, texts, vectors)
+
+    async def _match(self, asset: Asset, analysis: AnalysisFile) -> str | None:
+        """Asset id of the clip this source is a retake of (spec 18), if any."""
+        project = self.bundle.project
+        placed = {c.asset_id for c in editable_document(project).clips}
+        embed = await asyncio.to_thread(model_state, GROUPING_MODEL) == "up-to-date"
+        new = await self._clip_text(asset, analysis, embed)
+        candidates = []
+        for other in project.assets:
+            if other.id == asset.id or other.id not in placed:
+                continue
+            with contextlib.suppress(ValueError, OSError):
+                previous = load_analysis(Path(other.path), other.content_hash, self.bundle)
+                if previous and previous.words:
+                    candidates.append(await self._clip_text(other, previous, embed))
+        found = best_match(new, candidates)
+        return found[0] if found else None
+
+    def _publish(self, asset: Asset, match: str | None) -> list[dict[str, Any]]:
         project = self.bundle.project
         document = editable_document(project)
         _, start = layout(document)
         layer = 0
-        if analysis:
-            for other in project.assets:
-                with contextlib.suppress(ValueError, OSError):
-                    previous = load_analysis(Path(other.path), other.content_hash, self.bundle)
-                    matched = next((c for c in document.clips if c.asset_id == other.id), None)
-                    if previous and matched and similar(analysis, previous):
-                        start = matched.start
-                        layer = max((c.layer for c in document.clips), default=0) + 1
-                        break
+        matched = next(
+            (c for c in document.clips if c.asset_id == match and c.kind == "video"),
+            next((c for c in document.clips if c.asset_id == match), None),
+        )
+        if matched is not None:
+            start = matched.start
+            layer = max((c.layer for c in document.clips), default=0) + 1
         count = frames(asset.probe.duration_us, project.settings.frame_rate)
         if count < 1:
             raise ValueError("Media is shorter than one project frame")

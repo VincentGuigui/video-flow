@@ -5,11 +5,10 @@ import json
 import re
 from collections import Counter
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from pydantic import Field
-from rapidfuzz.fuzz import token_set_ratio
 
 from videoflow.analysis.types import Transcript, Word
 from videoflow.core.base import CamelModel
@@ -120,23 +119,17 @@ def write_sidecar(source: Path, analysis: AnalysisFile) -> None:
     save_atomic(target, (json.dumps(analysis.dump(), ensure_ascii=False, indent=2) + "\n").encode())
 
 
-def similar(a: AnalysisFile, b: AnalysisFile) -> bool:
-    first = " ".join(w.text for w in a.words).strip()
-    second = " ".join(w.text for w in b.words).strip()
-    if len(first.split()) < 4 or len(second.split()) < 4:
-        return False
-    keywords_a, keywords_b = set(a.keywords), set(b.keywords)
-    overlap = len(keywords_a & keywords_b) / max(1, len(keywords_a | keywords_b))
-    return token_set_ratio(first.casefold(), second.casefold()) >= 85 and overlap >= 0.35
-
-
 class Transcriber:
     """Factory lives at module scope so multiprocessing spawn can import it."""
 
     def __init__(self, asr_engine: str = "parakeet", prefer: Prefer = "auto") -> None:
-        self.vad = create("vad", prefer=prefer)
-        self.asr = create("asr", asr_engine, prefer=prefer)
+        # Engines load on first use: grouping cached analyses needs no speech models.
+        self.asr_engine = asr_engine
+        self.vad: Any = None
+        self.asr: Any = None
         self.summary: QwenSummary | None = None
+        self.prefer: Prefer = prefer
+        self.embedder: Any = None
 
     def _qwen(self) -> "QwenSummary":
         if self.summary is None:
@@ -148,11 +141,23 @@ class Transcriber:
     def summarize(self, text: str) -> tuple[str, list[str]]:
         return self._qwen().describe(text)
 
+    def embed(self, texts: list[str]) -> Any:
+        """Sentence vectors for retake grouping (editor.grouping.MODEL)."""
+        if self.embedder is None:
+            from videoflow.editor.grouping import MODEL
+            from videoflow.engines.embed.onnx_st import OnnxTextEmbedder
+
+            self.embedder = OnnxTextEmbedder(MODEL, self.prefer)
+        return np.asarray(self.embedder.encode(texts), dtype=np.float32)
+
     def topics(self, words: list[Word]) -> list[Topic]:
         """Topic sections titled by local Qwen, with keyword titles as fallback."""
         return detect_topics(words, title=self._qwen().title)
 
     def transcribe(self, pcm: bytes, language: str) -> Transcript:
+        if self.asr is None:
+            self.vad = create("vad", prefer=self.prefer)
+            self.asr = create("asr", self.asr_engine, prefer=self.prefer)
         audio = np.frombuffer(pcm, dtype="<f4").copy()
         ranges = self.vad.speech_ranges(audio, 16000)
         result: Transcript = self.asr.transcribe(audio, 16000, language=language, ranges=ranges)
