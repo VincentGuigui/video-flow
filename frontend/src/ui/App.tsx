@@ -627,6 +627,11 @@ export function App() {
                 ["edl", "paper-edit"],
               ],
               ["Subtitles", "SRT from timecoded analysis words", ["srt"]],
+              [
+                "Camtasia project",
+                "Clips, lanes and transitions as a .tscproj",
+                ["camtasia"],
+              ],
             ].map(([label, description, formats]) => (
               <button
                 key={label as string}

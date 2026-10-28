@@ -119,6 +119,13 @@ def export_command(
     paper_edit: Annotated[
         bool, typer.Option("--paper-edit", help="Export Markdown and CSV.")
     ] = False,
+    camtasia: Annotated[
+        bool, typer.Option("--camtasia", help="Export a Camtasia project (.tscproj).")
+    ] = False,
+    camtasia_template: Annotated[
+        Path | None,
+        typer.Option(help="Camtasia project to clone structures from (default: app templates/)."),
+    ] = None,
     transcripts: Annotated[
         Path | None,
         typer.Option(
@@ -153,6 +160,7 @@ def export_command(
                 ("edl", edl),
                 ("srt", srt),
                 ("paper-edit", paper_edit),
+                ("camtasia", camtasia),
             )
             if selected
         ] or ["otio"]
@@ -163,6 +171,7 @@ def export_command(
             transcripts=words,
             include_alternates=include_alternates,
             overwrite=overwrite,
+            camtasia_template=camtasia_template,
         )
     except (OSError, ValueError, ProjectStoreError, ValidationError) as exc:
         typer.echo(f"Export failed: {exc}", err=True)

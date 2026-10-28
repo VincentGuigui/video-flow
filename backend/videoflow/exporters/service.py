@@ -4,6 +4,7 @@ import json
 from collections.abc import Sequence
 from pathlib import Path
 
+from videoflow.exporters.camtasia import export_camtasia, load_template
 from videoflow.exporters.edl import export_edl
 from videoflow.exporters.otio_compile import compile_timeline, serialize
 from videoflow.exporters.otioz import write_otioz
@@ -14,7 +15,7 @@ from videoflow.project.models import Project
 from videoflow.project.store import save_atomic
 from videoflow.timeline.resolve import resolve
 
-FORMATS = frozenset({"otio", "otioz", "edl", "srt", "paper-edit"})
+FORMATS = frozenset({"otio", "otioz", "edl", "srt", "paper-edit", "camtasia"})
 
 
 def export_project(
@@ -25,6 +26,7 @@ def export_project(
     transcripts: Transcripts | None = None,
     include_alternates: bool = False,
     overwrite: bool = False,
+    camtasia_template: Path | None = None,
 ) -> list[Path]:
     """Write edit.* files plus a report describing losses and resolver warnings."""
     unknown = set(formats) - FORMATS
@@ -51,6 +53,11 @@ def export_project(
         texts["edit.edl"] = edl.text
         texts["edit.reels.json"] = json.dumps(edl.reels, ensure_ascii=False, indent=2) + "\n"
         warnings.extend(edl.warnings)
+    if "camtasia" in formats:
+        template, origin = load_template(camtasia_template)
+        camtasia = export_camtasia(project, template, origin)
+        texts["edit.tscproj"] = camtasia.text
+        warnings.extend(camtasia.warnings)
     if "srt" in formats:
         texts["edit.srt"] = export_srt(resolved, project, transcripts or {})
         if not texts["edit.srt"]:
