@@ -49,9 +49,7 @@ def coverage(a: ClipText, b: ClipText) -> float:
     """Share of `a`'s words in sentences that have a match in `b`."""
     if not a.texts or not b.texts:
         return 0.0
-    cosines = (
-        a.vectors @ b.vectors.T if a.vectors is not None and b.vectors is not None else None
-    )
+    cosines = a.vectors @ b.vectors.T if a.vectors is not None and b.vectors is not None else None
     matched = total = 0
     for i, text in enumerate(a.texts):
         weight = len(text.split())
