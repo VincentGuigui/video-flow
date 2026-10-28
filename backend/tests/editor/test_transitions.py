@@ -83,3 +83,21 @@ def test_dormant_transitions_are_ignored_and_validate():
         frames,
     )
     assert plan.active == [] and plan.dips == [] and plan.video_fade_in == {}
+
+
+def test_edge_fades_are_planned_per_clip_and_capped():
+    doc = EditorDocument(
+        clips=[
+            clip("v", 0, link="p").model_copy(update={"fade_in": 10, "fade_out": 99}),
+            clip("a", 0, kind="audio", link="p").model_copy(update={"fade_in": 10, "fade_out": 5}),
+        ]
+    )
+    plan = plan_transitions(doc, frames)
+    assert plan.video_fade_in == {"v": 10} and plan.video_fade_out == {"v": 25}
+    assert plan.audio_fades == {"a": (10, 5)}
+
+
+def test_edge_fade_merges_with_a_dissolve():
+    doc = document(EditorTransition(id="t", left_id="l", right_id="r", duration=10))
+    doc.clips[2] = doc.clips[2].model_copy(update={"fade_in": 4})
+    assert plan_transitions(doc, frames).video_fade_in == {"r": 10}

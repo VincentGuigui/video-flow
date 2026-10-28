@@ -54,7 +54,7 @@ import { Flow } from "./Flow";
 import { Transport } from "./Transport";
 import { Transcript } from "./Transcript";
 import { Compare } from "./Compare";
-import { TransitionControls } from "./TransitionControls";
+import { FadeControls, TransitionControls } from "./TransitionControls";
 import { stackedTakes } from "../compare";
 import { useAnalysis } from "./useAnalysis";
 import { currentRange, currentWindow, togglePlay } from "../playback";
@@ -925,6 +925,7 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
             </div>
           )}
           <TransitionControls clip={clip} />
+          <FadeControls clip={clip} />
           <div className="inspector-tip">
             <Scissors size={17} />
             <p>

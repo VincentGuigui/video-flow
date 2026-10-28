@@ -71,3 +71,32 @@ async def test_transition_renders_at_the_cut_with_exact_frames(edit, tmp_path, k
         assert middle.max() < 40
     else:
         assert middle.min() > 215
+
+
+async def test_edge_fades_render_from_and_to_black(edit, tmp_path):
+    red = edit.project.assets[0].id
+    doc = EditorDocument(
+        clips=[
+            EditorClip(
+                id="red",
+                kind="video",
+                asset_id=red,
+                name="Red",
+                start=0,
+                source_in=0,
+                source_out=50,
+                fade_in=10,
+                fade_out=10,
+                transform=Transform(width=160, height=90),
+            ),
+        ]
+    )
+    project, _ = SetEditor(document=doc).apply(edit.project)
+    edit.save(project)
+    output = await render_project(edit.project, edit, hw="cpu", normalize=False)
+    red_level = [
+        (await pixels(output.path, f, tmp_path)).reshape(-1, 3).mean(axis=0)[0]
+        for f in (0, 5, 25, 45, 49)
+    ]
+    assert red_level[0] < 40 and 90 < red_level[1] < 170 and red_level[2] > 220
+    assert 60 < red_level[3] < 170 and red_level[4] < 60

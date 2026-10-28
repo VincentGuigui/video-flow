@@ -161,6 +161,12 @@ def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeli
                             mode="muted" if clip.kind != "audio" else "linked",
                             asset_id=clip.asset_id,
                             gain_db=clip.gain_db,
+                            fade_in_frames=min(clip.fade_in, clip.duration)
+                            if clip.kind == "audio"
+                            else 0,
+                            fade_out_frames=min(clip.fade_out, clip.duration)
+                            if clip.kind == "audio"
+                            else 0,
                         ),
                         kind="gap" if clip.kind == "gap" else "media",
                         transform=clip.transform.dump(),

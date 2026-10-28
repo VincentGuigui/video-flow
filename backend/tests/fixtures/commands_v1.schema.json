@@ -765,6 +765,18 @@
           "title": "Enabled",
           "type": "boolean"
         },
+        "fadeIn": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Fadein",
+          "type": "integer"
+        },
+        "fadeOut": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Fadeout",
+          "type": "integer"
+        },
         "gainDb": {
           "default": 0,
           "maximum": 24,

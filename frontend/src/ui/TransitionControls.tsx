@@ -4,6 +4,7 @@ import {
   activeDuration,
   activeTransitions,
   neighbours,
+  setFade,
   setAllTransitions,
   setTransition,
   sourceFramesFor,
@@ -132,6 +133,51 @@ export function TransitionControls({ clip }: { clip: Clip }) {
           : "cross dissolve"}{" "}
         to all cuts
       </button>
+    </div>
+  );
+}
+
+// Edge fades of the selected clip (and its linked partner), in seconds.
+export function FadeControls({ clip }: { clip: Clip }) {
+  const { project, document, save, busy } = useEditor();
+  if (!project || clip.kind === "gap") return null;
+  const rate = fps(project.settings);
+  return (
+    <div className="inspector-section transition-controls">
+      <span className="overline">FADES</span>
+      {(
+        [
+          ["fadeIn", "Fade in", "From black (or what lies below) at the start"],
+          ["fadeOut", "Fade out", "To black (or what lies below) at the end"],
+        ] as const
+      ).map(([edge, label, hint]) => (
+        <label key={edge} className="transition-row" title={hint}>
+          <span>{label}</span>
+          <span className="transition-duration">
+            <input
+              aria-label={`${label} duration`}
+              type="number"
+              min={0}
+              step={0.1}
+              key={`${clip.id}-${edge}-${clip[edge] ?? 0}`}
+              defaultValue={((clip[edge] ?? 0) / rate).toFixed(2)}
+              disabled={busy}
+              onBlur={(e) => {
+                const frames = Math.max(
+                  0,
+                  Math.round(Number(e.currentTarget.value) * rate),
+                );
+                if (Number.isFinite(frames) && frames !== (clip[edge] ?? 0))
+                  void save(setFade(document, clip.id, edge, frames));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
+            />
+            s
+          </span>
+        </label>
+      ))}
     </div>
   );
 }

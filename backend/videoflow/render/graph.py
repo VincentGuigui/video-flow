@@ -137,8 +137,11 @@ def compile_graph(project: Project, preset: Preset = "final") -> RenderGraph:
                 f"trim=end_frame={clip.duration},{tone}setsar=1,format=rgba"
             )
             fade_in = plan.video_fade_in.get(clip.id, 0)
-            # A dissolve fades the incoming picture (and its backdrop) in over the outgoing one.
+            fade_out = plan.video_fade_out.get(clip.id, 0)
+            # Dissolves and edge fades blend the picture (and its backdrop) with what lies below.
             alpha = f",fade=t=in:s=0:n={fade_in}:alpha=1" if fade_in else ""
+            if fade_out:
+                alpha += f",fade=t=out:s={clip.duration - fade_out}:n={fade_out}:alpha=1"
             prepare += alpha
             timing = f"settb=AVTB,setpts=PTS+{clip.start}*{rate.den}/{rate.num}/TB"
             enable = _window(clip.start, clip.start + clip.duration, rate)

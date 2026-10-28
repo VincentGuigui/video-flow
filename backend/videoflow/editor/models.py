@@ -80,6 +80,9 @@ class EditorClip(CamelModel):
     resize_reference: ResizeReference | None = None
     background: Background = Field(default_factory=Background)
     held_range: HeldRange | None = None
+    fade_in: int = Field(default=0, ge=0)
+    """Frames fading in at the clip's start (picture from what lies below, audio from silence)."""
+    fade_out: int = Field(default=0, ge=0)
 
     @model_validator(mode="after")
     def valid(self) -> "EditorClip":

@@ -442,6 +442,28 @@ def export_camtasia(
         tracks[lanes.index(("video", by_id[t.left_id].layer))]["transitions"].append(transition)
     if active:
         warnings.append("Camtasia transitions do not carry the audio crossfades of the edit.")
+    # Edge fades (spec 21) become one-sided Fades unless a transition already uses that edge.
+    fade = proto.transitions["Fade"]
+    for index, (kind, layer) in enumerate(lanes):
+        track = tracks[index]
+        used_left = {t.get("leftMedia") for t in track["transitions"]}
+        used_right = {t.get("rightMedia") for t in track["transitions"]}
+        for clip in media_clips:
+            if clip.kind != kind or clip.layer != layer or clip.id not in media_ids:
+                continue
+            identifier = media_ids[clip.id]
+            for frames_, side, used in (
+                (clip.fade_in, "rightMedia", used_right),
+                (clip.fade_out, "leftMedia", used_left),
+            ):
+                if frames_ and identifier not in used:
+                    edge = {
+                        k: v
+                        for k, v in copy.deepcopy(fade).items()
+                        if k not in ("leftMedia", "rightMedia")
+                    }
+                    edge.update(duration=ticks(min(frames_, clip.duration)), **{side: identifier})
+                    track["transitions"].append(edge)
 
     timeline = output.setdefault("timeline", {})
     timeline["id"] = new_id()

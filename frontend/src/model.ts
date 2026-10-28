@@ -24,6 +24,8 @@ export interface Clip {
   transform: Transform;
   fitMode?: "fit" | "fill";
   heldRange?: { start: number; end: number } | null;
+  fadeIn?: number; // frames, edge fade at the clip's start (spec 21)
+  fadeOut?: number;
   background?: { mode: "transparent" | "color" | "blur"; color: string };
   resizeReference?: { width: number; height: number; transform: Transform };
 }
@@ -165,6 +167,7 @@ export function split(doc: Document, id: string, frame: number): Document {
         ...p,
         sourceOut: boundary,
         linkId: leftLink,
+        fadeOut: 0,
         heldRange: p.heldRange
           ? { start: Math.min(p.heldRange.start, p.start), end: frame }
           : null,
@@ -175,6 +178,7 @@ export function split(doc: Document, id: string, frame: number): Document {
         start: frame,
         sourceIn: boundary,
         linkId: rightLink,
+        fadeIn: 0,
         heldRange: p.heldRange
           ? {
               start: frame,

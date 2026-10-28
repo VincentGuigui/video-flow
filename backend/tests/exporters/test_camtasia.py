@@ -5,6 +5,7 @@ import pytest
 from tests.timeline.builders import asset
 from videoflow.core.time import Rational
 from videoflow.editor.models import EditorClip, EditorDocument, EditorTransition, Transform
+from videoflow.editor.resolve import document_for
 from videoflow.exporters import camtasia as cm
 from videoflow.exporters.service import export_project
 from videoflow.project.commands import SetEditor
@@ -163,3 +164,24 @@ def test_template_file_is_read_and_validated(tmp_path):
     bad.write_text("{}", encoding="utf-8")
     with pytest.raises(ValueError, match="not a Camtasia project"):
         cm.load_template(bad)
+
+
+def test_edge_fades_become_one_sided_fades_without_duplicating_transitions():
+    p = project()
+    doc = document_for(p)
+    clips = []
+    for c in doc.clips:
+        if c.id in ("v1", "a1"):
+            c = c.model_copy(update={"fade_in": 15, "fade_out": 5})
+        if c.id == "pip":
+            c = c.model_copy(update={"fade_out": 10})
+        clips.append(c)
+    p, _ = SetEditor(document=doc.model_copy(update={"clips": clips})).apply(p)
+    data = json.loads(cm.export_camtasia(p).text)
+    main, pip = tracks(data)
+    v1 = main["medias"][0]
+    sides = [(t.get("leftMedia"), t.get("rightMedia"), t["duration"]) for t in main["transitions"]]
+    assert (None, v1["id"], 15 * TICKS) in sides
+    assert sum(1 for left, _, _ in sides if left == v1["id"]) == 1  # the dissolve keeps the edge
+    (edge,) = pip["transitions"]
+    assert edge["leftMedia"] == pip["medias"][0]["id"] and "rightMedia" not in edge

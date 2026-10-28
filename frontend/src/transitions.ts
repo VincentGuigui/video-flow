@@ -2,6 +2,7 @@
 import {
   duration,
   layout,
+  partners,
   uid,
   type Clip,
   type Document,
@@ -93,6 +94,7 @@ export interface Plan {
   clips: Clip[];
   active: Active[];
   videoFadeIn: Map<string, number>;
+  videoFadeOut: Map<string, number>;
   audioFades: Map<string, { in: number; out: number }>;
   dips: { start: number; before: number; after: number; color: string }[];
 }
@@ -130,6 +132,7 @@ export function planTransitions(
     clips: [],
     active,
     videoFadeIn: new Map(),
+    videoFadeOut: new Map(),
     audioFades: new Map(),
     dips: [],
   };
@@ -173,6 +176,7 @@ export function planTransitions(
         }
       : c;
   });
+  for (const c of plan.clips) edgeFades(plan, c);
   return plan;
 }
 
@@ -261,4 +265,56 @@ export function setAllTransitions(
       if (left.id !== right.id && adjacent(left, right))
         next = setTransition(next, left.id, right.id, type, frames);
   return next;
+}
+
+// Clip edge fades (spec 21), merged with transition fades; capped at the clip length.
+function edgeFades(plan: Plan, clip: Clip) {
+  const fadeIn = Math.min(clip.fadeIn ?? 0, duration(clip)),
+    fadeOut = Math.min(clip.fadeOut ?? 0, duration(clip));
+  if (clip.kind === "video") {
+    if (fadeIn)
+      plan.videoFadeIn.set(
+        clip.id,
+        Math.max(plan.videoFadeIn.get(clip.id) ?? 0, fadeIn),
+      );
+    if (fadeOut)
+      plan.videoFadeOut.set(
+        clip.id,
+        Math.max(plan.videoFadeOut.get(clip.id) ?? 0, fadeOut),
+      );
+  } else if (clip.kind === "audio" && (fadeIn || fadeOut)) {
+    const current = plan.audioFades.get(clip.id) ?? { in: 0, out: 0 };
+    plan.audioFades.set(clip.id, {
+      in: Math.max(current.in, fadeIn),
+      out: Math.max(current.out, fadeOut),
+    });
+  }
+}
+
+// Picture opacity of a clip at `frame` from dissolves and edge fades.
+export function clipOpacity(plan: Plan, clip: Clip, frame: number): number {
+  const fadeIn = plan.videoFadeIn.get(clip.id) ?? 0,
+    fadeOut = plan.videoFadeOut.get(clip.id) ?? 0,
+    f = frame - clip.start;
+  let value = 1;
+  if (fadeIn && f < fadeIn) value = Math.min(value, f / fadeIn);
+  if (fadeOut && duration(clip) - f <= fadeOut)
+    value = Math.min(value, (duration(clip) - f - 1) / fadeOut);
+  return Math.max(0, Math.min(1, value));
+}
+
+// Set an edge fade on a clip and its linked partner.
+export function setFade(
+  doc: Document,
+  id: string,
+  edge: "fadeIn" | "fadeOut",
+  frames: number,
+): Document {
+  const ids = new Set(partners(doc, id).map((c) => c.id));
+  return {
+    ...doc,
+    clips: doc.clips.map((c) =>
+      ids.has(c.id) ? { ...c, [edge]: Math.max(0, Math.round(frames)) } : c,
+    ),
+  };
 }

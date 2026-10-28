@@ -18,6 +18,7 @@ import { snapHandle } from "../snap";
 import { BackgroundSelector } from "./BackgroundSelector";
 import { mediaUrl } from "../desktop";
 import {
+  clipOpacity,
   dipOpacity,
   fadeGain,
   planTransitions,
@@ -386,14 +387,7 @@ export function Preview() {
                 frame={frame}
                 rate={rate}
                 playing={playing}
-                opacity={
-                  plan.videoFadeIn.has(c.id)
-                    ? Math.min(
-                        1,
-                        (frame - c.start) / plan.videoFadeIn.get(c.id)!,
-                      )
-                    : 1
-                }
+                opacity={clipOpacity(plan, c, frame)}
                 gain={fadeGain(plan.audioFades.get(c.id), c, frame)}
               />
             ))}

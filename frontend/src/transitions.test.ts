@@ -5,7 +5,9 @@ import {
   fadeGain,
   neighbours,
   planTransitions,
+  clipOpacity,
   setAllTransitions,
+  setFade,
   setTransition,
   type Transition,
 } from "./transitions";
@@ -114,5 +116,41 @@ describe("transition editing", () => {
     expect(fadeGain({ in: 10, out: 5 }, c, 5)).toBeCloseTo(0.5);
     expect(fadeGain({ in: 10, out: 5 }, c, 22)).toBeCloseTo(0.6);
     expect(fadeGain(undefined, c, 22)).toBe(1);
+  });
+});
+
+describe("edge fades (mirrors backend tests)", () => {
+  it("plans clip fades, caps them and merges with a dissolve", () => {
+    const d = setFade(doc([]), "l", "fadeIn", 10);
+    const capped = setFade(d, "l", "fadeOut", 99);
+    const plan = planTransitions(capped, frames);
+    expect(plan.videoFadeIn.get("l")).toBe(10);
+    expect(plan.videoFadeOut.get("l")).toBe(25);
+    expect(plan.audioFades.get("la")).toEqual({ in: 10, out: 25 });
+    const merged = planTransitions(
+      setFade(doc([t()]), "r", "fadeIn", 4),
+      frames,
+    );
+    expect(merged.videoFadeIn.get("r")).toBe(10);
+  });
+  it("computes opacity at both edges", () => {
+    const d = setFade(setFade(doc([]), "l", "fadeIn", 10), "l", "fadeOut", 5);
+    const plan = planTransitions(d, frames),
+      l = plan.clips.find((c) => c.id === "l")!;
+    expect(clipOpacity(plan, l, 0)).toBe(0);
+    expect(clipOpacity(plan, l, 5)).toBeCloseTo(0.5);
+    expect(clipOpacity(plan, l, 12)).toBe(1);
+    expect(clipOpacity(plan, l, 24)).toBe(0);
+  });
+  it("split keeps the fade-in on the left part and the fade-out on the right", () => {
+    const d = setFade(setFade(doc([]), "l", "fadeIn", 5), "l", "fadeOut", 5);
+    const next = split(d, "l", 10);
+    const parts = next.clips
+      .filter((c) => c.kind === "video" && c.layer === 0 && c.start < 25)
+      .toSorted((a, b) => a.start - b.start);
+    expect(parts.map((c) => [c.fadeIn ?? 0, c.fadeOut ?? 0])).toEqual([
+      [5, 0],
+      [0, 5],
+    ]);
   });
 });

@@ -45,6 +45,7 @@ class TransitionPlan:
     total: int
     active: list[ActiveTransition] = field(default_factory=list)
     video_fade_in: dict[str, int] = field(default_factory=dict)
+    video_fade_out: dict[str, int] = field(default_factory=dict)
     audio_fades: dict[str, tuple[int, int]] = field(default_factory=dict)
     dips: list[Dip] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
@@ -142,4 +143,20 @@ def plan_transitions(
             if delta
             else c
         )
+        _edge_fades(plan, plan.clips[-1])
     return plan
+
+
+def _edge_fades(plan: TransitionPlan, clip: EditorClip) -> None:
+    """Clip edge fades (spec 21), merged with transition fades; capped at the clip length."""
+    fade_in, fade_out = min(clip.fade_in, clip.duration), min(clip.fade_out, clip.duration)
+    if not (fade_in or fade_out):
+        return
+    if clip.kind == "video":
+        if fade_in:
+            plan.video_fade_in[clip.id] = max(plan.video_fade_in.get(clip.id, 0), fade_in)
+        if fade_out:
+            plan.video_fade_out[clip.id] = max(plan.video_fade_out.get(clip.id, 0), fade_out)
+    elif clip.kind == "audio":
+        current = plan.audio_fades.get(clip.id, (0, 0))
+        plan.audio_fades[clip.id] = (max(current[0], fade_in), max(current[1], fade_out))
