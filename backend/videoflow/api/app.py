@@ -34,7 +34,7 @@ from videoflow.editor.models import Title
 from videoflow.editor.playback import PlaybackProxies
 from videoflow.editor.resolve import editable_document
 from videoflow.editor.titles import title_png
-from videoflow.engines.downloads import ModelDownloads
+from videoflow.engines.downloads import ModelDownloads, fetch_download_sizes
 from videoflow.exporters.service import export_project
 from videoflow.media import ffmpeg
 from videoflow.media.hashing import content_hash
@@ -253,6 +253,12 @@ def create_app(
             return downloads.submit(key)
         except (KeyError, ValueError) as exc:
             raise HTTPException(422, str(exc)) from exc
+
+    @app.post("/api/models/sizes")
+    async def model_sizes() -> Any:
+        """Ask the Hub for the download sizes not known yet (metadata only, cached)."""
+        keys = [m["id"] for m in (await asyncio.to_thread(downloads.status, preferences))["models"]]
+        return await asyncio.to_thread(fetch_download_sizes, keys)
 
     @app.post("/api/models/{key}/remove")
     async def remove_model(key: str) -> Any:

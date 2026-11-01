@@ -3,6 +3,7 @@
 import asyncio
 import contextlib
 import importlib.util
+import json
 import shutil
 from pathlib import Path
 from typing import Any
@@ -41,6 +42,53 @@ def disk_size(key: str) -> int:
         with contextlib.suppress(OSError):
             total += real.stat().st_size
     return total
+
+
+SIZES_FILE = "download-sizes.json"
+"""Download sizes from the Hub, cached per `repo@revision` in the models folder."""
+
+
+def _sizes_cache() -> dict[str, int]:
+    with contextlib.suppress(OSError, ValueError):
+        data = json.loads((models_dir() / SIZES_FILE).read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            return {k: int(v) for k, v in data.items()}
+    return {}
+
+
+def _size_key(key: str) -> str:
+    spec = load_manifest().get(key)
+    return f"{spec.repo}@{spec.revision}"
+
+
+def download_size(key: str) -> int | None:
+    """Bytes of the pinned files, if the Hub was already asked (no network here)."""
+    return _sizes_cache().get(_size_key(key))
+
+
+def fetch_download_sizes(keys: list[str]) -> dict[str, int | None]:
+    """Ask the Hub for the sizes of the pinned files of `keys` not cached yet.
+
+    Metadata only (no model file is downloaded). Unreachable Hub: sizes stay unknown.
+    """
+    from huggingface_hub import HfApi
+
+    cache = _sizes_cache()
+    api = HfApi()
+    for key in keys:
+        name = _size_key(key)
+        if name in cache:
+            continue
+        spec = load_manifest().get(key)
+        with contextlib.suppress(Exception):
+            infos = api.get_paths_info(spec.repo, spec.files, revision=spec.revision)
+            sizes = [getattr(info, "size", None) for info in infos]
+            if len(sizes) == len(spec.files) and all(isinstance(s, int) for s in sizes):
+                cache[name] = sum(int(s) for s in sizes if s is not None)
+    with contextlib.suppress(OSError):
+        models_dir().mkdir(parents=True, exist_ok=True)
+        (models_dir() / SIZES_FILE).write_text(json.dumps(cache, indent=2), encoding="utf-8")
+    return {key: cache.get(_size_key(key)) for key in keys}
 
 
 def model_state(key: str) -> str:
@@ -108,7 +156,7 @@ class ModelDownloads:
                     "purpose": spec.purpose,
                     "goal": spec.goal,
                     "state": model_state(key),
-                    "size": spec.size,
+                    "size": download_size(key),
                     "disk": disk_size(key),
                     "revision": spec.revision,
                     "required": key in required,

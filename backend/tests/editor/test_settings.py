@@ -147,16 +147,32 @@ def test_unusable_qwen_answer_keeps_the_deterministic_summary(monkeypatch):
     assert transcriber.summarize("bonjour") is None
 
 
-def test_model_sizes_disk_usage_and_removal(local_root):
+def test_model_sizes_disk_usage_and_removal(local_root, monkeypatch):
+    import huggingface_hub
+
     key = "silero-vad"
     spec = load_manifest().get(key)
-    assert all(m.size and m.size > 0 for m in load_manifest().models.values())
+    asked = []
+
+    class Hub:
+        def get_paths_info(self, repo, paths, revision):
+            asked.append((repo, revision))
+            return [type("Info", (), {"size": 100})() for _ in paths]
+
+    monkeypatch.setattr(huggingface_hub, "HfApi", Hub)
     bundle = Bundle.create(local_root / "edit.videoflow", new_project("Models"))
     app = create_app(bundle, token="t")
     with TestClient(app, base_url="http://127.0.0.1:8765") as client:
         client.get("/?token=t", follow_redirects=False)
         entry = next(m for m in client.get("/api/settings").json()["models"] if m["id"] == key)
-        assert entry["size"] == spec.size and entry["disk"] == 0
+        assert entry["size"] is None and entry["disk"] == 0  # not asked yet: unknown
+        sizes = client.post("/api/models/sizes").json()
+        assert sizes[key] == 100 * len(spec.files)
+        entry = next(m for m in client.get("/api/settings").json()["models"] if m["id"] == key)
+        assert entry["size"] == 100 * len(spec.files)
+        count = len(asked)
+        client.post("/api/models/sizes")
+        assert len(asked) == count  # cached per repo and revision
         folder = runtime.model_directory() / "hf" / ("models--" + spec.repo.replace("/", "--"))
         for name in spec.files:
             path = folder / "snapshots" / spec.revision / name

@@ -34,6 +34,10 @@ export function ManageModels({
       }
     };
     void poll();
+    // Download sizes come from the Hub metadata once, then from the local cache.
+    void api("/models/sizes", { method: "POST" })
+      .then(() => poll())
+      .catch(() => undefined);
     const timer = setInterval(() => void poll(), 750);
     return () => {
       stopped = true;
@@ -67,7 +71,10 @@ export function ManageModels({
         m.purpose !== "summary" || data.preferences.summaryEngine === "qwen",
     ) ?? [];
   const missing = models.filter((m) => m.required && m.state !== "up-to-date");
-  const missingSize = missing.reduce((sum, m) => sum + (m.size ?? 0), 0);
+  // A total only when every size is known (sizes come from the Hub, never guessed).
+  const missingSize = missing.every((m) => m.size != null)
+    ? missing.reduce((sum, m) => sum + (m.size ?? 0), 0)
+    : null;
   return (
     <div className="modal-backdrop settings-backdrop">
       <section
@@ -96,8 +103,10 @@ export function ManageModels({
           <div className="settings-notice">
             <p>
               {missing.length} required model
-              {missing.length === 1 ? " is" : "s are"} missing or obsolete (
-              {formatSize(missingSize)} to download).
+              {missing.length === 1 ? " is" : "s are"} missing or obsolete
+              {missingSize != null
+                ? ` (${formatSize(missingSize)} to download).`
+                : "."}
             </p>
             <button
               className="button"

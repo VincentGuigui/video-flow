@@ -31,8 +31,6 @@ class ModelSpec(BaseModel):
     license: str
     gated: bool = False
     files: list[str] = Field(min_length=1)
-    size: int | None = None
-    """Exact download size in bytes of `files` at `revision`, from the Hub metadata."""
     dim: int | None = None
     query_prefix: str = ""
     passage_prefix: str = ""
