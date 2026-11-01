@@ -7,6 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 from tests.project.conftest import FIXTURES
+from videoflow import __version__
 from videoflow.core.base import UnknownValue, is_unknown
 from videoflow.project import schema
 from videoflow.project.models import (
@@ -94,6 +95,8 @@ def test_round_trip_keeps_unknown_fields_and_enum_values(raw_project: dict[str, 
 
 def test_round_trip_through_bundle(tmp_path: Any, raw_project: dict[str, Any]) -> None:
     data = _with_unknowns(raw_project)
+    # Saving stamps the current app version; everything else must survive unchanged.
+    data["app"].update(writer=f"videoflow {__version__}", version=__version__)
     bundle = Bundle.create(tmp_path / "p.videoflow", Project.model_validate(data))
     loaded = Bundle(bundle.path).load()
     assert loaded.dump() == data

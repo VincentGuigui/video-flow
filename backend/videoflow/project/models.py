@@ -169,7 +169,7 @@ class AppStamp(CamelModel):
 
     writer: str = Field(default_factory=lambda: f"videoflow {__version__}")
     """Last writer, `videoflow <version>`; refreshed on every save."""
-    version: str = __version__
+    version: str = Field(default_factory=lambda: __version__)
     """Application version that last saved the file (refreshed on every save)."""
     min_reader: int = Field(default=SCHEMA_VERSION, ge=1)
     """Lowest schema version an app must support to write the file back."""
