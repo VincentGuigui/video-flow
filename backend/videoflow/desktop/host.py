@@ -15,7 +15,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QEvent, QFile, QIODevice, QObject, QUrl, Signal, Slot
+from PySide6.QtCore import QEvent, QFile, QIODevice, QObject, Qt, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineCore import (
@@ -321,6 +321,8 @@ class EditorWindow(QMainWindow):
         self.setMinimumSize(850, 720)
         self.view = QWebEngineView(self)
         self.view.setAcceptDrops(True)
+        # No browser menu (reload, copy address, inspect): the page shows its own menus.
+        self.view.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
         self.page = LocalPage(backend.origin, self.view)
         self.view.setPage(self.page)
         # The page title names the open project (Save as, home page, project switches).

@@ -4,7 +4,7 @@ Snapshot of what is built and what comes next. Update it with every feature. His
 
 ## Built
 
-- **Desktop app:** PySide6 / Qt WebEngine window hosting the React editor; native file and folder dialogs and drops; originals referenced in place, relink when offline. See [desktop shell](architecture/desktop-shell.md).
+- **Desktop app:** PySide6 / Qt WebEngine window hosting the React editor; native file and folder dialogs and drops; only the app's own context menus; originals referenced in place, relink when offline. See [desktop shell](architecture/desktop-shell.md).
 - **FFmpeg setup:** FFmpeg window at start and in Settings; download of a pinned, checksum-verified build into `tools/ffmpeg/` only on the user's consent, also in the install scripts. See [FFmpeg setup](features/ffmpeg-setup.md).
 - **Projects:** `<name>.video-flow` folders in the working folder with relative media paths (the whole folder can be moved), recent list, home page, save as, rename; application cache outside projects with size, open and clear in Settings. See [projects](features/projects.md).
 - **Project media:** context menu with Info (location, analysis, transcript) and re-analysis. See [project media](features/media-library.md).
@@ -16,6 +16,11 @@ Snapshot of what is built and what comes next. Update it with every feature. His
 
 ## Next
 
+- Resizable clip and project properties panels: half or tall height, pinned or unpinned (overlay that collapses on mouse leave).
+- Tabs in clip properties (Clip, Animation, Effects) for transitions and clip effects.
+- Still images in the media library, used like video clips (3 s by default).
+- Freeze frame: extract a still from a video clip and insert it in the clip.
+- Keyframed transforms (position, scale, rotation, crop, opacity), replacing zoom & pan.
 - Confirm the Camtasia export in Camtasia itself (opening, fades, linked audio, titles).
 - Measure retake grouping and transcription accuracy on real rushes, and tune thresholds.
 - Qualify NPU execution providers (OpenVINO, QNN, VitisAI) and GPU encoders on target Windows and Linux machines; Windows ARM64 qualification gate.

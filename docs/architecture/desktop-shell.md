@@ -22,6 +22,8 @@ One process serves one open project at a time. The home screen closes it first (
 4. The window (1440×980, minimum 850×720) loads `http://127.0.0.1:PORT/?token=TOKEN`. The backend checks the token and answers with a 303 redirect to `/`. The redirect sets an `HttpOnly`, `SameSite=Strict` `videoflow` cookie, so the token does not stay in the URL. Later requests authenticate with the cookie.
 5. At document creation, an injected script loads `qwebchannel.js` from Qt resources and connects to the host object. It sets `window.__videoflowDesktop = true` and exposes `window.videoFlowDesktop`. When the channel is ready, it dispatches `videoflow-ready`. The script runs in the main frame only.
 
+Only the app's own context menus open (the Project media menu, for example). The view has no context menu policy, and the page cancels every `contextmenu` event, so the browser menu (reload, back, copy address, inspect) never shows, in the desktop window or in a browser.
+
 Built frontend assets come from `frontend/dist` in development. In a packaged build they come from the PyInstaller resource folder (`sys._MEIPASS`). If they are missing, the server answers 503 with build instructions. End users do not need Node, Vite or uv.
 
 ## Icons

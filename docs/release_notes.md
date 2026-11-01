@@ -2,6 +2,10 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.6.0 — 2026-11-01
+
+- Right-click shows only the app's own menus; the browser menu (reload, copy address) is gone.
+
 ## 0.5.0 — 2026-11-01
 
 - FFmpeg window: when no FFmpeg 6.1+ is found, the app offers at start (and from Settings) to download a pinned, checksum-verified build into `tools/ffmpeg/`, with its licence files, only on the user's consent.
