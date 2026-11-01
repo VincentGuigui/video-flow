@@ -254,6 +254,24 @@ def create_app(
         except (KeyError, ValueError) as exc:
             raise HTTPException(422, str(exc)) from exc
 
+    @app.post("/api/models/{key}/remove")
+    async def remove_model(key: str) -> Any:
+        """Delete a model's files after stopping the workers that may have it loaded."""
+        nonlocal imports
+        async with mutation_lock:
+            if any(
+                j.state in ("queued", "running", "waiting-models") for j in imports.jobs.values()
+            ):
+                raise HTTPException(409, "Finish or cancel imports before removing a model")
+            await imports.close()
+            imports = Imports(bundle, preferences=preferences, require_models=True)
+            app.state.imports = imports
+            try:
+                await asyncio.to_thread(downloads.remove, key)
+            except (KeyError, ValueError) as exc:
+                raise HTTPException(422, str(exc)) from exc
+            return await asyncio.to_thread(downloads.status, preferences)
+
     @app.post("/api/models/{key}/cancel")
     async def cancel_model(key: str) -> Any:
         await downloads.cancel(key)

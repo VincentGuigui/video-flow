@@ -1,7 +1,10 @@
 """Explicit, cancellable model downloads; inference never approves its own download."""
 
 import asyncio
+import contextlib
 import importlib.util
+import shutil
+from pathlib import Path
 from typing import Any
 
 from videoflow.engines.manifest import load_manifest, models_dir
@@ -9,9 +12,40 @@ from videoflow.jobs.workers import EngineSpec, WorkerPool, report_progress
 from videoflow.preferences import Preferences, required_models
 
 
+def model_folder(key: str) -> Path:
+    """The Hugging Face cache folder of a model (every revision, blobs and snapshots)."""
+    spec = load_manifest().get(key)
+    return models_dir() / "hf" / ("models--" + spec.repo.replace("/", "--"))
+
+
+def stored_files(folder: Path) -> set[Path]:
+    """The real files behind a model folder.
+
+    The Hugging Face cache links snapshots to blobs, and blobs may themselves link into a
+    shared store (`models/hf/blobs/`); on Windows without symlinks they are plain files.
+    """
+    files: set[Path] = set()
+    if folder.is_dir():
+        for item in folder.rglob("*"):
+            with contextlib.suppress(OSError):
+                real = item.resolve()
+                if real.is_file():
+                    files.add(real)
+    return files
+
+
+def disk_size(key: str) -> int:
+    """Bytes the model occupies, counting each real file once."""
+    total = 0
+    for real in stored_files(model_folder(key)):
+        with contextlib.suppress(OSError):
+            total += real.stat().st_size
+    return total
+
+
 def model_state(key: str) -> str:
     spec = load_manifest().get(key)
-    snapshots = models_dir() / "hf" / ("models--" + spec.repo.replace("/", "--")) / "snapshots"
+    snapshots = model_folder(key) / "snapshots"
     current = snapshots / spec.revision
     if all(
         (current / name).is_file() and (current / name).stat().st_size > 0 for name in spec.files
@@ -74,6 +108,8 @@ class ModelDownloads:
                     "purpose": spec.purpose,
                     "goal": spec.goal,
                     "state": model_state(key),
+                    "size": spec.size,
+                    "disk": disk_size(key),
                     "revision": spec.revision,
                     "required": key in required,
                     "license": spec.license,
@@ -114,6 +150,29 @@ class ModelDownloads:
             task.cancel()
             await asyncio.gather(task, return_exceptions=True)
             self.jobs[key].update(state="cancelled", phase="Cancelled; download can be resumed")
+
+    def remove(self, key: str) -> None:
+        """Delete a model's files (every revision); it can be downloaded again later."""
+        load_manifest().get(key)
+        if key in self.tasks and not self.tasks[key].done():
+            raise ValueError("Cancel the download before removing the model")
+        folder = model_folder(key)
+        mine = stored_files(folder)
+        others = set().union(
+            *(
+                stored_files(other)
+                for other in (models_dir() / "hf").glob("models--*")
+                if other != folder
+            )
+        )
+        shutil.rmtree(folder, ignore_errors=True)
+        # Shared-store files only this model used (outside its folder) go too.
+        for real in mine - others:
+            with contextlib.suppress(OSError):
+                real.unlink()
+        if folder.exists():
+            raise ValueError(f"Some files of {key} are in use; close the app and remove again")
+        self.jobs.pop(key, None)
 
     async def close(self) -> None:
         for key in list(self.tasks):

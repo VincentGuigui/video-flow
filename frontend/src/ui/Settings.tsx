@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Download, X } from "lucide-react";
+import { Cpu, X } from "lucide-react";
 import { api, useEditor } from "../store";
 import { CacheSettings } from "./CacheSettings";
+import { ManageModels } from "./ManageModels";
 
 export interface Preferences {
   summaryEngine: "deterministic" | "qwen";
@@ -13,6 +14,8 @@ export interface Preferences {
 }
 interface Model {
   id: string;
+  size: number | null;
+  disk: number;
   name: string;
   purpose: string;
   goal?: string;
@@ -33,17 +36,12 @@ export interface SettingsData {
   directory: string;
   models: Model[];
 }
-export function Settings({
-  onClose,
-  requested = false,
-}: {
-  onClose: () => void;
-  requested?: boolean;
-}) {
+export function Settings({ onClose }: { onClose: () => void }) {
   const [data, setData] = useState<SettingsData | null>(null),
     [preferences, setPreferences] = useState<Preferences | null>(null),
     [saving, setSaving] = useState(false),
-    [message, setMessage] = useState("");
+    [message, setMessage] = useState(""),
+    [models, setModels] = useState(false);
   const { set } = useEditor();
   useEffect(() => {
     let stopped = false;
@@ -68,13 +66,6 @@ export function Settings({
       clearInterval(timer);
     };
   }, [set]);
-  async function download(id: string) {
-    try {
-      await api(`/models/${id}/download`, { method: "POST" });
-    } catch (e) {
-      set({ error: String(e) });
-    }
-  }
   async function save() {
     if (!preferences) return;
     setSaving(true);
@@ -91,19 +82,6 @@ export function Settings({
       setSaving(false);
     }
   }
-  const models =
-    data?.models.filter(
-      (m) => m.purpose !== "summary" || preferences?.summaryEngine === "qwen",
-    ) ?? [];
-  const required = (m: Model) =>
-    m.id === "silero-vad" ||
-    m.id === "paraphrase-multilingual-minilm-l12-v2" ||
-    m.id ===
-      (preferences?.asrEngine === "faster-whisper"
-        ? "faster-whisper-tiny"
-        : "parakeet-tdt-0.6b-v3-int8") ||
-    (m.id === "qwen2.5-0.5b-instruct" && preferences?.summaryEngine === "qwen");
-  const missing = models.filter((m) => required(m) && m.state !== "up-to-date");
   return (
     <div className="modal-backdrop settings-backdrop">
       <section
@@ -118,13 +96,6 @@ export function Settings({
             <X size={20} />
           </button>
         </div>
-        {requested && (
-          <p className="settings-notice">
-            Local analysis needs model files. Download them below, or close
-            Settings to continue editing without analysis. Downloads only start
-            when you ask.
-          </p>
-        )}
         {preferences && (
           <>
             <div className="settings-grid">
@@ -239,103 +210,22 @@ export function Settings({
             <h3>Cache</h3>
             <CacheSettings />
             <h3>AI models</h3>
-            <p className="muted">
-              Models folder: <code>{data?.directory}</code>
-            </p>
-            {missing.length > 0 && (
-              <div className="settings-notice">
-                <p>
-                  {missing.length} required model
-                  {missing.length === 1 ? " is" : "s are"} missing or obsolete.
-                  Download now?
-                </p>
-                <button
-                  className="button"
-                  onClick={() => {
-                    for (const model of missing) void download(model.id);
-                  }}
-                >
-                  <Download size={15} />
-                  Download required models
+            <div className="settings-cache">
+              <p className="muted">
+                Download, update or remove the local models used for
+                transcription, grouping and summaries.
+              </p>
+              <div className="cache-actions">
+                <button className="button" onClick={() => setModels(true)}>
+                  <Cpu size={15} />
+                  Manage AI models…
                 </button>
               </div>
-            )}
-            <div className="model-list">
-              {models.map((model) => {
-                const active =
-                  model.download &&
-                  ["queued", "running"].includes(model.download.state);
-                return (
-                  <article key={model.id}>
-                    <div>
-                      <strong>{model.name}</strong>
-                      {model.goal && <p className="model-goal">{model.goal}</p>}
-                      <p className="muted">
-                        {model.purpose} · {model.license}
-                        {required(model) ? " · selected" : " · optional"}
-                      </p>
-                      <span
-                        className={`model-state ${model.state}`}
-                        title={
-                          model.state === "obsolete"
-                            ? "This app supports a newer version. Update downloads it."
-                            : undefined
-                        }
-                      >
-                        {model.state === "up-to-date"
-                          ? "Up to date"
-                          : model.state === "obsolete"
-                            ? "Obsolete"
-                            : "Missing"}
-                      </span>
-                      {model.runtimeMissing.length > 0 && (
-                        <p className="error">
-                          Runtime components missing:{" "}
-                          {model.runtimeMissing.join(", ")}. Install the
-                          matching application inference extra.
-                        </p>
-                      )}
-                      {active && (
-                        <>
-                          <p>{model.download?.phase}</p>
-                          <progress max={1} value={model.download?.progress} />
-                        </>
-                      )}
-                      {model.download?.error && (
-                        <p className="error">{model.download.error}</p>
-                      )}
-                    </div>
-                    {active ? (
-                      <button
-                        className="button"
-                        onClick={() =>
-                          void api(`/models/${model.id}/cancel`, {
-                            method: "POST",
-                          }).catch((e) => set({ error: String(e) }))
-                        }
-                      >
-                        Cancel
-                      </button>
-                    ) : (
-                      <button
-                        className="button"
-                        disabled={model.state === "up-to-date"}
-                        onClick={() => void download(model.id)}
-                      >
-                        {model.state === "up-to-date"
-                          ? "Already downloaded"
-                          : model.state === "obsolete"
-                            ? "Update"
-                            : "Download"}
-                      </button>
-                    )}
-                  </article>
-                );
-              })}
             </div>
           </>
         )}
       </section>
+      {models && <ManageModels onClose={() => setModels(false)} />}
     </div>
   );
 }

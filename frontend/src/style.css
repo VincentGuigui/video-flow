@@ -2603,3 +2603,12 @@ button.timecode:hover {
   flex: none;
   margin-top: 2px;
 }
+.model-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+}
+.model-sizes {
+  font-variant-numeric: tabular-nums;
+}

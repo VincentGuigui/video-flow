@@ -145,3 +145,39 @@ def test_unusable_qwen_answer_keeps_the_deterministic_summary(monkeypatch):
     transcriber = Transcriber()
     transcriber.summary = Broken()  # type: ignore[assignment]
     assert transcriber.summarize("bonjour") is None
+
+
+def test_model_sizes_disk_usage_and_removal(local_root):
+    key = "silero-vad"
+    spec = load_manifest().get(key)
+    assert all(m.size and m.size > 0 for m in load_manifest().models.values())
+    bundle = Bundle.create(local_root / "edit.videoflow", new_project("Models"))
+    app = create_app(bundle, token="t")
+    with TestClient(app, base_url="http://127.0.0.1:8765") as client:
+        client.get("/?token=t", follow_redirects=False)
+        entry = next(m for m in client.get("/api/settings").json()["models"] if m["id"] == key)
+        assert entry["size"] == spec.size and entry["disk"] == 0
+        folder = runtime.model_directory() / "hf" / ("models--" + spec.repo.replace("/", "--"))
+        for name in spec.files:
+            path = folder / "snapshots" / spec.revision / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b"x" * 1000)
+        entry = next(m for m in client.get("/api/settings").json()["models"] if m["id"] == key)
+        assert entry["state"] == "up-to-date" and entry["disk"] == 1000 * len(spec.files)
+        # Shared-store layout: a snapshot links to a blob linking outside the model folder.
+        store = runtime.model_directory() / "hf" / "blobs" / "61" / "shared"
+        store.parent.mkdir(parents=True)
+        store.write_bytes(b"y" * 500)
+        blob = folder / "blobs" / "abc"
+        blob.parent.mkdir(parents=True)
+        blob.symlink_to(store)
+        link = folder / "snapshots" / spec.revision / "extra.bin"
+        link.symlink_to(blob)
+        entry = next(m for m in client.get("/api/settings").json()["models"] if m["id"] == key)
+        assert entry["disk"] == 1000 * len(spec.files) + 500
+        removed = client.post(f"/api/models/{key}/remove")
+        assert removed.status_code == 200, removed.text
+        entry = next(m for m in removed.json()["models"] if m["id"] == key)
+        assert entry["state"] == "missing" and entry["disk"] == 0 and not folder.exists()
+        assert not store.exists()
+        assert client.post("/api/models/unknown/remove").status_code == 422

@@ -13,6 +13,7 @@ revision = "e71cae966052b992a7eca6b17738916ce0eca4ec"
 license = "mit"
 gated = false
 files = ["onnx/model.onnx"]
+size = 2243022  # bytes of the pinned files (Hugging Face metadata of this revision)
 
 [models."parakeet-tdt-0.6b-v3-int8"]
 goal = "Transcribes speech with word timecodes (default, fastest)."
@@ -22,6 +23,7 @@ revision = "8f23f0c03c8761650bdb5b40aaf3e40d2c15f1ce"
 license = "cc-by-4.0"  # attribution: NVIDIA Parakeet TDT 0.6B v3, ONNX export by istupakov
 gated = false
 files = ["config.json", "vocab.txt", "encoder-model.int8.onnx", "decoder_joint-model.int8.onnx"]
+size = 670480039  # bytes of the pinned files (Hugging Face metadata of this revision)
 
 [models.faster-whisper-tiny]
 goal = "Transcribes speech with word timecodes (Whisper alternative)."
@@ -31,6 +33,7 @@ revision = "d90ca5fe260221311c53c58e660288d3deb8d356"
 license = "mit"
 gated = false
 files = ["config.json", "model.bin", "tokenizer.json", "vocabulary.txt"]
+size = 78203619  # bytes of the pinned files (Hugging Face metadata of this revision)
 
 [models.paraphrase-multilingual-minilm-l12-v2]
 goal = "Groups retakes by matching similar sentences across clips."
@@ -40,6 +43,7 @@ revision = "e8f8c211226b894fcb81acc59f3b34ba3efd5f42"
 license = "apache-2.0"
 gated = false
 files = ["onnx/model_quint8_avx2.onnx", "tokenizer.json"]
+size = 127535388  # bytes of the pinned files (Hugging Face metadata of this revision)
 dim = 384
 query_prefix = ""
 passage_prefix = ""
@@ -54,6 +58,7 @@ revision = "c2bb04a51fab207c420665f1946016107bffc701"
 license = "apache-2.0"
 gated = false
 files = ["onnx/model_quantized.onnx"]
+size = 24451943  # bytes of the pinned files (Hugging Face metadata of this revision)
 dim = 384
 
 [models."qwen2.5-0.5b-instruct"]
@@ -64,3 +69,4 @@ revision = "7ae557604adf67be50417f59c2c2f167def9a775"
 license = "apache-2.0"
 gated = false
 files = ["config.json", "generation_config.json", "merges.txt", "model.safetensors", "tokenizer.json", "tokenizer_config.json", "vocab.json"]
+size = 999586347  # bytes of the pinned files (Hugging Face metadata of this revision)

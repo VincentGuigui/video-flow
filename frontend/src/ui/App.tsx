@@ -46,6 +46,7 @@ import {
 } from "../model";
 import { api, updateClip, useEditor, flushClipUpdates } from "../store";
 import { Settings, type SettingsData } from "./Settings";
+import { ManageModels } from "./ManageModels";
 import { InterfaceZoom } from "./InterfaceZoom";
 import { RenderPanel } from "./RenderPanel";
 import { Home } from "./Home";
@@ -141,7 +142,6 @@ export function App() {
           data.models.some((m) => m.required && m.state !== "up-to-date")
         ) {
           setModelPrompt(true);
-          setSettings(true);
         }
       })
       .catch((e) => set({ error: String(e) }));
@@ -208,6 +208,7 @@ export function App() {
       if (
         target.closest('input,textarea,select,[contenteditable="true"]') ||
         settings ||
+        modelPrompt ||
         home ||
         useEditor.getState().closed ||
         importFiles ||
@@ -304,7 +305,7 @@ export function App() {
     }
     window.addEventListener("keydown", keyboard);
     return () => window.removeEventListener("keydown", keyboard);
-  }, [settings, home, importFiles, help, output]);
+  }, [settings, modelPrompt, home, importFiles, help, output]);
   // The home page closes the project: the server releases its workers and files, and
   // the editor unmounts its media. Opening or creating a project loads it again.
   async function closeProject() {
@@ -662,8 +663,9 @@ export function App() {
         />
       )}
       {state.compare && <Compare clipId={state.compare} />}
-      {settings && (
-        <Settings requested={modelPrompt} onClose={() => setSettings(false)} />
+      {settings && <Settings onClose={() => setSettings(false)} />}
+      {modelPrompt && (
+        <ManageModels requested onClose={() => setModelPrompt(false)} />
       )}
       {help && (
         <div className="modal-backdrop" onClick={() => setHelp(false)}>

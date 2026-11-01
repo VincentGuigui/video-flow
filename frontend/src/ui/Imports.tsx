@@ -8,7 +8,8 @@ import {
   ArrowRight,
   Square,
 } from "lucide-react";
-import { Settings, type SettingsData } from "./Settings";
+import { type SettingsData } from "./Settings";
+import { ManageModels } from "./ManageModels";
 import { api, useEditor } from "../store";
 import { type NativeFile } from "../desktop";
 
@@ -376,7 +377,7 @@ export function ImportDialog({
         )}
       </section>
       {showModels && (
-        <Settings requested onClose={() => setShowModels(false)} />
+        <ManageModels requested onClose={() => setShowModels(false)} />
       )}
     </div>
   );
