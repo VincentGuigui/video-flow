@@ -11,6 +11,15 @@ def application_dir() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def cache_root() -> Path:
+    """Rebuildable per-project caches: `cache/<project id>/` beside the executable.
+
+    VIDEOFLOW_CACHE_DIR overrides it (tests, or another drive with more space).
+    """
+    override = os.environ.get("VIDEOFLOW_CACHE_DIR")
+    return Path(override) if override else application_dir() / "cache"
+
+
 def model_directory() -> Path:
     path = application_dir() / "models"
     os.environ["VIDEOFLOW_MODELS_DIR"] = str(path)

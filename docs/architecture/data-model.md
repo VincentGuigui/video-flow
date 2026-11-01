@@ -25,14 +25,10 @@ A project is a `*.videoflow` folder. Its `project.json` holds a schema-versioned
 | `history.jsonl` | Append-only log of committed command batches (write-ahead and audit). |
 | `analysis/` *(created)* | `analysis/sidecars/<sha256>.json`: bundle copy of every analysis sidecar. |
 | `features/` *(created)* | `features/sentences/<hash>.npy`: sentence vectors for [retake grouping](../features/retake-grouping.md). |
-| `cache/proxies/` *(created)* | Playback proxies keyed by asset content hash. |
-| `cache/thumbs/` *(created)* | Thumbnails. |
-| `cache/peaks/` | Waveform peaks (`.bin`). |
-| `cache/titles/` | Title pictures drawn by Pillow for the render. |
-| `cache/render/<id>/` | Render scratch files. |
-| `cache/previews/` *(created)* | Reserved; nothing writes it. |
 | `exports/` *(created)* | `edit.otio`, `edit.otioz`, `edit.edl`, `edit.tscproj`, `edit.srt`, `edit.md`/`edit.csv`, `edit.report.json`. |
 | `renders/` *(created)* | `render-<id>.mp4`. |
+
+The cache is outside the project, so copying a working folder copies only the project and its media: `Bundle.cache_dir` is `<cache root>/<project id>/` (`runtime.cache_root()`: `cache/` beside the executable, or `VIDEOFLOW_CACHE_DIR`). It holds `proxies/` (playback proxies keyed by asset content hash), `thumbs/`, `peaks/` (waveform `.bin`), `titles/` (title pictures), `render/<id>/` (render scratch files), an unused `previews/`, and `project.txt` (project name and path, for Settings). Everything in it is rebuilt on demand.
 
 `Bundle.timeline_file` names `timeline.otio`, but no code writes it: OTIO is produced only on export. Everything under `analysis/`, `features/` and `cache/` is rebuildable. Source media stay where they are and are never copied or modified.
 

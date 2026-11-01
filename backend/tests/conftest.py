@@ -9,6 +9,14 @@ import pytest
 from videoflow import samples
 
 
+@pytest.fixture(autouse=True, scope="session")
+def _isolated_cache(tmp_path_factory: pytest.TempPathFactory) -> None:
+    """Project caches go to a temporary root, never beside the repository."""
+    import os
+
+    os.environ["VIDEOFLOW_CACHE_DIR"] = str(tmp_path_factory.mktemp("cache"))
+
+
 @pytest.fixture(scope="session")
 def samples_dir() -> Path:
     """Synthetic rushes, generated once and cached by generator hash."""

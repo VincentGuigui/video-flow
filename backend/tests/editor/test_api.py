@@ -317,15 +317,24 @@ def test_title_picture_is_drawn_at_the_project_size(client):
     assert client.get("/api/title", params={"spec": "nope"}).status_code == 422
 
 
-def test_open_cache_shows_the_project_cache(client, app_bundle, monkeypatch):
+def test_cache_lists_sizes_opens_root_and_clears(client, app_bundle, monkeypatch):
     from videoflow.api import app as module
 
     opened = []
     monkeypatch.setattr(module, "open_folder", opened.append)
     _, bundle = app_bundle
-    assert client.get("/api/settings").json()["cacheDirectory"] == str(bundle.cache_dir)
-    assert client.post("/api/open-cache").json() == {"path": str(bundle.cache_dir)}
-    assert opened == [bundle.cache_dir]
+    (bundle.proxies_dir / "p.mp4").write_bytes(b"x" * 1000)
+    usage = client.get("/api/cache").json()
+    mine = next(p for p in usage["projects"] if p["current"])
+    assert mine["id"] == bundle.project.id and mine["name"] == "Test"
+    assert mine["size"] >= 1000 and usage["size"] >= mine["size"]
+    assert bundle.cache_dir.parent == Path(usage["root"])
+    assert client.post("/api/cache/open").json() == {"path": usage["root"]}
+    assert opened == [Path(usage["root"])]
+    assert client.post("/api/cache/clear").json() == {"failed": []}
+    assert not (bundle.proxies_dir / "p.mp4").exists() and bundle.proxies_dir.is_dir()
+    after = client.get("/api/cache").json()
+    assert next(p for p in after["projects"] if p["current"])["size"] < 1000
 
 
 def test_close_and_rename_release_and_move_the_open_project(client, app_bundle):

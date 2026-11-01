@@ -155,7 +155,10 @@ class Bundle:
 
     @property
     def cache_dir(self) -> Path:
-        return self.path / "cache"
+        """Rebuildable data, outside the project so copying a working folder stays light."""
+        from videoflow.runtime import cache_root
+
+        return cache_root() / self.project.id
 
     @property
     def proxies_dir(self) -> Path:
@@ -202,10 +205,21 @@ class Bundle:
         if bundle.exists():
             raise ProjectStoreError(f"a project already exists at {bundle.path}")
         bundle.path.mkdir(parents=True, exist_ok=True)
+        bundle._project = project
         for folder in bundle.directories():
             folder.mkdir(parents=True, exist_ok=True)
         bundle.save(project)
+        bundle.label_cache()
         return bundle
+
+    def label_cache(self) -> None:
+        """Name the cache folder after its project, for the cache list in Settings."""
+        label = self.cache_dir / "project.txt"
+        text = f"{self.project.name}\n{self.path.resolve()}\n"
+        with contextlib.suppress(OSError):
+            if not label.is_file() or label.read_text(encoding="utf-8") != text:
+                label.parent.mkdir(parents=True, exist_ok=True)
+                label.write_text(text, encoding="utf-8")
 
     def load(
         self,
@@ -238,6 +252,7 @@ class Bundle:
             project = self._replay_history(project)
             self._resolve_media(project)
             self._project = project
+            self.label_cache()
             if (applied or project.revision != data.get("revision")) and not self.read_only:
                 save_atomic(self.project_file, dumps_project(project))
             return project

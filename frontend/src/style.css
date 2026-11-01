@@ -2464,15 +2464,27 @@ button.timecode:hover {
 }
 .settings-cache {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
+}
+.cache-projects {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 140px;
+  overflow: auto;
+  font-size: 13px;
+}
+.cache-projects li {
+  display: flex;
   justify-content: space-between;
   gap: 12px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--line);
 }
-.settings-cache p {
-  overflow-wrap: anywhere;
-}
-.settings-cache .button {
-  flex: none;
+.cache-actions {
+  display: flex;
+  gap: 8px;
 }
 /* The zone that receives Ctrl+A and Delete (last clicked). */
 .zone-active {

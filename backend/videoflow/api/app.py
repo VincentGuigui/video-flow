@@ -37,11 +37,12 @@ from videoflow.media.ingest import MEDIA_EXTENSIONS
 from videoflow.media.peaks import compute_peaks, read_peaks
 from videoflow.media.proxy import build_proxy
 from videoflow.preferences import Preferences, load_preferences, save_preferences
+from videoflow.project import cache
 from videoflow.project.commands import Command, RelinkAsset
 from videoflow.project.library import ProjectLibrary
 from videoflow.project.store import Bundle, ProjectStoreError, StaleRevisionError
 from videoflow.render.jobs import Renders
-from videoflow.runtime import open_folder
+from videoflow.runtime import cache_root, open_folder
 
 
 class Patch(CamelModel):
@@ -172,18 +173,43 @@ def create_app(
     async def settings() -> Any:
         return {
             "preferences": preferences.dump(),
-            "cacheDirectory": str(bundle.cache_dir),
             **await asyncio.to_thread(downloads.status, preferences),
         }
 
-    @app.post("/api/open-cache")
+    @app.get("/api/cache")
+    async def cache_usage() -> Any:
+        """Per-project caches (proxies, thumbnails, waveforms, title pictures, render files)."""
+        projects = await asyncio.to_thread(cache.usage, cache_root())
+        for entry in projects:
+            entry["current"] = entry["id"] == bundle.project.id
+        return {
+            "root": str(cache_root()),
+            "size": sum(int(str(e["size"])) for e in projects),
+            "projects": projects,
+        }
+
+    @app.post("/api/cache/open")
     async def open_cache() -> Any:
-        """Show the project's cache (proxies, thumbnails, waveforms, title pictures)."""
+        root = cache_root()
         try:
-            await asyncio.to_thread(open_folder, bundle.cache_dir)
+            await asyncio.to_thread(open_folder, root)
         except OSError as exc:
-            raise HTTPException(422, f"Could not open {bundle.cache_dir}: {exc}") from exc
-        return {"path": str(bundle.cache_dir)}
+            raise HTTPException(422, f"Could not open {root}: {exc}") from exc
+        return {"path": str(root)}
+
+    @app.post("/api/cache/clear")
+    async def clear_cache() -> Any:
+        async with mutation_lock:
+            if renders.active or any(
+                j.state in ("queued", "running", "waiting-models") for j in imports.jobs.values()
+            ):
+                raise HTTPException(409, "Finish or cancel imports and renders before clearing")
+            failed = await asyncio.to_thread(cache.clear, cache_root())
+            # The open project rebuilds its cache on demand; recreate its folders and label.
+            for folder in bundle.directories():
+                folder.mkdir(parents=True, exist_ok=True)
+            bundle.label_cache()
+        return {"failed": failed}
 
     @app.put("/api/settings")
     async def update_settings(payload: Preferences) -> Any:
@@ -200,7 +226,6 @@ def create_app(
             app.state.imports = imports
             return {
                 "preferences": preferences.dump(),
-                "cacheDirectory": str(bundle.cache_dir),
                 **await asyncio.to_thread(downloads.status, preferences),
             }
 

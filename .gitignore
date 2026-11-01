@@ -44,3 +44,5 @@ Thumbs.db
 
 # Stray npm lockfile at the root (the frontend keeps its own)
 /package-lock.json
+# Application cache in development (runtime.cache_root)
+/cache/

@@ -15,6 +15,6 @@ Thumbnails are scaled to fit the 16:9 thumbnail frame (at most 160×90), so the 
 
 ## Cache folder
 
-Settings → **Cache** shows the project's cache directory (proxies, thumbnails, waveforms, title pictures and render work files) and **Open cache folder** opens it in the system file manager (Explorer on Windows, the default file manager through `xdg-open` on Linux).
+Settings → **Cache** shows the total cache size and one line per project (name, size, the open project marked). The cache lives outside the projects, in `cache/` beside the application (one folder per project: proxies, thumbnails, waveforms, title pictures and render work files), so it can be cleared freely: everything is rebuilt on demand. **Open cache folder** opens it in the system file manager (Explorer on Windows, the default file manager through `xdg-open` on Linux); **Clear cache** deletes it (refused while an import or render runs; files still in use are kept and reported).
 
 Validation: frontend tests cover the items of each zone, removing several clips with partners (lift and ripple) and removing media with their clips; a backend test covers the cache path and the open request. A browser check selected all six clips of the flow with Ctrl+A and deleted them, undid it, removed one medium (and its two clips) and undid it, selected all media with Ctrl+A, measured the three thumbnails (portrait included) fully inside their frames, and opened Settings with the cache path and button.

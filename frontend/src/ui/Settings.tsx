@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Download, FolderOpen, X } from "lucide-react";
+import { Download, X } from "lucide-react";
 import { api, useEditor } from "../store";
+import { CacheSettings } from "./CacheSettings";
 
 export interface Preferences {
   summaryEngine: "deterministic" | "qwen";
@@ -30,7 +31,6 @@ interface Model {
 export interface SettingsData {
   preferences: Preferences;
   directory: string;
-  cacheDirectory: string;
   models: Model[];
 }
 export function Settings({
@@ -237,23 +237,7 @@ export function Settings({
               <span role="status">{message}</span>
             </div>
             <h3>Cache</h3>
-            <div className="settings-cache">
-              <p className="muted">
-                Proxies, thumbnails, waveforms and render files of this project:{" "}
-                {data?.cacheDirectory}
-              </p>
-              <button
-                className="button"
-                onClick={() =>
-                  void api("/open-cache", { method: "POST" }).catch((e) =>
-                    set({ error: String(e) }),
-                  )
-                }
-              >
-                <FolderOpen size={15} />
-                Open cache folder
-              </button>
-            </div>
+            <CacheSettings />
             <h3>AI models</h3>
             <p className="muted">
               Models folder: <code>{data?.directory}</code>

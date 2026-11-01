@@ -80,8 +80,9 @@ All under `/api`, JSON in camelCase.
 | GET / PATCH | `/project` | Open project, resolved editor document, media roots, offline assets / apply a command batch |
 | POST | `/project/save` | Save, name, or Save as (copy) |
 | GET / POST | `/projects`, `/projects/action` | Project library / new, open, rename, delete |
-| GET / PUT | `/settings` | Preferences, cache folder, model states / update preferences (refused while imports run) |
-| POST | `/open-cache` | Open the project cache folder |
+| GET / PUT | `/settings` | Preferences and model states / update preferences (refused while imports run) |
+| GET | `/cache` | Cache root, total size and size per project |
+| POST | `/cache/open`, `/cache/clear` | Open the cache folder / delete all project caches (refused while imports or renders run) |
 | POST | `/models/{key}/download`, `/models/{key}/cancel` | Explicit model download / cancel |
 | POST | `/desktop/selection` | Host only: issue single-use handles for natively selected files |
 | POST | `/native-import`, `/native-relink` | Import or relink (content hash checked) through a handle |
@@ -111,7 +112,7 @@ All under `/api`, JSON in camelCase.
 - **Content hash** (`media/hashing.py`): BLAKE2b of the whole file up to 64 MiB, else of its size plus 16 evenly spaced chunks. It keys duplicates, caches and sidecars, and checks relinks.
 - **Proxies** (`media/proxy.py`): H.264 8-bit SDR BT.709, short side at most 540 px, CFR, a keyframe every second, rotation baked in, HDR tone-mapped when `zscale` and `tonemap` exist; proxy time equals source time. Hardware decode/encode from `hw/video.py`, with a software retry.
 - **Thumbnails**: one 240 px JPEG per video asset, from the proxy, on first request. **Waveforms**: one-resolution peaks file (`VFPK`: min, max, RMS per bucket) on first request.
-- Proxies, thumbnails, peaks, title pictures, WebM fallbacks and render scratch files are in the bundle `cache/`; sentence vectors in `features/`. See [workspace zones](../features/workspace-zones.md) for the cache folder.
+- Proxies, thumbnails, peaks, title pictures, WebM fallbacks and render scratch files are in the application cache (`cache/<project id>/` beside the executable, outside the project); sentence vectors in `features/`. See [workspace zones](../features/workspace-zones.md) for the cache folder.
 
 ## 8. AI engines and device selection
 
