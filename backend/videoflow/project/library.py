@@ -76,6 +76,20 @@ class ProjectLibrary:
         path = bundle.path.resolve()
         self._write([path, *[p for p in self._paths() if p != path]])
 
+    def trash(self, identifier: str) -> None:
+        """Move a project folder to the system trash and forget it; media are not touched.
+
+        Only the `<name>.video-flow` folder goes (it holds no media); the caller must have
+        released its files.
+        """
+        from send2trash import send2trash
+
+        entries = [e for e in self.entries() if e["id"] == identifier]
+        if len(entries) != 1 or not is_project(Path(entries[0]["path"])):
+            raise ValueError("Unknown or ambiguous project")
+        send2trash(entries[0]["path"])
+        self.remove(identifier)
+
     def remove(self, identifier: str) -> None:
         """Forget a project; its folder is left untouched."""
         keep = [Path(e["path"]) for e in self.entries() if e["id"] != identifier]

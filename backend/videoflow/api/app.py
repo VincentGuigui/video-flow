@@ -76,7 +76,7 @@ class RenderSave(CamelModel):
 
 
 class ProjectAction(CamelModel):
-    kind: Literal["new", "open", "close", "rename", "remove"]
+    kind: Literal["new", "open", "close", "rename", "remove", "delete"]
     id: str | None = None
     name: str = "Untitled"
     folder: str | None = None
@@ -384,6 +384,12 @@ def create_app(
                         else library.find(payload.id or "")
                     )
                     await rename_project(target, payload.name)
+                elif payload.kind == "delete":
+                    if payload.id == bundle.project.id:
+                        if project_open:
+                            raise ValueError("Close the project before deleting it")
+                        await switch_project(bundle)  # let go of its files first
+                    await asyncio.to_thread(library.trash, payload.id or "")
                 else:
                     library.remove(payload.id or "")  # the folder itself is left untouched
             except (ValueError, OSError, ProjectStoreError) as exc:

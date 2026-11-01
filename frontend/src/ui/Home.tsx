@@ -10,7 +10,10 @@ interface Entry {
   folder: string;
 }
 type Action =
-  { kind: "new" } | { kind: "open" } | { kind: "rename"; entry: Entry };
+  | { kind: "new" }
+  | { kind: "open" }
+  | { kind: "rename"; entry: Entry }
+  | { kind: "delete"; entry: Entry };
 
 // Recent projects. A project is a `<name>.video-flow` folder inside a working folder;
 // in the desktop app folders are chosen natively, in a browser they are typed.
@@ -68,6 +71,8 @@ export function Home({ onClose }: { onClose: () => void }) {
     if (!action) return;
     if (action.kind === "rename")
       void perform({ kind: "rename", id: action.entry.id, name });
+    else if (action.kind === "delete")
+      void perform({ kind: "delete", id: action.entry.id });
     else if (action.kind === "new")
       void perform({
         kind: "new",
@@ -77,11 +82,13 @@ export function Home({ onClose }: { onClose: () => void }) {
     else void perform({ kind: "open", path });
   }
   const ready =
-    action?.kind === "rename"
-      ? !!name.trim()
-      : action?.kind === "new"
-        ? !!name.trim() && (native() ? !!folder : !!path.trim())
-        : !!path.trim();
+    action?.kind === "delete"
+      ? true
+      : action?.kind === "rename"
+        ? !!name.trim()
+        : action?.kind === "new"
+          ? !!name.trim() && (native() ? !!folder : !!path.trim())
+          : !!path.trim();
   return (
     <div className="home-page">
       <div className="home-heading">
@@ -152,6 +159,14 @@ export function Home({ onClose }: { onClose: () => void }) {
             >
               Remove from list
             </button>
+            <button
+              className="button"
+              disabled={busy}
+              title="Move the project folder to the trash; media are kept"
+              onClick={() => setAction({ kind: "delete", entry })}
+            >
+              Delete
+            </button>
           </article>
         ))}
         {!projects.length && (
@@ -178,13 +193,23 @@ export function Home({ onClose }: { onClose: () => void }) {
                   ? "New project"
                   : action.kind === "open"
                     ? "Open project"
-                    : "Rename project"}
+                    : action.kind === "delete"
+                      ? `Delete ${action.entry.name}?`
+                      : "Rename project"}
               </h2>
               <button type="button" onClick={() => setAction(null)}>
                 <X size={18} />
               </button>
             </div>
-            {action.kind !== "open" && (
+            {action.kind === "delete" && (
+              <p>
+                The project folder{" "}
+                <code>{action.entry.path.split(/[\\/]/).at(-1)}</code> moves to
+                the trash, where it can be restored. The media in{" "}
+                <code>{action.entry.folder}</code> are not touched.
+              </p>
+            )}
+            {(action.kind === "new" || action.kind === "rename") && (
               <label>
                 Project name
                 <input
@@ -209,7 +234,7 @@ export function Home({ onClose }: { onClose: () => void }) {
                 </button>
               </div>
             )}
-            {action.kind !== "rename" && !native() && (
+            {(action.kind === "new" || action.kind === "open") && !native() && (
               <label>
                 {action.kind === "new"
                   ? "Working folder (with your media)"
@@ -235,7 +260,9 @@ export function Home({ onClose }: { onClose: () => void }) {
                 ? "Open"
                 : action.kind === "new"
                   ? "Create project"
-                  : "Save"}
+                  : action.kind === "delete"
+                    ? "Move to trash"
+                    : "Save"}
             </button>
           </form>
         </div>

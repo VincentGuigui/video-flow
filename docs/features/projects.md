@@ -13,7 +13,7 @@ The logo closes the open project (its workers, renders and media are released an
 
 - **New project**: a name and a working folder (chosen with the native folder dialog in the desktop app, typed in a browser) create `<working folder>/<name>.video-flow` and open it. Names are kept file-system safe (`< > : " / \ | ? *` removed); an existing folder of that name is refused.
 - **Open project…**: opens a project folder chosen natively (or typed in a browser) and puts it first in the recent list. Only valid project folders are accepted: named `*.video-flow` (or `*.videoflow` from earlier versions) and containing `project.json`; anything else is refused with an explanation.
-- **Recent projects**: each line shows the name and the working folder, with **Open**, **Rename** (renames the project and its folder to `<new name>.video-flow` in the same working folder) and **Remove from list** (forgets it here; its folder and media are kept).
+- **Recent projects**: each line shows the name and the working folder, with **Open**, **Rename** (renames the project and its folder to `<new name>.video-flow` in the same working folder), **Remove from list** (forgets it here; its folder and media are kept) and **Delete** (after a confirmation, moves the `<name>.video-flow` folder to the system trash, where it can be restored, and forgets it; the media are never touched; the open project must be closed first, which the home page always is).
 
 ## Launch, Save and Save as
 

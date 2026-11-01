@@ -89,3 +89,20 @@ def test_only_named_project_folders_open(tmp_path):
     assert not is_project(tmp_path / "empty.video-flow")
     with pytest.raises(ValueError, match="choose a <name>.video-flow folder"):
         open_bundle(plain)
+
+
+def test_delete_moves_only_the_project_folder_to_the_trash(tmp_path, monkeypatch):
+    import send2trash
+
+    trashed = []
+    monkeypatch.setattr(send2trash, "send2trash", trashed.append)
+    work = tmp_path / "work"
+    work.mkdir()
+    (work / "clip.mp4").write_bytes(b"x")
+    lib = library(tmp_path)
+    bundle = lib.create(work, "Doomed")
+    lib.trash(bundle.project.id)
+    assert trashed == [str(bundle.path)]
+    assert lib.entries() == [] and (work / "clip.mp4").is_file()
+    with pytest.raises(ValueError):
+        lib.trash("prj_missing")

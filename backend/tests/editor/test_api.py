@@ -440,3 +440,26 @@ def test_media_info_reveal_and_reanalysis(client, app_bundle, original, monkeypa
     assert not current["cached"] and current["state"] in ("running", "waiting-models", "done")
     client.post(f"/api/jobs/cancel?job_id={rerun['id']}")
     assert client.post("/api/assets/missing/analyse").status_code == 404
+
+
+def test_delete_moves_a_closed_project_to_the_trash(client, app_bundle, monkeypatch):
+    import send2trash
+
+    trashed = []
+    monkeypatch.setattr(send2trash, "send2trash", trashed.append)
+    _, original = app_bundle
+    first = original.project.id
+    revision = client.get("/api/project").json()["project"]["revision"]
+    client.post("/api/project/save", json={"baseRevision": revision, "name": "B", "copy": True})
+    second = client.get("/api/project").json()["project"]["id"]
+    refused = client.post("/api/projects/action", json={"kind": "delete", "id": second})
+    assert refused.status_code == 422  # the open project must be closed first
+    deleted = client.post("/api/projects/action", json={"kind": "delete", "id": first})
+    assert deleted.status_code == 200, deleted.text
+    assert len(trashed) == 1 and trashed[0].endswith("edit.videoflow")
+    client.post("/api/projects/action", json={"kind": "close"})
+    assert (
+        client.post("/api/projects/action", json={"kind": "delete", "id": second}).status_code
+        == 200
+    )
+    assert client.get("/api/projects").json() == []

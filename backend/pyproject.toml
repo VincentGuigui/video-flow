@@ -15,6 +15,7 @@ dependencies = [
     "OpenTimelineIO-Plugins>=0.17",
     "rapidfuzz>=3.9",
     "pillow>=10.1",
+    "send2trash>=1.8",
     "python-ulid>=3.0",
 ]
 
@@ -121,7 +122,7 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 # Optional heavy extras (desktop, qwen) may be absent in the dev environment.
-module = ["PySide6.*", "torch.*", "transformers.*"]
+module = ["PySide6.*", "torch.*", "transformers.*", "send2trash.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
