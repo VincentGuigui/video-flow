@@ -11,7 +11,6 @@ a = Analysis(
     pathex=[str(root / "backend")],
     binaries=[],
     datas=[
-        (str(root / "frontend" / "dist"), "frontend/dist"),
         (str(root / "backend" / "videoflow" / "engines" / "manifest.toml"), "videoflow/engines"),
         (str(root / "backend" / "videoflow" / "assets" / "fonts"), "videoflow/assets/fonts"),
         (str(root / "backend" / "videoflow" / "assets" / "icons"), "videoflow/assets/icons"),
@@ -24,7 +23,10 @@ a = Analysis(
                    "videoflow.engines.summary", "transformers.models.qwen2.modeling_qwen2",
                    "transformers.models.qwen2.tokenization_qwen2_fast", "opentimelineio.adapters.otio_json",
                    "opentimelineio.adapters.otioz", "opentimelineio.adapters.file_bundle_utils"],
-    hookspath=[], runtime_hooks=[], excludes=["tkinter"], noarchive=False,
+    hookspath=[], runtime_hooks=[], noarchive=False,
+    # "__main__" is listed because PyInstaller appends it to this list in place otherwise,
+    # which makes every later build see changed excludes and redo the whole analysis.
+    excludes=["tkinter", "__main__"],
 )
 # Pin the MSVC family to the working Qt wheel. Ambient PATH entries can otherwise
 # inject a newer, mismatched runtime (for example an unrelated image-codec SDK).
@@ -41,6 +43,11 @@ if sys.platform == "win32":
     # Poppler/Conda ICU found on PATH is ABI-incompatible and must not be bundled.
     system_icu = {"icuuc.dll", "icuin.dll", "icudt.dll"}
     a.binaries = [entry for entry in a.binaries if Path(entry[0]).name.lower() not in system_icu]
+# The built interface is added after Analysis: it changes on every frontend build, and as an
+# Analysis input it would force the whole (slow) dependency analysis to run again.
+dist = root / "frontend" / "dist"
+a.datas += [(str(Path("frontend/dist") / f.relative_to(dist)), str(f), "DATA")
+            for f in dist.rglob("*") if f.is_file()]
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="Video-Flow", debug=False,
           bootloader_ignore_signals=False, strip=False, upx=False, console=False,

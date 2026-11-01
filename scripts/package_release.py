@@ -11,6 +11,7 @@ Run from the repository root through scripts/dev.sh package or scripts/dev.ps1 p
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,9 +33,11 @@ def main() -> int:
         str(STAGING / "work"),
         str(ROOT / "scripts" / "desktop.spec"),
     ]
+    started = time.monotonic()
     result = subprocess.run(command, cwd=ROOT, check=False)
     if result.returncode:
         return result.returncode
+    built_in = time.monotonic() - started
     RELEASE.mkdir(parents=True, exist_ok=True)
     produced = sorted(built.iterdir())
     names = {item.name for item in produced}
@@ -51,6 +54,11 @@ def main() -> int:
         shutil.move(str(item), str(target))
     kept = sorted(p.name for p in RELEASE.iterdir() if p.name not in names)
     print(f"Updated {RELEASE}" + (f" (kept: {', '.join(kept)})" if kept else ""))
+    print(
+        f"PyInstaller {built_in:.0f} s, release update {time.monotonic() - started - built_in:.0f} s."
+        " A run that redoes the dependency analysis logs 'Building because ...'; it is"
+        " expected only after Python code, dependencies or the spec change."
+    )
     return 0
 
 
