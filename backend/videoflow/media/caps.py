@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import json
+import os
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 GRAPH_FLAG_NEW = "-/filter_complex"
 GRAPH_FLAG_OLD = "-filter_complex_script"
@@ -196,7 +200,7 @@ def detect_graph_flag(ffmpeg: Path) -> str:
 
 
 def probe_caps(binaries: FFmpegBinaries | None = None) -> FFmpegCaps:
-    """Run the capability probe (about 6 short ffmpeg invocations)."""
+    """Run the capability probe: six short ffmpeg invocations, side by side."""
     b = binaries or locate_binaries()
     base = [str(b.ffmpeg), "-hide_banner"]
 
@@ -204,32 +208,125 @@ def probe_caps(binaries: FFmpegBinaries | None = None) -> FFmpegCaps:
         env_proc = run_sync([*base, *extra])
         return env_proc.stdout.decode("utf-8", "replace")
 
-    version_text = out("-version")
-    if not version_text:
-        raise RuntimeError(f"cannot execute {b.ffmpeg}")
-    version, tup = parse_version(version_text)
-    return FFmpegCaps(
-        ffmpeg=b.ffmpeg,
-        ffprobe=b.ffprobe,
-        version=version,
-        version_tuple=tup,
-        graph_flag=detect_graph_flag(b.ffmpeg),
-        xfade_transitions=parse_xfade(out("-h", "filter=xfade")),
-        filters=parse_table(out("-filters")),
-        encoders=parse_table(out("-encoders")),
-        hwaccels=parse_hwaccels(out("-hwaccels")),
-    )
+    with ThreadPoolExecutor(max_workers=6, thread_name_prefix="ffmpeg-caps") as pool:
+        version_text = pool.submit(out, "-version")
+        graph_flag = pool.submit(detect_graph_flag, b.ffmpeg)
+        xfade = pool.submit(out, "-h", "filter=xfade")
+        filters = pool.submit(out, "-filters")
+        encoders = pool.submit(out, "-encoders")
+        hwaccels = pool.submit(out, "-hwaccels")
+        if not version_text.result():
+            raise RuntimeError(f"cannot execute {b.ffmpeg}")
+        version, tup = parse_version(version_text.result())
+        return FFmpegCaps(
+            ffmpeg=b.ffmpeg,
+            ffprobe=b.ffprobe,
+            version=version,
+            version_tuple=tup,
+            graph_flag=graph_flag.result(),
+            xfade_transitions=parse_xfade(xfade.result()),
+            filters=parse_table(filters.result()),
+            encoders=parse_table(encoders.result()),
+            hwaccels=parse_hwaccels(hwaccels.result()),
+        )
+
+
+CAPS_CACHE_VERSION = 1
+
+
+def caps_cache_file() -> Path:
+    """Probe results kept between launches, per user (VIDEOFLOW_CAPS_CACHE overrides)."""
+    override = os.environ.get("VIDEOFLOW_CAPS_CACHE")
+    if override:
+        return Path(override)
+    from videoflow.runtime import user_data_dir
+
+    return user_data_dir() / "ffmpeg-caps.json"
+
+
+def _fingerprint(binaries: FFmpegBinaries) -> dict[str, Any] | None:
+    """What identifies a build: both paths, sizes and modification times."""
+    try:
+        result: dict[str, Any] = {"version": CAPS_CACHE_VERSION}
+        for name, path in (("ffmpeg", binaries.ffmpeg), ("ffprobe", binaries.ffprobe)):
+            stat = path.stat()
+            result[name] = [str(path.resolve()), stat.st_size, stat.st_mtime_ns]
+        return result
+    except OSError:
+        return None
+
+
+def _load_cached(fingerprint: dict[str, Any]) -> FFmpegCaps | None:
+    try:
+        data = json.loads(caps_cache_file().read_text(encoding="utf-8"))
+        if data.get("fingerprint") != fingerprint:
+            return None
+        caps = data["caps"]
+        return FFmpegCaps(
+            ffmpeg=Path(caps["ffmpeg"]),
+            ffprobe=Path(caps["ffprobe"]),
+            version=str(caps["version"]),
+            version_tuple=tuple(int(v) for v in caps["version_tuple"]),  # type: ignore[arg-type]
+            graph_flag=str(caps["graph_flag"]),
+            xfade_transitions=frozenset(caps["xfade_transitions"]),
+            filters=frozenset(caps["filters"]),
+            encoders=frozenset(caps["encoders"]),
+            hwaccels=frozenset(caps["hwaccels"]),
+        )
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return None
+
+
+def _store(caps: FFmpegCaps, fingerprint: dict[str, Any]) -> None:
+    data = {
+        "fingerprint": fingerprint,
+        "caps": {
+            "ffmpeg": str(caps.ffmpeg),
+            "ffprobe": str(caps.ffprobe),
+            "version": caps.version,
+            "version_tuple": list(caps.version_tuple),
+            "graph_flag": caps.graph_flag,
+            "xfade_transitions": sorted(caps.xfade_transitions),
+            "filters": sorted(caps.filters),
+            "encoders": sorted(caps.encoders),
+            "hwaccels": sorted(caps.hwaccels),
+        },
+    }
+    target = caps_cache_file()
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        part = target.with_name(target.name + ".part")
+        part.write_text(json.dumps(data), encoding="utf-8")
+        os.replace(part, target)
+    except OSError:
+        pass  # a read-only profile only costs a probe at the next launch
 
 
 _cached: FFmpegCaps | None = None
+_cached_fingerprint: dict[str, Any] | None = None
 
 
 def get_caps(refresh: bool = False) -> FFmpegCaps:
-    """Process-wide cached probe using default binary discovery."""
-    global _cached
-    if _cached is None or refresh:
-        _cached = probe_caps()
-    return _cached
+    """Process-wide capabilities of the default ffmpeg (settings, tools/ffmpeg/, PATH).
+
+    The probe runs only for a build not seen before: its results are kept on disk, keyed
+    by the binaries' paths, sizes and dates. `refresh` looks for the binaries again (an
+    install or a changed PATH) and probes only if they changed.
+    """
+    global _cached, _cached_fingerprint
+    if _cached is not None and not refresh:
+        return _cached
+    binaries = locate_binaries()
+    fingerprint = _fingerprint(binaries)
+    if _cached is not None and fingerprint is not None and fingerprint == _cached_fingerprint:
+        return _cached
+    caps = _load_cached(fingerprint) if fingerprint is not None else None
+    if caps is None:
+        caps = probe_caps(binaries)
+        if fingerprint is not None:
+            _store(caps, fingerprint)
+    _cached, _cached_fingerprint = caps, fingerprint
+    return caps
 
 
 __all__ = [

@@ -6,6 +6,10 @@ Video-Flow needs FFmpeg 6.1 or newer (`ffmpeg` and `ffprobe`) to read media, mak
 
 `media/caps.py` looks, in order, at the paths set in settings, at `tools/ffmpeg/` beside the application (the repository root in development), then at `PATH`. A build older than 6.1 counts as missing.
 
+## Capability probe
+
+What a build can do (version, filters, encoders, hardware decoders, xfade transitions, graph-file flag) comes from six short FFmpeg runs, made side by side (`media/caps.py`, `probe_caps`). The result is kept per user in `ffmpeg-caps.json` (in `%LOCALAPPDATA%\Video-Flow`, or `~/.local/share/video-flow`), keyed by the paths, sizes and modification times of `ffmpeg` and `ffprobe`: a launch with the same build runs no FFmpeg at all, and a new or replaced build (an install, another PATH) is probed once. A damaged or unwritable file only costs a probe. `GET /api/ffmpeg` looks for the binaries again each time and probes only when they changed (about 3 ms instead of 300 ms here).
+
 ## Pinned builds
 
 `backend/videoflow/media/ffmpeg_install.py` pins one static build per platform, by URL and SHA-256:
@@ -31,6 +35,7 @@ API: `GET /api/ffmpeg` (status, pinned build, download job), `POST /api/ffmpeg/i
 
 ## Validation
 
+- `tests/media/test_caps_cache.py`: one probe per build across launches, a new probe for a changed build or a damaged cache file.
 - `tests/media/test_ffmpeg_install.py`: zip and tar.xz unpacking with licence files, checksum mismatch, platforms, scripts pinning the same builds.
 - `tests/editor/test_api.py::test_ffmpeg_status_and_consented_install`: status, install job, no pinned build.
 - Checked by hand on Linux x64: real download from the app window and from `scripts/install.sh`.
