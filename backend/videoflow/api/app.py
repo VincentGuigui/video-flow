@@ -44,6 +44,7 @@ from videoflow.project.commands import Command, RelinkAsset
 from videoflow.project.library import ProjectLibrary
 from videoflow.project.store import Bundle, ProjectStoreError, StaleRevisionError
 from videoflow.render.jobs import Renders
+from videoflow.runtime import open_folder
 
 
 class Patch(CamelModel):
@@ -173,8 +174,18 @@ def create_app(
     async def settings() -> Any:
         return {
             "preferences": preferences.dump(),
+            "cacheDirectory": str(bundle.cache_dir),
             **await asyncio.to_thread(downloads.status, preferences),
         }
+
+    @app.post("/api/open-cache")
+    async def open_cache() -> Any:
+        """Show the project's cache (proxies, thumbnails, waveforms, title pictures)."""
+        try:
+            await asyncio.to_thread(open_folder, bundle.cache_dir)
+        except OSError as exc:
+            raise HTTPException(422, f"Could not open {bundle.cache_dir}: {exc}") from exc
+        return {"path": str(bundle.cache_dir)}
 
     @app.put("/api/settings")
     async def update_settings(payload: Preferences) -> Any:
@@ -191,6 +202,7 @@ def create_app(
             app.state.imports = imports
             return {
                 "preferences": preferences.dump(),
+                "cacheDirectory": str(bundle.cache_dir),
                 **await asyncio.to_thread(downloads.status, preferences),
             }
 

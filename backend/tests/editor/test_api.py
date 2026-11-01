@@ -315,3 +315,14 @@ def test_title_picture_is_drawn_at_the_project_size(client):
     assert picture.size == (1920, 1080) and picture.mode == "RGBA"
     assert client.get("/api/title", params={"spec": '{"text": " "}'}).status_code == 422
     assert client.get("/api/title", params={"spec": "nope"}).status_code == 422
+
+
+def test_open_cache_shows_the_project_cache(client, app_bundle, monkeypatch):
+    from videoflow.api import app as module
+
+    opened = []
+    monkeypatch.setattr(module, "open_folder", opened.append)
+    _, bundle = app_bundle
+    assert client.get("/api/settings").json()["cacheDirectory"] == str(bundle.cache_dir)
+    assert client.post("/api/open-cache").json() == {"path": str(bundle.cache_dir)}
+    assert opened == [bundle.cache_dir]

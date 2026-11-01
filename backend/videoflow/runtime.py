@@ -19,3 +19,15 @@ def model_directory() -> Path:
     os.environ["HF_HUB_CACHE"] = str(path / "hf")
     os.environ["HF_XET_CACHE"] = str(path / "xet")
     return path
+
+
+def open_folder(path: Path) -> None:
+    """Show a folder in the system file manager (Windows Explorer or the Linux default)."""
+    path.mkdir(parents=True, exist_ok=True)
+    if sys.platform == "win32":
+        os.startfile(path)  # type: ignore[attr-defined]  # noqa: S606
+    else:
+        import subprocess
+
+        opener = "open" if sys.platform == "darwin" else "xdg-open"
+        subprocess.Popen([opener, str(path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
