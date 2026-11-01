@@ -255,7 +255,9 @@ export function Settings({
               </button>
             </div>
             <h3>AI models</h3>
-            <p className="muted">{data?.directory}</p>
+            <p className="muted">
+              Models folder: <code>{data?.directory}</code>
+            </p>
             {missing.length > 0 && (
               <div className="settings-notice">
                 <p>
@@ -274,11 +276,6 @@ export function Settings({
                 </button>
               </div>
             )}
-            <p className="muted">
-              Status compares local files with the pinned versions supported by
-              this app. Updates download those versions. No model files are
-              stored in AppData.
-            </p>
             <div className="model-list">
               {models.map((model) => {
                 const active =
@@ -293,7 +290,14 @@ export function Settings({
                         {model.purpose} · {model.license}
                         {required(model) ? " · selected" : " · optional"}
                       </p>
-                      <span className={`model-state ${model.state}`}>
+                      <span
+                        className={`model-state ${model.state}`}
+                        title={
+                          model.state === "obsolete"
+                            ? "This app supports a newer version. Update downloads it."
+                            : undefined
+                        }
+                      >
                         {model.state === "up-to-date"
                           ? "Up to date"
                           : model.state === "obsolete"
