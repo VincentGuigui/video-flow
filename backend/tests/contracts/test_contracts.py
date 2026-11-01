@@ -18,13 +18,6 @@ from videoflow.analysis.types import (
     Transcript,
     Word,
 )
-from videoflow.api.events import (
-    AssetUpdatedEvent,
-    EventEnvelope,
-    ProjectUpdatedEvent,
-    event_adapter,
-    parse_event,
-)
 from videoflow.core.base import is_unknown
 from videoflow.core.time import Rational, TimeRange
 from videoflow.engines.protocols import (
@@ -43,7 +36,6 @@ from videoflow.engines.protocols import (
     VisualEmbedder,
     audio_key,
 )
-from videoflow.jobs.types import Job, JobDoneEvent, JobProgressEvent, JobSpec, Priority
 from videoflow.timeline.resolved import (
     ResolvedClip,
     ResolvedTimeline,
@@ -178,42 +170,6 @@ def test_analysis_types_round_trip() -> None:
     seg = Segment(id="seg_a", asset_id="ast", kind="speech", start_us=0, end_us=10)
     assert seg.range == TimeRange(start_us=0, end_us=10)
     assert ThresholdProfile(model_id="intfloat/multilingual-e5-small", query_prefix="query: ")
-
-
-def test_event_union_parses_every_type() -> None:
-    events = [
-        JobProgressEvent(job_id="job_1", kind="proxy", progress=0.5).dump(),
-        JobDoneEvent(job_id="job_1", kind="proxy", state="succeeded").dump(),
-        AssetUpdatedEvent(project_id="prj", asset_id="ast", parts=["proxy"]).dump(),
-        ProjectUpdatedEvent(project_id="prj", revision=4).dump(),
-    ]
-    parsed = [parse_event(e) for e in events]
-    assert [type(p).__name__ for p in parsed] == [
-        "JobProgressEvent",
-        "JobDoneEvent",
-        "AssetUpdatedEvent",
-        "ProjectUpdatedEvent",
-    ]
-    assert events[0]["type"] == "job.progress" and "jobId" in events[0]
-    env = EventEnvelope(seq=3, event=parsed[3])
-    assert EventEnvelope.model_validate(env.dump()) == env
-    schema = event_adapter.json_schema(by_alias=True)
-    assert set(schema["discriminator"]["mapping"]) == {
-        "job.progress",
-        "job.done",
-        "asset.updated",
-        "project.updated",
-    }
-    with pytest.raises(ValidationError):
-        parse_event({"type": "nope"})
-
-
-def test_job_models() -> None:
-    spec = JobSpec(kind="proxy", asset_id="ast", priority=Priority.INGEST)
-    job = Job(id="job_1", kind=spec.kind, priority=spec.priority)
-    assert job.state == "queued" and not job.done
-    assert job.model_copy(update={"state": "cancelled"}).done
-    assert Priority.INTERACTIVE < Priority.INGEST < Priority.ANALYSIS
 
 
 def test_resolved_timeline_round_trip() -> None:

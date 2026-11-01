@@ -6,7 +6,7 @@ Source of truth for versions: `backend/pyproject.toml` and `backend/uv.lock`. Ve
 
 | Package | Version | Licence | Purpose |
 |---|---|---|---|
-| fastapi | 0.162 | MIT | HTTP API, SSE (`fastapi.sse`), OpenAPI |
+| fastapi | 0.162 | MIT | HTTP API, OpenAPI |
 | uvicorn[standard] | 0.54 | BSD-3-Clause | ASGI server |
 | pydantic | 2.14 | MIT | Project schema, API models, JSON Schema export |
 | typer | 0.27 | MIT | `videoflow` CLI |

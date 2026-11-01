@@ -41,7 +41,7 @@ flowchart LR
 
 | Module | Responsibility |
 |--------|----------------|
-| `api/` | `app.py`: FastAPI app factory, authentication middleware, every endpoint, SPA static files. `events.py`: typed event union (job, asset, project events) |
+| `api/` | `app.py`: FastAPI app factory, authentication middleware, every endpoint, SPA static files |
 | `core/` | Shared base model (camelCase JSON, unknown fields kept, open enums), `<prefix>_<ULID>` ids, integer-microsecond time and rational frame rates |
 | `project/` | Project schema (`models.py`), semantic commands with inverses (`commands.py`), bundle store with atomic save, `history.jsonl` and revisions (`store.py`), migrations, JSON Schema goldens (`schema.py`), project library |
 | `editor/` | The interactive edit document (`models.py`), import queue (`imports.py`), analysis sidecars and the transcriber worker (`analysis.py`), retake grouping, topics and summaries, transitions, volume, zoom, titles (Pillow + bundled Inter), playback WebM fallback, resolution of the document for render and export (`resolve.py`) |
@@ -50,7 +50,7 @@ flowchart LR
 | `analysis/` | Analysis library: text normalisation, segmentation, relations, clustering, intra-group alignment, scoring, ordering, reconciliation, GCC-PHAT audio sync, shot detection, content-hash stage cache. See [analysis pipeline](analysis-pipeline.md) |
 | `engines/` | Engine protocols and deterministic fakes, registry (`registry.py`), adapters (`asr/`, `vad/`, `embed/`, `vision/`), Qwen summaries, pinned model manifest and explicit downloads |
 | `hw/` | AI provider chain and ONNX session factory (`ai.py`), hardware video decode/encode probing (`video.py`), doctor report |
-| `jobs/` | Long-lived spawned ML worker processes (`workers.py`); job contracts and an in-memory priority registry (`registry.py`, `types.py`) |
+| `jobs/` | Long-lived spawned ML worker processes (`workers.py`) |
 | `render/` | Filter graph compiler (`graph.py`), cancellable runner with output validation, two-pass loudness, render job owner (`jobs.py`) |
 | `exporters/` | OTIO, OTIOZ, CMX 3600 EDL, SRT, paper edit (Markdown + CSV), Camtasia `.tscproj`; `service.py` writes them with `edit.report.json` |
 | `desktop/` | Qt host and bridge, selection grants, native smoke check |
@@ -69,7 +69,7 @@ React 19, Vite and Zustand; no other state or UI framework (icons from `lucide-r
 - **Saving**: every edit sends the whole document as `{baseRevision, commands: [SetEditor, ...]}` through `PATCH /api/project`. The backend applies the batch atomically, bumps the revision and returns the project, the resolved editor document and the inverse commands. A stale `baseRevision` is rejected with 409 and the store reloads.
 - **Undo/redo**: the client owns the stacks (last 100 steps). Undo sends the stored inverses as a new batch and pushes the returned inverses on the redo stack. Imports return their inverses too, so an import is one undo step.
 - **Preview**: each visible clip plays its proxy in its own `<video>` element, positioned with the clip transform, crop, opacity and zoom; audio gain (fades, mutes, ducking) is applied through the media element volume. H.264 proxies are used when the engine can play them, else a VP9 WebM (`/api/media/{id}?codec=webm`). Titles are the PNG the render uses (`/api/title`). The FFmpeg render is the reference.
-- **Progress**: the UI polls `/api/jobs`, `/api/renders` and `/api/settings`. `GET /api/events` also streams a `{revision, jobs}` snapshot as server-sent events every 0.5 s when it changes.
+- **Progress**: the UI polls `/api/jobs`, `/api/renders` and `/api/settings`.
 
 ## 5. API
 
@@ -96,7 +96,6 @@ All under `/api`, JSON in camelCase.
 | POST / GET | `/render`, `/renders` | Start an MP4 render (`draft`/`final`, loudness normalisation) / list renders |
 | POST / GET | `/renders/{id}/cancel`, `/renders/{id}/file` | Cancel / download |
 | POST | `/desktop/render-save` | Host only: copy a finished render to the path chosen in the native save dialog |
-| GET | `/events` | Server-sent `{revision, jobs}` snapshots |
 
 ## 6. Jobs, imports, renders and downloads
 

@@ -2,13 +2,11 @@
 
 import asyncio
 import hashlib
-import json
 import os
 import secrets
 import shutil
 import sys
 import uuid
-from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Literal
@@ -20,7 +18,6 @@ from fastapi.responses import (
     JSONResponse,
     RedirectResponse,
     Response,
-    StreamingResponse,
 )
 from pydantic import Field
 
@@ -605,26 +602,6 @@ def create_app(
             return {"files": [str(p) for p in paths]}
         except (ValueError, OSError) as exc:
             raise HTTPException(422, str(exc)) from exc
-
-    @app.get("/api/events")
-    async def events(request: Request) -> StreamingResponse:
-        async def stream() -> AsyncIterator[str]:
-            previous = ""
-            while not await request.is_disconnected():
-                data = json.dumps(
-                    {
-                        "revision": bundle.project.revision,
-                        "jobs": [j.dump() for j in imports.jobs.values()],
-                    }
-                )
-                if data != previous:
-                    yield f"data: {data}\n\n"
-                    previous = data
-                else:
-                    yield ": keepalive\n\n"
-                await asyncio.sleep(0.5)
-
-        return StreamingResponse(stream(), media_type="text/event-stream")
 
     @app.get("/{path:path}")
     async def frontend_file(path: str) -> Any:
