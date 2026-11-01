@@ -260,3 +260,15 @@ def test_files_of_older_versions_are_saved_as_the_current_version(tmp_path: Path
     Bundle(bundle.path).load()  # opens without problem: rewritten at once
     saved = json.loads(bundle.project_file.read_text())["app"]
     assert saved["version"] == __version__ and saved["writer"] == f"videoflow {__version__}"
+
+
+def test_obsolete_in_project_cache_is_removed_on_open(tmp_path: Path) -> None:
+    from videoflow.project.models import new_project
+
+    bundle = Bundle.create(tmp_path / "Old.videoflow", new_project("Old"))
+    legacy = bundle.path / "cache" / "proxies"
+    legacy.mkdir(parents=True)
+    (legacy / "p.mp4").write_bytes(b"x")
+    Bundle(bundle.path).load()
+    assert not (bundle.path / "cache").exists()
+    assert bundle.project_file.is_file()

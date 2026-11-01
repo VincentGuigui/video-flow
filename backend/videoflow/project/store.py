@@ -20,6 +20,7 @@ than the saved revision are replayed.
 import contextlib
 import json
 import os
+import shutil
 import threading
 import time
 import uuid
@@ -257,6 +258,7 @@ class Bundle:
             self._resolve_media(project)
             self._project = project
             self.label_cache()
+            self._remove_legacy_cache()
             older_app = project.app.version != __version__
             if (
                 applied or older_app or project.revision != data.get("revision")
@@ -264,6 +266,17 @@ class Bundle:
                 # Opened fine (migrated if needed): from now on it is a current-version file.
                 save_atomic(self.project_file, dumps_project(project))
             return project
+
+    def _remove_legacy_cache(self) -> None:
+        """Projects before 0.2 kept rebuildable caches in `<project>/cache/`: remove it."""
+        from videoflow.runtime import cache_root
+
+        legacy = self.path / "cache"
+        if self.read_only or not legacy.is_dir() or legacy.is_symlink():
+            return
+        if cache_root().resolve().is_relative_to(legacy.resolve()):
+            return  # never the application cache itself
+        shutil.rmtree(legacy, ignore_errors=True)
 
     def _resolve_media(self, project: Project) -> None:
         """Follow media through moves of the whole working folder.

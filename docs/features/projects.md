@@ -4,7 +4,7 @@
 
 - A project is a `<name>.video-flow` folder **inside the user's working folder**, the folder that holds the original videos and media. It contains `project.json` (the edit), `history.jsonl`, `analysis/`, `features/`, `exports/` and `renders/`.
 - Media are referenced **relative to the working folder** (`relPath`, with the absolute path kept as a fallback): copying or moving the whole working folder (media and project) to another place, disk or computer keeps the project working. Media outside the working folder are referenced with `../` paths, or only absolutely when they are on another Windows drive.
-- Rebuildable caches (proxies, thumbnails, waveforms, title pictures, render work files) are not in the project: they live in the application cache (`cache/<project id>/` beside the executable), shown and cleared in Settings (see [workspace zones](workspace-zones.md)).
+- Rebuildable caches (proxies, thumbnails, waveforms, title pictures, render work files) are not in the project: they live in the application cache (`cache/<project id>/` beside the executable), shown and cleared in Settings (see [workspace zones](workspace-zones.md)). A project from an earlier version still holding a `cache/` folder has it deleted when it opens.
 - The application keeps only a list of recent projects per user (`recent-projects.json` in `%LOCALAPPDATA%\Video-Flow` on Windows, `~/.local/share/video-flow` on Linux; at most 20, most recent first). Projects created by earlier versions in the per-user `Video-Flow` library (`*.videoflow`) are added to that list the first time, and open as before.
 
 ## Home page
