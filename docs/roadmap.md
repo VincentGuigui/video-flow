@@ -13,12 +13,11 @@ Snapshot of what is built and what comes next. Update it with every feature. His
 - **Import and analysis:** probe, playback proxies, thumbnails, waveforms; VAD, transcription (Parakeet TDT or Whisper), summary, keywords and topic sections; reusable analysis sidecars; models downloaded only on request; NPU → GPU → CPU device choice. See [interactive editor](features/interactive-editor.md), [transcript panel](features/transcript-panel.md).
 - **Retakes:** retakes stacked on import by sentence similarity; compare takes side by side and pick one. See [retake grouping](features/retake-grouping.md), [compare takes](features/compare-takes.md).
 - **Editing:** layered clip flow and timeline, linked video/audio, split, lift, ripple delete, trim modes, focus, undo/redo, transforms and backgrounds, timeline range and range playback, transcript-driven trim and delete, auto-trim silence, detach and restore audio, workspace zones with select all and delete. See [unified timeline](features/unified-timeline.md), [range and trim](features/range-and-trim.md), [audio tracks](features/audio-tracks.md), [workspace zones](features/workspace-zones.md).
-- **Finishing:** Effects tab with transition cards (opened from cut markers in the flow and transition bands in the timeline) and effect cards with Add effect; cross dissolve and dips, edge fades, speed, zoom & pan, mute ranges, ducking under speech, titles and lower thirds. See [transitions](features/transitions.md), [clip effects](features/clip-effects.md).
+- **Finishing:** Effects tab with transition cards (opened from cut markers in the flow and transition bands in the timeline) and effect cards with Add effect; cross dissolve and dips, edge fades, speed, keyframed transforms (position, size, rotation, crop, opacity), mute ranges, ducking under speech, titles and lower thirds. See [transitions](features/transitions.md), [clip effects](features/clip-effects.md), [keyframes](features/keyframes.md).
 - **Output:** MP4 render with hardware encoders when available and loudness normalisation; OTIO, OTIOZ, EDL, SRT, paper edit and Camtasia 2023.4+ exports. See [render and export](architecture/render-export.md), [Camtasia export](features/camtasia-export.md).
 
 ## Next
 
-- Keyframed transforms (position, scale, rotation, crop, opacity), replacing zoom & pan.
 - Confirm the Camtasia export in Camtasia itself (opening, fades, linked audio, titles).
 - Measure retake grouping and transcription accuracy on real rushes, and tune thresholds.
 - Qualify NPU execution providers (OpenVINO, QNN, VitisAI) and GPU encoders on target Windows and Linux machines; Windows ARM64 qualification gate.

@@ -2914,3 +2914,87 @@ button.timecode:hover {
   font-size: 12px;
   margin: 6px 0 0;
 }
+/* Keyframes of the selected clip on the timeline (docs/features/keyframes.md). */
+.timeline-keyframe {
+  position: absolute;
+  top: 31px;
+  width: 11px;
+  height: 11px;
+  margin-left: -5.5px;
+  padding: 0;
+  transform: rotate(45deg);
+  background: #f2c14e;
+  border: 1px solid #a07a1c;
+  border-radius: 2px;
+  z-index: 4;
+  cursor: ew-resize;
+}
+.timeline-keyframe.selected {
+  background: #e07a1f;
+  border-color: #7a3d08;
+  box-shadow: 0 0 0 2px rgba(224, 122, 31, 0.3);
+}
+.flow-keyframe {
+  position: absolute;
+  bottom: 3px;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  transform: rotate(45deg);
+  background: #f2c14e;
+  border: 1px solid #a07a1c;
+  pointer-events: none;
+}
+/* Animation tab (docs/features/keyframes.md). */
+.animation-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.keyframe-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.keyframe-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.keyframe-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px;
+  border-radius: 5px;
+}
+.keyframe-row.current {
+  background: #fdf3dc;
+}
+.keyframe-row.selected {
+  box-shadow: inset 0 0 0 1px #e07a1f;
+}
+.keyframe-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-start;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+.keyframe-time svg {
+  color: #c99a26;
+  fill: #f2c14e;
+}
+.animation-fields .number-field {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.animation-fields .number-field input {
+  width: 52px;
+}
+.animation-fields .number-field small {
+  color: #97a18e;
+}

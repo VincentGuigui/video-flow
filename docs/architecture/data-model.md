@@ -75,7 +75,7 @@ All positions and lengths are integer project-rate frames. `start` is the timeli
       "transform": { "x": 0, "y": 0, "width": 1920, "height": 1080,
                      "cropLeft": 0, "cropRight": 0, "cropTop": 0, "cropBottom": 0 },
       "resizeReference": null, "background": { "mode": "transparent", "color": "#000000" },
-      "heldRange": null, "zooms": [], "volumeRanges": [], "title": null, "stillFrame": null },
+      "heldRange": null, "keyframes": [], "volumeRanges": [], "title": null, "stillFrame": null },
     { "id": "clp_…", "kind": "text", "assetId": null, "name": "Title", "start": 0,
       "sourceIn": 0, "sourceOut": 90, "layer": 1, "linkId": null,
       "title": { "text": "Chapter 1", "style": "title", "size": 0.08, "color": "#ffffff",
@@ -95,7 +95,8 @@ All positions and lengths are integer project-rate frames. `start` is the timeli
 | `heldRange` | `{start, end}` timeline frames kept by a standard audio trim without a placeholder clip. |
 | `fadeIn`, `fadeOut` | Edge fades in frames (picture from what lies below, audio from silence). |
 | `gainDb` | −60 to +24 dB. |
-| `zooms[]` | `start`, `end` (source frames), `scale` (>1, ≤8), focus `x`, `y` (0–1), `easeIn` (9), `easeOut` (30). |
+| `keyframes[]` | `frame` (source frame), `transform`, `ease` (`smooth` or `linear`). Video clips only, distinct frames, kept sorted ([keyframed transforms](../features/keyframes.md)). |
+| `transform` | `x`, `y`, `width`, `height` (output pixels), crop fractions, `rotation` (degrees clockwise, default 0), `opacity` (0–1, default 1). |
 | `volumeRanges[]` | `start`, `end` (source frames), `gainDb` (−60 = silence, ≤0), `ramp` (4 frames, outside the range), `kind` `mute` or `duck`. |
 | `linkId` | Joins exactly one video and one audio clip, which must share `start`, `duration` and `speed`. |
 | `transitions[]` | `type` `dissolve`, `dip_black` or `dip_white`; `duration` 1–3600 requested frames, centred on the cut between `leftId` and `rightId`. Dormant (ignored, never deleted) while the clips are missing or not adjacent on one lane. |
@@ -151,7 +152,7 @@ The original model is still in the schema, the commands and the legacy resolver.
 | `ResolvedClip` | `itemId`, `track`, `assetId` (`__gap__` for gap and text clips), `timelineStart`, `duration`, `sourceInFrame`, `sourceInUs`/`sourceOutUs`, handles and `availableBefore`/`availableAfter`, `audio` (`mode`, `gainDb`, fade frames). From the editor it also carries `kind` (`media`/`gap`), `layer`, `transform`, and `speed`, `title` and `stillFrame` when set. A still clip has no `availableBefore`/`availableAfter` (unbounded). |
 | `ResolvedTransition` | `afterItemId`, `beforeItemId`, `type`, `state`, `duration`, `cutFrame`, `leftFrames`, `rightFrames`, `audioDuration`. Editor transitions above the bottom video lane are rendered but not resolved (warning). |
 
-Zooms, volume ranges, held ranges, backgrounds and video fades are not in the resolved timeline: the FFmpeg render and the Camtasia exporter read the `EditorDocument` directly, and warnings (`editor_speed`, `editor_titles`, `editor_transforms`, `editor_transition_audio`) list what other formats lose.
+Volume ranges, held ranges, backgrounds and video fades are not in the resolved timeline (keyframes are clip metadata): the FFmpeg render and the Camtasia exporter read the `EditorDocument` directly, and warnings (`editor_speed`, `editor_titles`, `editor_keyframes`, `editor_transforms`, `editor_transition_audio`) list what other formats lose.
 
 ## OTIO compilation
 

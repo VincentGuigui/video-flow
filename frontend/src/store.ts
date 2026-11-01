@@ -48,9 +48,11 @@ interface State {
   offline: string[];
   // No project open (home page): the server keeps an unseen placeholder.
   closed: boolean;
-  inspectorTab: "Clip" | "Effects" | "Transcript" | "Project";
+  inspectorTab: "Clip" | "Animation" | "Effects" | "Transcript" | "Project";
   // Cut (`left>right`) whose transition card the Effects tab highlights.
   effectFocus: string | null;
+  // Keyframe selected on the timeline (source frame of the selected clip).
+  keyframe: number | null;
   load: () => Promise<void>;
   save: (
     doc: Document,
@@ -91,11 +93,19 @@ export const useEditor = create<State>((set, get) => ({
   closed: false,
   inspectorTab: "Clip",
   effectFocus: null,
+  keyframe: null,
   // Picking one clip ends a multiple selection.
   set: (values) =>
     set(
-      "selected" in values && !("selectedClips" in values)
-        ? { ...values, selectedClips: [] }
+      "selected" in values
+        ? {
+            ...("selectedClips" in values ? {} : { selectedClips: [] }),
+            // Another clip ends the keyframe selection.
+            ...("keyframe" in values || values.selected === get().selected
+              ? {}
+              : { keyframe: null }),
+            ...values,
+          }
         : values,
     ),
   load: async () => {

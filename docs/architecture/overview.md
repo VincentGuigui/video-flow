@@ -44,7 +44,7 @@ flowchart LR
 | `api/` | `app.py`: FastAPI app factory, authentication middleware, every endpoint, SPA static files |
 | `core/` | Shared base model (camelCase JSON, unknown fields kept, open enums), `<prefix>_<ULID>` ids, integer-microsecond time and rational frame rates |
 | `project/` | Project schema (`models.py`), semantic commands with inverses (`commands.py`), bundle store with atomic save, `history.jsonl` and revisions (`store.py`), migrations, JSON Schema goldens (`schema.py`), project library |
-| `editor/` | The interactive edit document (`models.py`), import queue (`imports.py`), analysis sidecars and the transcriber worker (`analysis.py`), retake grouping, topics and summaries, transitions, volume, zoom, titles (Pillow + bundled Inter), playback WebM fallback, resolution of the document for render and export (`resolve.py`) |
+| `editor/` | The interactive edit document (`models.py`), import queue (`imports.py`), analysis sidecars and the transcriber worker (`analysis.py`), retake grouping, topics and summaries, transitions, volume, keyframes, titles (Pillow + bundled Inter), playback WebM fallback, resolution of the document for render and export (`resolve.py`) |
 | `timeline/` | Resolved timeline contract (flat, frame-quantised tracks), resolver, transition handle maths, invariant checks; shared by exporters and render |
 | `media/` | FFmpeg capability probe and binary lookup (`caps.py`), async FFmpeg runner with progress and cancellation plus ffprobe parsing, content hashing, ingest (probe, hash, duplicate detection), proxies, waveform peaks |
 | `analysis/` | Analysis library: text normalisation, segmentation, relations, clustering, intra-group alignment, scoring, ordering, reconciliation, GCC-PHAT audio sync, shot detection, content-hash stage cache. See [analysis pipeline](analysis-pipeline.md) |
@@ -63,12 +63,12 @@ flowchart LR
 
 React 19, Vite and Zustand; no other state or UI framework (icons from `lucide-react`).
 
-- **Pure logic** (`*.ts`, each with a `*.test.ts`): `model.ts` (edit document types, layout, lanes, linking; mirrors `editor/models.py`), `transitions.ts`, `volume.ts`, `zoom.ts` and `titles.ts` (mirrors of the backend modules of the same name, kept in step), `range.ts`, `snap.ts`, `compare.ts`, `transcript.ts`, `zones.ts`, `timeline.ts`, `playback.ts`, `desktop.ts` (Qt bridge and media URLs).
+- **Pure logic** (`*.ts`, each with a `*.test.ts`): `model.ts` (edit document types, layout, lanes, linking; mirrors `editor/models.py`), `transitions.ts`, `volume.ts`, `keyframes.ts` and `titles.ts` (mirrors of the backend modules of the same name, kept in step), `range.ts`, `snap.ts`, `compare.ts`, `transcript.ts`, `zones.ts`, `timeline.ts`, `playback.ts`, `desktop.ts` (Qt bridge and media URLs).
 - **UI** (`ui/`): `App.tsx` (editor shell), `Home.tsx` (recent projects, new, open), `Flow.tsx` (clip flow), `Preview.tsx`, `Transport.tsx`, `Transcript.tsx`, `Compare.tsx`, `Imports.tsx`, `RenderPanel.tsx`, `Settings.tsx`, `ProjectSave.tsx` and property controls.
 - **State** (`store.ts`): one Zustand store holds the project, the edit document, selection, zone, focus, cursor frame, range and the undo/redo stacks.
 - **Saving**: every edit sends the whole document as `{baseRevision, commands: [SetEditor, ...]}` through `PATCH /api/project`. The backend applies the batch atomically, bumps the revision and returns the project, the resolved editor document and the inverse commands. A stale `baseRevision` is rejected with 409 and the store reloads.
 - **Undo/redo**: the client owns the stacks (last 100 steps). Undo sends the stored inverses as a new batch and pushes the returned inverses on the redo stack. Imports return their inverses too, so an import is one undo step.
-- **Preview**: each visible clip plays its proxy in its own `<video>` element, positioned with the clip transform, crop, opacity and zoom; audio gain (fades, mutes, ducking) is applied through the media element volume. H.264 proxies are used when the engine can play them, else a VP9 WebM (`/api/media/{id}?codec=webm`). Titles are the PNG the render uses (`/api/title`). The FFmpeg render is the reference.
+- **Preview**: each visible clip plays its proxy in its own `<video>` element, positioned with the clip transform (keyframes interpolated), crop, rotation and opacity; audio gain (fades, mutes, ducking) is applied through the media element volume. H.264 proxies are used when the engine can play them, else a VP9 WebM (`/api/media/{id}?codec=webm`). Titles are the PNG the render uses (`/api/title`). The FFmpeg render is the reference.
 - **Progress**: the UI polls `/api/jobs`, `/api/renders` and `/api/settings`.
 
 ## 5. API

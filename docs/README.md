@@ -25,7 +25,8 @@ Start with the [project README](../README.md) for what Video-Flow does and how t
 | [Transitions](features/transitions.md) | Cross dissolve and dips between adjacent clips |
 | [Retake grouping](features/retake-grouping.md) | Stacking retakes on import: MiniLM sentence similarity and word overlap |
 | [Camtasia export](features/camtasia-export.md) | Template-driven `.tscproj` writer, mapping, limits |
-| [Clip effects](features/clip-effects.md) | Edge fades, speed, zoom & pan, mute ranges and ducking, titles and lower thirds |
+| [Clip effects](features/clip-effects.md) | Effects tab, edge fades, speed, mute ranges and ducking, titles and lower thirds |
+| [Keyframed transforms](features/keyframes.md) | Animated position, size, rotation, crop and opacity: Animation tab, timeline diamonds, render and exports |
 | [Project media](features/media-library.md) | Media context menu: Info (location, analysis, transcript) and Analysis (analyse again) |
 | [Projects](features/projects.md) | Projects as `<name>.video-flow` folders in the working folder, relative media, recent list, home page |
 | [Still images and freeze frames](features/still-images.md) | Pictures in the media library, freeze frames, still clips without source limit, preview, render and exports |
@@ -41,6 +42,7 @@ Start with the [project README](../README.md) for what Video-Flow does and how t
 | [0001 Feasibility](decisions/0001-feasibility.md) | Feasibility study and state of the art |
 | [0002 Review and plan](decisions/0002-review-and-plan.md) | Stack review, verified hypotheses, NPU → GPU → CPU policy, implementation plan |
 | [0003 Camtasia findings](decisions/0003-camtasia-findings.md) | What the user's Camtasia projects use, and the feature backlog drawn from them |
+| [0004 Keyframes replace zoom](decisions/0004-keyframes-replace-zoom.md) | Keyframed transforms replace zoom & pan, without migration |
 
 ## Writing rules
 

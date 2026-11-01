@@ -2,14 +2,14 @@
 
 ## Project
 
-Video-Flow is a local-first desktop app for assembling footage shot with many retakes. It imports rushes, transcribes and analyses them locally, stacks retakes of the same sentences so they can be compared, then lets the user cut, layer and finish the edit (transitions, fades, speed, zoom, ducking, titles). It renders an MP4 with FFmpeg or exports to OpenTimelineIO, EDL, SRT, paper edit or Camtasia (2023.4+).
+Video-Flow is a local-first desktop app for assembling footage shot with many retakes. It imports rushes, transcribes and analyses them locally, stacks retakes of the same sentences so they can be compared, then lets the user cut, layer and finish the edit (transitions, fades, speed, keyframed transforms, ducking, titles). It renders an MP4 with FFmpeg or exports to OpenTimelineIO, EDL, SRT, paper edit or Camtasia (2023.4+).
 
 Targets Windows and Linux (x64). AI runs on the NPU, then the GPU, then the CPU. Originals are never copied or modified.
 
 ## Key elements
 
 - **Stack:** Python 3.13 backend (`backend/`, package `videoflow`, uv, FastAPI) hosted in a PySide6 / Qt WebEngine window; React + Vite + Zustand frontend (`frontend/`, npm). FFmpeg >= 6.1 for media and rendering.
-- **Edit model:** the editor document (`backend/videoflow/editor/models.py`, mirrored in `frontend/src/model.ts`) holds clips in integer project-rate frames: video, audio, empty (`gap`) and text clips on numbered lanes, linked video/audio pairs, transitions. Backend and frontend logic mirror each other (transitions, zoom, volume, titles): change both together.
+- **Edit model:** the editor document (`backend/videoflow/editor/models.py`, mirrored in `frontend/src/model.ts`) holds clips in integer project-rate frames: video, audio, empty (`gap`) and text clips on numbered lanes, linked video/audio pairs, transitions. Backend and frontend logic mirror each other (transitions, keyframes, volume, titles): change both together.
 - **Edits are commands:** the frontend saves the whole document with `SetEditor` through `PATCH /api/project`; every save is one undo step.
 - **Render:** `backend/videoflow/render/graph.py` compiles the document into FFmpeg filter graphs; titles are drawn by Pillow (`editor/titles.py`) with the bundled Inter font.
 - **Project bundle:** `<name>.video-flow` folder inside the user's working folder (next to the media, referenced by relative paths; `project/library.py`, per-user recent list in `recent-projects.json` under `runtime.user_data_dir()`), with `project.json`, analysis, features, exports and renders. Rebuildable caches (proxies, thumbnails, waveforms, title pictures) live outside it in `cache/<project id>/` beside the application (`runtime.cache_root()`).

@@ -24,6 +24,7 @@ import {
   Type,
   Sparkles,
   Image as ImageIcon,
+  Diamond,
 } from "lucide-react";
 import {
   canRestoreAudio,
@@ -65,6 +66,7 @@ import { Compare } from "./Compare";
 import { removeClips, withoutAssets, zoneItems } from "../zones";
 import { TitleControls } from "./TitleControls";
 import { EffectsTab } from "./EffectsTab";
+import { AnimationTab } from "./AnimationTab";
 import { stackedTakes } from "../compare";
 import { useAnalysis } from "./useAnalysis";
 import { currentRange, currentWindow, togglePlay } from "../playback";
@@ -73,6 +75,7 @@ import { ImportDialog } from "./Imports";
 import { MediaInfoDialog, MediaMenu } from "./MediaInfo";
 import { native, type NativeFile, type NativeSelection } from "../desktop";
 import { PropertiesDock } from "./PropertiesDock";
+import { addKeyframe, removeKeyframe } from "../keyframes";
 import { loadLayout, storeLayout } from "../panel";
 
 const RESOLUTIONS = [
@@ -292,6 +295,32 @@ export function App() {
         : s.selected
           ? [s.selected]
           : [];
+      if (
+        !s.busy &&
+        (e.key === "Delete" || e.key === "Backspace") &&
+        s.keyframe !== null &&
+        s.selected &&
+        s.zone === "timeline"
+      ) {
+        // A keyframe selected on the timeline is removed, not its clip.
+        e.preventDefault();
+        void s.save(removeKeyframe(s.document, s.selected, s.keyframe));
+        s.set({ keyframe: null });
+        return;
+      }
+      if (s.selected && !s.busy && e.key.toLowerCase() === "k" && !ctrl) {
+        const placed = layout(s.document).clips.find(
+          (c) => c.id === s.selected,
+        );
+        if (
+          placed?.kind === "video" &&
+          s.frame >= placed.start &&
+          s.frame < placed.start + duration(placed)
+        ) {
+          e.preventDefault();
+          void s.save(addKeyframe(s.document, placed.id, s.frame, placed));
+        }
+      }
       if (!s.busy && (e.key === "Delete" || e.key === "Backspace")) {
         if (s.zone === "media" && s.selectedAssets.length) {
           // Removing media also removes its clips; one undo step restores both.
@@ -731,6 +760,8 @@ export function App() {
               ["Exit clip focus", "Esc"],
               ["Split at cursor", "S"],
               ["Freeze frame at cursor", "F"],
+              ["Keyframe at cursor (selected clip)", "K"],
+              ["Remove the selected keyframe", "Delete (timeline)"],
               ["Lift · preserve time", "Delete"],
               ["Ripple delete", "Backspace"],
               ["Select all in the clicked zone", "Ctrl + A"],
@@ -866,9 +897,19 @@ function Inspector({
       <div className="inspector-tabs">
         {(clip && clip.kind === "gap"
           ? (["Clip", "Project"] as const)
-          : clip && (clip.kind === "text" || isStill(clip))
+          : clip && clip.kind === "text"
             ? (["Clip", "Effects", "Project"] as const)
-            : (["Clip", "Effects", "Transcript", "Project"] as const)
+            : clip && isStill(clip)
+              ? (["Clip", "Animation", "Effects", "Project"] as const)
+              : clip && clip.kind === "audio"
+                ? (["Clip", "Effects", "Transcript", "Project"] as const)
+                : ([
+                    "Clip",
+                    "Animation",
+                    "Effects",
+                    "Transcript",
+                    "Project",
+                  ] as const)
         ).map((t) => (
           <button
             key={t}
@@ -904,6 +945,8 @@ function Inspector({
         <Transcript clip={clip} />
       ) : tab === "Effects" && clip && clip.kind !== "gap" ? (
         <EffectsTab clip={clip} />
+      ) : tab === "Animation" && clip && clip.kind === "video" ? (
+        <AnimationTab clip={clip} />
       ) : clip ? (
         <div className="inspector-content">
           <div className={`inspector-kind ${clip.kind}`}>
@@ -958,7 +1001,25 @@ function Inspector({
               </div>
             </details>
           )}
-          {clip.kind === "video" && (
+          {clip.kind === "video" && !!clip.keyframes?.length && (
+            <div className="inspector-section">
+              <span className="overline">TRANSFORM</span>
+              <p className="muted still-hint">
+                Animated with {clip.keyframes.length} keyframe
+                {clip.keyframes.length === 1 ? "" : "s"}.
+              </p>
+              <button
+                className="button"
+                onClick={() =>
+                  useEditor.getState().set({ inspectorTab: "Animation" })
+                }
+              >
+                <Diamond size={14} />
+                Edit in Animation
+              </button>
+            </div>
+          )}
+          {clip.kind === "video" && !clip.keyframes?.length && (
             <div className="inspector-section">
               <span className="overline">TRANSFORM</span>
               <div className="transform-grid">

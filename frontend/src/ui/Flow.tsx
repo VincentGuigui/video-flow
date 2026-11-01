@@ -45,6 +45,7 @@ import { useTimeline, useTimelineWheel } from "../timeline";
 import { addTitle, type Title } from "../titles";
 import { useEditor } from "../store";
 import { cutKey, cuts, transitionAt, TRANSITION_LABELS } from "../transitions";
+import { keyframeOffsets } from "../keyframes";
 import { Waveform } from "./Waveform";
 
 export function Flow() {
@@ -414,6 +415,14 @@ export function Flow() {
                         e.preventDefault();
                         startTrim(e, c, edge, false);
                       }}
+                    />
+                  ))}
+                {kind === "video" &&
+                  keyframeOffsets(c).map(({ frame: k, offset }) => (
+                    <span
+                      key={k}
+                      className="flow-keyframe"
+                      style={{ left: offset * px }}
                     />
                   ))}
                 {isSelected &&

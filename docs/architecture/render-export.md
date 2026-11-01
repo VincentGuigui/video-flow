@@ -28,7 +28,7 @@ flowchart LR
   4. HDR (HLG or PQ probe): `zscale` to linear, `tonemap=hable`, back to BT.709 SDR; a warning names the clip.
   5. `setsar=1,format=rgba`, then alpha `fade` in/out for dissolves and edge fades.
   6. Background (from [editor refinements](../features/editor-refinements.md)): `color` (a colour plate with the same alpha fades), `blur` (the same frames `split`, scaled to cover the frame with 8 % overscan, cropped, `gblur`), or `transparent` (none).
-  7. Picture: `scale` to the transform size, optional `zoompan` (expressions from `editor/zoom.py`, smoothstep ease, one focus point per zoom, evaluated over the clip's own frames), `crop` for the crop insets, then `overlay` at the transform position.
+  7. Picture: `scale` to the transform size, `crop` for the crop insets, then `overlay` at the transform position. A clip with keyframes, a rotation or an opacity below 1 is drawn per frame instead: crop (`crop`, or `perspective` when it animates), a transparent border, `perspective` onto the rotated box corners (piecewise expressions from `editor/keyframes.py`), `colorchannelmixer` for opacity, then `overlay` of the full frame ([keyframed transforms](../features/keyframes.md)).
 - **Placement:** each layer is shifted with `setpts=PTS+start/rate` and overlaid with `eof_action=pass:repeatlast=0` and an `enable` window on **timestamps** with half-frame margins (`gte(t,…)*lt(t,…)`), never frame counters.
 - **Text clips:** the title picture (Pillow, bundled Inter; `editor/titles.py`) is an image input `loop`ed for the clip's frames, alpha-faded and overlaid in its window. Pictures are keyed by a hash of the title and output size and drawn by `write_titles` into `cache/titles/` before FFmpeg runs, so no `drawtext` is needed.
 - **Dips:** after all lanes, each dip is a full-frame black or white `color` layer that fades in over `before` frames and out over `after` frames, overlaid on the composite.
@@ -114,11 +114,11 @@ Resolver warnings are copied into `edit.report.json` and printed by the CLI:
 | `editor_titles` | Titles go to the render and Camtasia; OTIO and EDL see gaps (OTIO keeps the text as metadata) |
 | `editor_transforms` | Spatial transforms are OTIO metadata |
 
-The service adds that OTIO gain, fades and fit are metadata only; the EDL adds that audio, overlays, gain and fades are omitted, and that dips become dissolves. Zooms, mute and duck ranges, backgrounds and crop are not carried by OTIO or EDL; SRT and the paper edit drop words said inside a mute range (resolved audio clips carry them as `muted` source ranges) and read an editor video clip's words from its linked audio clip (`linkId`). SRT and paper edit map words through the clip speed.
+The service adds that OTIO gain, fades and fit are metadata only; the EDL adds that audio, overlays, gain and fades are omitted, and that dips become dissolves. Keyframes (OTIO metadata only), mute and duck ranges, backgrounds and crop are not carried by OTIO or EDL; SRT and the paper edit drop words said inside a mute range (resolved audio clips carry them as `muted` source ranges) and read an editor video clip's words from its linked audio clip (`linkId`). SRT and paper edit map words through the clip speed.
 
 ### Camtasia
 
-`exporters/camtasia.py` writes `.tscproj` 7.0 by cloning structures from a template (`templates/camtasia.tscproj` in the application folder, `--camtasia-template`, or the built-in 2023.4.3 default). It maps lanes to tracks, linked pairs to `UnifiedMedia`, times to 705 600 000 ticks per second, transforms, gain, speed, zoom and volume keyframes, edge fades, dissolves and dips as `Fade`/`FadeThroughBlack`, and titles as text callouts. Crop, backgrounds, transition audio crossfades, gaps and disabled clips are reported as not exported. Details: [Camtasia export](../features/camtasia-export.md), [clip effects](../features/clip-effects.md).
+`exporters/camtasia.py` writes `.tscproj` 7.0 by cloning structures from a template (`templates/camtasia.tscproj` in the application folder, `--camtasia-template`, or the built-in 2023.4.3 default). It maps lanes to tracks, linked pairs to `UnifiedMedia`, times to 705 600 000 ticks per second, transforms, gain, speed, transform and volume keyframes, edge fades, dissolves and dips as `Fade`/`FadeThroughBlack`, and titles as text callouts. Crop, backgrounds, transition audio crossfades, gaps and disabled clips are reported as not exported. Details: [Camtasia export](../features/camtasia-export.md), [clip effects](../features/clip-effects.md).
 
 ### CLI
 

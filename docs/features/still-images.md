@@ -13,7 +13,7 @@ Importing an image appends a 3 s **image clip** at the end of the flow, like a v
 - `stillFrame` (`EditorClip.still_frame`) is the source frame a still clip shows for its whole length. A clip with a `stillFrame` is a **still clip**; `null` means a moving clip. Only video clips at speed 1 can be still. [Freeze frames](#freeze-frame) use the same field with a frame of a video.
 - A still clip has no source limit. Both edges trim freely, longer or shorter, with the usual ripple and preserve-time handles, and it snaps like any clip. Its source range only measures its length and always starts at 0 (like text clips); splitting it gives two still clips of the same picture.
 - A dissolve onto or from a still clip always has the handles it needs: the picture repeats.
-- Speed does not apply to still clips (the Speed effect is not offered). Fades, transitions, zoom & pan, transform, crop and backgrounds work as on video clips.
+- Speed does not apply to still clips (the Speed effect is not offered). Fades, transitions, keyframes, transform, crop and backgrounds work as on video clips.
 - An image asset accepts only still clips; validation refuses a moving clip on it (`editor/resolve.py`).
 
 Clip properties name it **Image clip** with its duration and no source range, Transcript tab or link selector.
@@ -26,7 +26,7 @@ Clip properties name it **Image clip** with its duration and no source range, Tr
 - **On the first frame**, the clip is not split: the freeze goes before it and takes over its incoming transition.
 - **On the last frame**, the freeze goes after the clip, holding that last frame, and takes over its outgoing transition.
 
-The freeze is a still clip (`stillFrame` = the frozen source frame) named after the clip with “· freeze”, with the clip's transform, crop and background, no link, fades or zooms. It is then selected; like any still clip it can be made longer or shorter freely. Clip properties name it **Freeze frame**. Still clips themselves cannot be frozen.
+The freeze is a still clip (`stillFrame` = the frozen source frame) named after the clip with “· freeze”, with the transform shown at that frame, the clip's background, and no link, fades or keyframes. It is then selected; like any still clip it can be made longer or shorter freely. Clip properties name it **Freeze frame**. Still clips themselves cannot be frozen.
 
 ## Preview, render and exports
 

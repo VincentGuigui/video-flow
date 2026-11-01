@@ -47,7 +47,7 @@ describe("clip effects registry", () => {
           d.clips.find((c) => c.id === id)!,
         ),
       ).map((e) => e.id);
-    expect(ids("v")).toEqual(["fadeIn", "fadeOut", "speed", "zoom", "mute"]);
+    expect(ids("v")).toEqual(["fadeIn", "fadeOut", "speed", "mute"]);
     expect(ids("m")).toEqual(["fadeIn", "fadeOut", "speed", "mute", "duck"]);
     expect(ids("t")).toEqual(["fadeIn", "fadeOut"]);
     expect(ids("g")).toEqual([]);
@@ -65,7 +65,7 @@ describe("clip effects registry", () => {
     expect(removed.clips.map((c) => c.fadeIn)).toEqual([0, 0]);
   });
 
-  it("removes speed, zooms, mute and duck ranges", () => {
+  it("removes speed, mute and duck ranges", () => {
     const ranges = [
       { start: 0, end: 5, gainDb: -60, ramp: 1, kind: "mute" as const },
       { start: 6, end: 9, gainDb: -15, ramp: 1, kind: "duck" as const },
@@ -73,17 +73,6 @@ describe("clip effects registry", () => {
     const d = doc([
       clip("v", 0, "video", "p", {
         speed: 2,
-        zooms: [
-          {
-            start: 0,
-            end: 10,
-            scale: 2,
-            x: 0.5,
-            y: 0.5,
-            easeIn: 1,
-            easeOut: 1,
-          },
-        ],
       }),
       clip("va", 0, "audio", "p", { speed: 2, volumeRanges: ranges }),
     ]);
@@ -94,7 +83,6 @@ describe("clip effects registry", () => {
         .remove(d, v)
         .clips.map((c) => c.speed ?? 1),
     ).toEqual([1, 1]);
-    expect(effect("zoom").remove(d, v).clips[0].zooms).toEqual([]);
     expect(effect("mute").summary(d, v, 30)).toBe("1 range");
     const unmuted = effect("mute").remove(d, v);
     expect(unmuted.clips[1].volumeRanges).toEqual([ranges[1]]);

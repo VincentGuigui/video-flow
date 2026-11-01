@@ -18,7 +18,7 @@ import { useEditor } from "../store";
 import { snapHandle } from "../snap";
 import { BackgroundSelector } from "./BackgroundSelector";
 import { mediaUrl } from "../desktop";
-import { zoomAt } from "../zoom";
+import { setTransformAt, transformAtFrame } from "../keyframes";
 import { envelopeAt } from "../volume";
 import { titleUrl } from "../titles";
 import {
@@ -82,8 +82,8 @@ function Media({
   }, [frame, rate, playing, clip, gain, still]);
   if (clip.kind === "audio")
     return <audio ref={ref} src={mediaUrl(clip.assetId)} preload="auto" />;
-  const t = clip.transform,
-    zoom = zoomAt(clip, frame);
+  // The transform at this frame: keyframes interpolated (docs/features/keyframes.md).
+  const t = transformAtFrame(clip, frame);
   return (
     <>
       {!backdrop && clip.background?.mode === "color" && (
@@ -124,7 +124,7 @@ function Media({
           }}
         />
       ) : (
-        // The box clips crop and zoom; zooming scales the picture toward its focus point.
+        // The box crops the picture, then turns about its centre.
         <div
           className="clip-box"
           style={{
@@ -135,6 +135,7 @@ function Media({
             height: t.height,
             overflow: "hidden",
             clipPath: `inset(${t.cropTop * 100}% ${t.cropRight * 100}% ${t.cropBottom * 100}% ${t.cropLeft * 100}%)`,
+            transform: t.rotation ? `rotate(${t.rotation}deg)` : undefined,
           }}
         >
           <Picture
@@ -145,9 +146,7 @@ function Media({
               width: "100%",
               height: "100%",
               objectFit: "fill",
-              opacity,
-              transform: zoom.factor > 1 ? `scale(${zoom.factor})` : undefined,
-              transformOrigin: `${zoom.x * 100}% ${zoom.y * 100}%`,
+              opacity: opacity * (t.opacity ?? 1),
             }}
           />
         </div>
@@ -237,7 +236,7 @@ export function Preview() {
     0.01,
     Math.min((size.width - 90) / width, (size.height - 36) / height),
   );
-  const t = draft ?? selection?.transform;
+  const t = draft ?? (selection && transformAtFrame(selection, frame));
   const bounds = t
     ? {
         x: t.x + t.width * t.cropLeft,
@@ -408,12 +407,16 @@ export function Preview() {
       window.removeEventListener("pointerup", end);
       setDraft(null);
       setSnap({ x: [], y: [] });
-      const doc = clone(useEditor.getState().document),
-        c = doc.clips.find((c) => c.id === selection.id);
-      if (c) {
-        c.transform = latest;
-        void save(doc);
-      }
+      // With keyframes, the edit sets (or adds) the keyframe at the cursor.
+      void save(
+        setTransformAt(
+          useEditor.getState().document,
+          selection.id,
+          useEditor.getState().frame,
+          latest,
+          selection,
+        ),
+      );
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", end, { once: true });
@@ -463,7 +466,9 @@ export function Preview() {
                 <Media
                   key={c.id}
                   clip={
-                    c.id === selected && draft ? { ...c, transform: draft } : c
+                    c.id === selected && draft
+                      ? { ...c, transform: draft, keyframes: [] }
+                      : c
                   }
                   frame={frame}
                   rate={rate}

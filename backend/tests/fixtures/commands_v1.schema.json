@@ -805,6 +805,14 @@
           "title": "Id",
           "type": "string"
         },
+        "keyframes": {
+          "items": {
+            "$ref": "#/$defs/Keyframe"
+          },
+          "maxItems": 1000,
+          "title": "Keyframes",
+          "type": "array"
+        },
         "kind": {
           "enum": [
             "video",
@@ -904,14 +912,6 @@
           },
           "maxItems": 2000,
           "title": "Volumeranges",
-          "type": "array"
-        },
-        "zooms": {
-          "items": {
-            "$ref": "#/$defs/Zoom"
-          },
-          "maxItems": 200,
-          "title": "Zooms",
           "type": "array"
         }
       },
@@ -1137,6 +1137,35 @@
         "itemId"
       ],
       "title": "ItemMarkerTarget",
+      "type": "object"
+    },
+    "Keyframe": {
+      "additionalProperties": true,
+      "description": "The clip's transform at one source frame (docs/features/keyframes.md).\n\nBetween two keyframes every value is interpolated; `ease` shapes the change that starts\nat this keyframe (`smooth` eases in and out). Before the first and after the last\nkeyframe the transform holds.",
+      "properties": {
+        "ease": {
+          "default": "smooth",
+          "enum": [
+            "linear",
+            "smooth"
+          ],
+          "title": "Ease",
+          "type": "string"
+        },
+        "frame": {
+          "minimum": 0,
+          "title": "Frame",
+          "type": "integer"
+        },
+        "transform": {
+          "$ref": "#/$defs/Transform"
+        }
+      },
+      "required": [
+        "frame",
+        "transform"
+      ],
+      "title": "Keyframe",
       "type": "object"
     },
     "LlmProviderName": {
@@ -2481,6 +2510,20 @@
           "title": "Height",
           "type": "number"
         },
+        "opacity": {
+          "default": 1,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Opacity",
+          "type": "number"
+        },
+        "rotation": {
+          "default": 0,
+          "maximum": 3600,
+          "minimum": -3600,
+          "title": "Rotation",
+          "type": "number"
+        },
         "width": {
           "default": 1920,
           "exclusiveMinimum": 0,
@@ -2839,61 +2882,6 @@
         "end"
       ],
       "title": "VolumeRange",
-      "type": "object"
-    },
-    "Zoom": {
-      "additionalProperties": true,
-      "description": "Animated zoom toward a point of the clip's picture (docs/features/clip-effects.md), in\nsource frames.\n\nThe zoom eases in from 1 at `start` to `scale`, holds, and eases back to 1 by `end`.\n`x`/`y` locate the focus point in the picture (0..1, top-left origin); it stays in place.",
-      "properties": {
-        "easeIn": {
-          "default": 9,
-          "minimum": 0,
-          "title": "Easein",
-          "type": "integer"
-        },
-        "easeOut": {
-          "default": 30,
-          "minimum": 0,
-          "title": "Easeout",
-          "type": "integer"
-        },
-        "end": {
-          "exclusiveMinimum": 0,
-          "title": "End",
-          "type": "integer"
-        },
-        "scale": {
-          "default": 2.0,
-          "exclusiveMinimum": 1,
-          "maximum": 8,
-          "title": "Scale",
-          "type": "number"
-        },
-        "start": {
-          "minimum": 0,
-          "title": "Start",
-          "type": "integer"
-        },
-        "x": {
-          "default": 0.5,
-          "maximum": 1,
-          "minimum": 0,
-          "title": "X",
-          "type": "number"
-        },
-        "y": {
-          "default": 0.5,
-          "maximum": 1,
-          "minimum": 0,
-          "title": "Y",
-          "type": "number"
-        }
-      },
-      "required": [
-        "start",
-        "end"
-      ],
-      "title": "Zoom",
       "type": "object"
     }
   },

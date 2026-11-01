@@ -25,6 +25,12 @@ import {
   TIMELINE_ORIGIN as origin,
 } from "../timeline";
 import { useEditor } from "../store";
+import {
+  keyframeOffsets,
+  moveKeyframe,
+  sourceAt,
+  timelineAt,
+} from "../keyframes";
 import { currentRange, togglePlay } from "../playback";
 import { moveHandle, type Handle } from "../range";
 import {
@@ -267,6 +273,7 @@ export function Transport() {
               }}
             />
           ))}
+          <KeyframeLane origin={origin} scale={scale} />
           <div
             className="overview-range"
             data-testid="timeline-range"
@@ -358,5 +365,74 @@ export function Transport() {
         </span>
       </div>
     </section>
+  );
+}
+
+// Keyframes of the selected video clip on the timeline (docs/features/keyframes.md):
+// click to move the cursor there and select it (Delete removes it), drag to move it
+// inside the clip's visible range.
+function KeyframeLane({ origin, scale }: { origin: number; scale: number }) {
+  const { document, selected, save, busy, set } = useEditor();
+  const chosen = useEditor((s) => s.keyframe);
+  const [moving, setMoving] = useState<{ from: number; to: number } | null>(
+    null,
+  );
+  const clip = layout(document).clips.find(
+    (c) => c.id === selected && c.kind === "video",
+  );
+  if (!clip?.keyframes?.length) return null;
+  return (
+    <>
+      {keyframeOffsets(clip).map(({ frame, offset }) => {
+        const shown =
+          moving?.from === frame
+            ? timelineAt(clip, moving.to)
+            : clip.start + offset;
+        return (
+          <button
+            key={frame}
+            className={`timeline-keyframe ${chosen === frame ? "selected" : ""}`}
+            data-testid="timeline-keyframe"
+            aria-label={`Keyframe at ${frame}`}
+            title="Keyframe: click to go there, drag to move, Delete to remove"
+            style={{ left: origin + shown * scale }}
+            disabled={busy}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              const x0 = e.clientX,
+                position = clip.start + offset;
+              let to = frame;
+              set({ frame: position, playing: false, keyframe: frame });
+              const motion = (event: PointerEvent) => {
+                const target = Math.min(
+                  clip.start + duration(clip) - 1,
+                  Math.max(
+                    clip.start,
+                    position + Math.round((event.clientX - x0) / scale),
+                  ),
+                );
+                to = sourceAt(clip, target);
+                setMoving({ from: frame, to });
+                set({ frame: target });
+              };
+              const end = () => {
+                window.removeEventListener("pointermove", motion);
+                setMoving(null);
+                if (to !== frame) {
+                  const next = moveKeyframe(document, clip.id, frame, to);
+                  if (next !== document) {
+                    void save(next);
+                    set({ keyframe: to });
+                  }
+                }
+              };
+              window.addEventListener("pointermove", motion);
+              window.addEventListener("pointerup", end, { once: true });
+            }}
+          />
+        );
+      })}
+    </>
   );
 }

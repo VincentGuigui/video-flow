@@ -15,13 +15,7 @@ import {
   type TransitionType,
 } from "../transitions";
 import { EFFECTS, type EffectDef, type EffectId } from "../effects";
-import {
-  DuckBody,
-  FadeBody,
-  MuteBody,
-  SpeedBody,
-  ZoomBody,
-} from "./EffectBodies";
+import { DuckBody, FadeBody, MuteBody, SpeedBody } from "./EffectBodies";
 
 const TYPES: (TransitionType | "cut")[] = [
   "cut",
@@ -42,7 +36,6 @@ const BODIES: Record<EffectId, (props: { clip: Clip }) => ReactNode> = {
   fadeIn: ({ clip }) => <FadeBody clip={clip} edge="fadeIn" />,
   fadeOut: ({ clip }) => <FadeBody clip={clip} edge="fadeOut" />,
   speed: SpeedBody,
-  zoom: ZoomBody,
   mute: MuteBody,
   duck: DuckBody,
 };

@@ -1,5 +1,5 @@
 import type { Transition } from "./transitions";
-import type { Zoom } from "./zoom";
+import { transformAt, type Keyframe } from "./keyframes";
 import type { VolumeRange } from "./volume";
 import type { Title } from "./titles";
 export interface Transform {
@@ -11,6 +11,8 @@ export interface Transform {
   cropRight: number;
   cropTop: number;
   cropBottom: number;
+  rotation?: number; // degrees, clockwise about the box centre (docs/features/keyframes.md)
+  opacity?: number; // 0..1
 }
 export interface Clip {
   id: string;
@@ -28,7 +30,7 @@ export interface Clip {
   fitMode?: "fit" | "fill";
   heldRange?: { start: number; end: number } | null;
   speed?: number; // 1 = normal; source frames per timeline frame
-  zooms?: Zoom[];
+  keyframes?: Keyframe[]; // animated transform, in source frames
   volumeRanges?: VolumeRange[];
   title?: Title; // text clips only (docs/features/clip-effects.md)
   fadeIn?: number; // frames, edge fade at the clip's start (docs/features/clip-effects.md)
@@ -565,10 +567,19 @@ export function trim(
       }
     }
   }
-  // Text and still clips have no source: their range always starts at 0.
+  // Text and still clips have no source: their range always starts at 0 (keyframes
+  // keep their place in the clip).
   next.clips = next.clips.map((p) =>
     sourceless(p) && p.sourceIn
-      ? { ...p, sourceIn: 0, sourceOut: p.sourceOut - p.sourceIn }
+      ? {
+          ...p,
+          sourceIn: 0,
+          sourceOut: p.sourceOut - p.sourceIn,
+          keyframes: p.keyframes?.map((k) => ({
+            ...k,
+            frame: Math.max(0, k.frame - p.sourceIn),
+          })),
+        }
       : p,
   );
   return ripple ? pack(next) : mergeGaps(next);
@@ -638,7 +649,7 @@ export function nextFitMode(
   if (clip.fitMode) return clip.fitMode === "fit" ? "fill" : "fit";
   const fitted = fitPicture(video, settings);
   return (Object.keys(fitted) as (keyof Transform)[]).every(
-    (k) => Math.abs(fitted[k] - clip.transform[k]) < 0.01,
+    (k) => Math.abs((fitted[k] ?? 0) - (clip.transform[k] ?? 0)) < 0.01,
   )
     ? "fill"
     : "fit";
@@ -674,7 +685,8 @@ export function resize(
         );
         if (
           (Object.keys(expected) as (keyof Transform)[]).some(
-            (k) => Math.abs(expected[k] - c.transform[k]) > 0.00001,
+            (k) =>
+              Math.abs((expected[k] ?? 0) - (c.transform[k] ?? 0)) > 0.00001,
           )
         )
           ref = undefined;
@@ -688,6 +700,10 @@ export function resize(
         ...c,
         resizeReference: ref,
         transform: map(ref.transform, ref.width, ref.height, width, height),
+        keyframes: c.keyframes?.map((k) => ({
+          ...k,
+          transform: map(k.transform, old.width, old.height, width, height),
+        })),
       };
     }),
   };
@@ -793,7 +809,9 @@ export function freezeFrame(
     fadeIn: 0,
     fadeOut: 0,
     heldRange: null,
-    zooms: [],
+    // The freeze keeps the picture as it was at that frame, without animation.
+    transform: clone(transformAt(c, held)),
+    keyframes: [],
     volumeRanges: [],
   };
   base.clips = [

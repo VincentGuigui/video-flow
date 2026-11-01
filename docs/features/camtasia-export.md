@@ -20,6 +20,8 @@ This revision implements EXP-06 for Windows and supersedes [render and export](.
 | Clip start, duration, source in | `start`, `duration`, `mediaStart` in ticks of 705 600 000 per second |
 | Source file | `sourceBin` entry with `src` = original path; source-track `range` in the track's own `editRate` |
 | Position and size | `translation0/1` (pixels from canvas centre, y up) and `scale0/1` (relative to source size), as static parameter values |
+| Rotation, opacity, keyframes | `rotation2` (radians, counter-clockwise) and `opacity` values; keyframes on these and on position and size, in media time ([keyframed transforms](keyframes.md)). Rotation is unverified in Camtasia. |
+| Still images and freeze frames | `IMFile` (one picture) ([still images](still-images.md)) |
 | Clip gain | AMFile `attributes.gain` (linear) |
 | Cross dissolve | `Fade` transition between the two adjacent medias |
 | Dip to black | `FadeThroughBlack` when the template has it, else `Fade` (warning) |

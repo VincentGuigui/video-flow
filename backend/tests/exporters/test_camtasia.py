@@ -8,9 +8,9 @@ from videoflow.editor.models import (
     EditorClip,
     EditorDocument,
     EditorTransition,
+    Keyframe,
     Transform,
     VolumeRange,
-    Zoom,
 )
 from videoflow.editor.resolve import document_for
 from videoflow.exporters import camtasia as cm
@@ -205,21 +205,25 @@ def test_speed_becomes_camtasia_scalar():
     assert v2["duration"] == 25 * TICKS and v2["metadata"]["clipSpeedAttribute"] is True
 
 
-def test_zoom_becomes_scale_and_translation_keyframes():
+def test_keyframes_become_camtasia_keyframes_in_media_time():
     p = project()
     doc = document_for(p)
-    zoom = Zoom(start=20, end=50, scale=2, x=0.25, y=0.25, ease_in=5, ease_out=10)
-    clips = [c.model_copy(update={"zooms": [zoom]}) if c.id == "v2" else c for c in doc.clips]
+    full = Transform(width=1920, height=1080)
+    zoomed = Transform(x=0, y=0, width=3840, height=2160, rotation=90, opacity=0.5)
+    keys = [Keyframe(frame=20, transform=full), Keyframe(frame=25, transform=zoomed)]
+    clips = [c.model_copy(update={"keyframes": keys}) if c.id == "v2" else c for c in doc.clips]
     p, _ = SetEditor(document=doc.model_copy(update={"clips": clips})).apply(p)
     parameters = tracks(json.loads(cm.export_camtasia(p).text))[0]["medias"][1]["parameters"]
     scale = parameters["scale0"]["keyframes"]
     assert [(f["time"], f["duration"], f["value"]) for f in scale] == [
+        (20 * TICKS, 0, 1.0),
         (20 * TICKS, 5 * TICKS, 2.0),
-        (40 * TICKS, 10 * TICKS, 1.0),
     ]
-    # Focus at a quarter of the frame: picture moves right and down (y up) to keep it fixed.
-    assert parameters["translation0"]["keyframes"][0]["value"] == 480.0
-    assert parameters["translation1"]["keyframes"][0]["value"] == -270.0
+    # The doubled picture's centre moves right and down (y up) by half the canvas.
+    assert parameters["translation0"]["keyframes"][1]["value"] == 960.0
+    assert parameters["translation1"]["keyframes"][1]["value"] == -540.0
+    assert parameters["rotation2"]["keyframes"][1]["value"] == round(-3.14159265 / 2, 6)
+    assert parameters["opacity"]["keyframes"][1]["value"] == 0.5
 
 
 def test_volume_ranges_become_camtasia_volume_keyframes():

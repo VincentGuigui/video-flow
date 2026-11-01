@@ -6,9 +6,9 @@ from videoflow.editor.models import (
     EditorClip,
     EditorDocument,
     EditorTransition,
+    Keyframe,
     Transform,
     VolumeRange,
-    Zoom,
 )
 from videoflow.media import ffmpeg
 from videoflow.media.ingest import ingest_files
@@ -157,7 +157,7 @@ def test_atempo_chain_stays_in_range():
     assert _atempo(0.25) == "atempo=0.5,atempo=0.5,"
 
 
-async def test_zoom_magnifies_toward_the_focus_point_and_returns(edit, tmp_path):
+async def test_keyframes_magnify_toward_the_left_edge_and_return(edit, tmp_path):
     quad = tmp_path / "quad.mp4"
     # Left half red, right half blue: zooming on the left edge fills the frame with red.
     made = await ffmpeg.run(
@@ -183,6 +183,7 @@ async def test_zoom_magnifies_toward_the_focus_point_and_returns(edit, tmp_path)
     assert made.ok, made.stderr_tail
     asset = (await ingest_files([quad])).assets[0]
     project = edit.project.model_copy(update={"assets": [*edit.project.assets, asset]})
+    zoomed = Transform(x=0, y=-135, width=640, height=360)
     doc = EditorDocument(
         clips=[
             EditorClip(
@@ -194,7 +195,13 @@ async def test_zoom_magnifies_toward_the_focus_point_and_returns(edit, tmp_path)
                 source_in=0,
                 source_out=50,
                 transform=Transform(width=160, height=90),
-                zooms=[Zoom(start=10, end=40, scale=4, x=0.0, y=0.5, ease_in=5, ease_out=5)],
+                # 400 % anchored on the middle of the left edge between frames 15 and 35.
+                keyframes=[
+                    Keyframe(frame=10, transform=Transform(width=160, height=90)),
+                    Keyframe(frame=15, transform=zoomed),
+                    Keyframe(frame=35, transform=zoomed),
+                    Keyframe(frame=40, transform=Transform(width=160, height=90)),
+                ],
             ),
         ]
     )

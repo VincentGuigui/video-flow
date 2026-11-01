@@ -13,8 +13,7 @@ import {
 import { setFade } from "./transitions";
 import { withVolumeRanges } from "./volume";
 
-export type EffectId =
-  "fadeIn" | "fadeOut" | "speed" | "zoom" | "mute" | "duck";
+export type EffectId = "fadeIn" | "fadeOut" | "speed" | "mute" | "duck";
 
 export interface EffectDef {
   id: EffectId;
@@ -75,19 +74,6 @@ export const EFFECTS: EffectDef[] = [
     summary: (_, clip) => `${Math.round(speedOf(clip) * 100)} %`,
     add: () => null,
     remove: (doc, clip) => setSpeed(doc, clip.id, 1),
-  },
-  {
-    id: "zoom",
-    label: "Zoom & pan",
-    description: "Push in toward a point over a range",
-    applies: (_, clip) => clip.kind === "video",
-    active: (_, clip) => (clip.zooms ?? []).length > 0,
-    summary: (_, clip) => plural((clip.zooms ?? []).length, "zoom"),
-    add: () => null,
-    remove: (doc, clip) => ({
-      ...doc,
-      clips: doc.clips.map((c) => (c.id === clip.id ? { ...c, zooms: [] } : c)),
-    }),
   },
   {
     id: "mute",

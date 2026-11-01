@@ -6,12 +6,12 @@ from pathlib import Path
 from typing import Literal
 
 from videoflow.core.time import Rational, frames, frames_to_samples
+from videoflow.editor.keyframes import animated, keys_of, piecewise, transform_at
 from videoflow.editor.models import EditorClip, EditorDocument, Title
 from videoflow.editor.resolve import document_for, editable_document, validate_assets
 from videoflow.editor.titles import title_png
 from videoflow.editor.transitions import plan_transitions
 from videoflow.editor.volume import volume_expression
-from videoflow.editor.zoom import zoompan_expressions
 from videoflow.project.models import Project
 
 type Preset = Literal["draft", "final"]
@@ -53,14 +53,103 @@ def _window(start: int, end: int, rate: Rational) -> str:
     )
 
 
-def _zoompan(clip: EditorClip, w: int, h: int, fps: str) -> str:
-    """Animated zoom toward the focus point, inside the clip's own frame
-    (docs/features/clip-effects.md)."""
-    expressions = zoompan_expressions(clip)
-    if expressions is None:
-        return ""
-    z, x, y = expressions
-    return f"zoompan=z='{z}':x='{x}':y='{y}':d=1:s={w}x{h}:fps={fps},"
+BORDER = 2
+"""Transparent pixels around the picture, so `perspective` leaves the outside transparent."""
+
+
+def _animated(
+    clip: EditorClip, index: int, out: tuple[int, int], scale: tuple[float, float], rate: Rational
+) -> str:
+    """Per-frame transform of [fg{index}] into a full-frame picture [p{index}]
+    (docs/features/keyframes.md): crop, size, position, rotation and opacity.
+
+    `perspective` maps the (cropped) picture, inside a transparent border, onto the corners
+    of its box rotated about the box centre; its expressions read the source frame from the
+    filter's frame counter.
+    """
+    keys = keys_of(clip)
+    out_w, out_h = out
+    sx, sy = scale
+    position = f"({clip.source_in}+in*{_number(clip.speed)})"
+
+    def value(name: str) -> str:
+        return piecewise(keys, lambda t: float(getattr(t, name)), position)
+
+    steps: list[str] = []
+    crops = [value(n) for n in ("crop_left", "crop_right", "crop_top", "crop_bottom")]
+    left, right, top, bottom = crops
+    if not all(_constant(c) for c in crops):
+        # The crop region stretched to the whole frame, per frame.
+        steps.append(
+            "perspective=sense=source:eval=frame:"
+            f"x0='W*{left}':y0='H*{top}':x1='W*(1-{right})':y1='H*{top}':"
+            f"x2='W*{left}':y2='H*(1-{bottom})':x3='W*(1-{right})':y3='H*(1-{bottom})'"
+        )
+    elif any(float(c) for c in crops):
+        steps.append(
+            f"crop=w='iw*(1-{left}-{right})':h='ih*(1-{top}-{bottom})':x='iw*{left}':y='ih*{top}'"
+        )
+    # Zoomed-in boxes are drawn on a canvas twice the output size, then scaled down.
+    largest = max(
+        max(k.transform.width / out_w * sx, k.transform.height / out_h * sy) for k in keys
+    )
+    k = 2 if largest > 1.25 else 1
+    cw, ch = out_w * k, out_h * k
+    inner_w, inner_h = cw - 2 * BORDER, ch - 2 * BORDER
+    steps.append(
+        f"scale={inner_w}:{inner_h},setsar=1,pad={cw}:{ch}:{BORDER}:{BORDER}:color=black@0"
+    )
+    x, y, w, h = value("x"), value("y"), value("width"), value("height")
+    ax, ay = sx * k, sy * k
+    cx, cy = f"(({x})+({w})/2)*{_number(ax)}", f"(({y})+({h})/2)*{_number(ay)}"
+    # Visible edges relative to the box centre, widened by the border's share.
+    vw = f"((1-{left}-{right})*({w})*{_number(ax)})"
+    vh = f"((1-{top}-{bottom})*({h})*{_number(ay)})"
+    edge_x = f"{vw}*{BORDER}/{inner_w}"
+    edge_y = f"{vh}*{BORDER}/{inner_h}"
+    lx = f"((-0.5+{left})*({w})*{_number(ax)}-{edge_x})"
+    rx = f"((0.5-{right})*({w})*{_number(ax)}+{edge_x})"
+    ty = f"((-0.5+{top})*({h})*{_number(ay)}-{edge_y})"
+    by = f"((0.5-{bottom})*({h})*{_number(ay)}+{edge_y})"
+    rotation = value("rotation")
+    corners = []
+    for dx, dy in ((lx, ty), (rx, ty), (lx, by), (rx, by)):
+        if _constant(rotation) and float(rotation) == 0:
+            corners += [f"{cx}+{dx}", f"{cy}+{dy}"]
+        else:
+            angle = f"({rotation})*PI/180"
+            corners += [
+                f"{cx}+{dx}*cos({angle})-{dy}*sin({angle})",
+                f"{cy}+{dx}*sin({angle})+{dy}*cos({angle})",
+            ]
+    names = ("x0", "y0", "x1", "y1", "x2", "y2", "x3", "y3")
+    steps.append(
+        "perspective=sense=destination:eval=frame:"
+        + ":".join(f"{n}='{c}'" for n, c in zip(names, corners, strict=True))
+    )
+    if k != 1:
+        steps.append(f"scale={out_w}:{out_h}")
+    opacity = value("opacity")
+    if not _constant(opacity):
+        # colorchannelmixer has no time expressions: one command per frame that changes.
+        commands, last = [], None
+        for n in range(clip.duration):
+            v = round(transform_at(clip, clip.source_in + n * clip.speed).opacity, 3)
+            if v != last:
+                commands.append(f"{n * rate.den / rate.num:.4f} colorchannelmixer@o{index} aa {v}")
+                last = v
+        steps.append(f"sendcmd=c='{';'.join(commands)}',colorchannelmixer@o{index}=aa=1")
+    elif float(opacity) != 1:
+        steps.append(f"colorchannelmixer=aa={opacity}")
+    return ",".join(steps)
+
+
+def _constant(expression: str) -> bool:
+    try:
+        float(expression)
+    except ValueError:
+        return False
+    return True
 
 
 def _volume(clip: EditorClip, rate: Rational) -> str:
@@ -262,11 +351,18 @@ def compile_graph(
                     f"repeatlast=0:format=rgb:enable='{enable}'[v{video_count + 1}]"
                 )
                 video_count += 1
-            video.append(
-                f"[fg{index}]scale={w}:{h},{_zoompan(clip, w, h, fps)}"
-                f"crop={crop_w}:{crop_h}:{crop_x}:{crop_y}:exact=1,"
-                f"{timing}[p{index}]"
-            )
+            if animated(clip):
+                # Keyframes, rotation or opacity: drawn on a full frame
+                # (docs/features/keyframes.md).
+                picture = _animated(clip, index, (out_w, out_h), (sx, sy), rate)
+                video.append(f"[fg{index}]{picture},{timing}[p{index}]")
+                x = y = 0
+            else:
+                video.append(
+                    f"[fg{index}]scale={w}:{h},"
+                    f"crop={crop_w}:{crop_h}:{crop_x}:{crop_y}:exact=1,"
+                    f"{timing}[p{index}]"
+                )
             video.append(
                 f"[v{video_count}][p{index}]overlay=x={x}:y={y}:"
                 f"eof_action=pass:repeatlast=0:format=rgb:"

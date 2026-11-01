@@ -198,6 +198,11 @@ def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeli
                         **(
                             {"stillFrame": clip.still_frame} if clip.still_frame is not None else {}
                         ),
+                        **(
+                            {"keyframes": [k.dump() for k in clip.keyframes]}
+                            if clip.keyframes
+                            else {}
+                        ),
                         **({"linkId": clip.link_id} if clip.link_id else {}),
                         **(
                             {"muted": muted}
@@ -222,6 +227,14 @@ def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeli
                 code="editor_titles",
                 message="Titles are rendered and exported to Camtasia; OTIO and EDL carry "
                 "them as gaps (with their text as OTIO metadata).",
+            )
+        )
+    if any(c.keyframes for c in clips):
+        warnings.append(
+            TimelineWarning(
+                code="editor_keyframes",
+                message="Keyframed transforms are rendered and exported to Camtasia; "
+                "OTIO carries them as metadata.",
             )
         )
     if any(c.kind == "video" for c in clips):

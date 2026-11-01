@@ -13,6 +13,7 @@ canvas centre (translation, y up) and relative to the source size (scale).
 
 import copy
 import json
+import math
 from dataclasses import dataclass, field
 from fractions import Fraction
 from pathlib import Path
@@ -20,11 +21,11 @@ from typing import Any
 
 from videoflow.core.time import frames
 from videoflow.editor.fonts import FAMILY
-from videoflow.editor.models import EditorClip, Title
+from videoflow.editor.keyframes import keys_of
+from videoflow.editor.models import EditorClip, Title, Transform
 from videoflow.editor.resolve import document_for, editable_document
 from videoflow.editor.titles import layout_title, title_lines
 from videoflow.editor.transitions import active_transitions
-from videoflow.editor.zoom import ramps
 from videoflow.project.models import Asset, Project, ProjectSettings
 
 EDIT_RATE = 705_600_000
@@ -499,10 +500,13 @@ def export_camtasia(
             media.update(mediaStart=ticks(clip.still_frame), mediaDuration=1, scalar=1)
         media.setdefault("attributes", {})["ident"] = clip.name
         parameters = media.setdefault("parameters", {})
-        placement = _placement(clip, assets[clip.asset_id or ""], settings)
+        asset = assets[clip.asset_id or ""]
+        placement = _placement(keys_of(clip)[0].transform, asset, settings)
         for key, value in placement.items():
             _set(parameters, key, value)
-        for key, keyframes in _zoom_keyframes(clip, placement, ticks).items():
+        for key, keyframes in _transform_keyframes(clip, asset, settings, ticks).items():
+            if key not in parameters:
+                _set(parameters, key, keyframes[0]["value"])
             parameters[key]["keyframes"] = keyframes
         return media
 
@@ -780,56 +784,52 @@ def _volume_keyframes(clip: EditorClip, ticks: Any) -> list[dict[str, Any]]:
     return keyframes
 
 
-def _zoom_keyframes(
-    clip: EditorClip, base: dict[str, float], ticks: Any
+def _transform_keyframes(
+    clip: EditorClip, asset: Asset, settings: ProjectSettings, ticks: Any
 ) -> dict[str, list[dict[str, Any]]]:
-    """Zooms (docs/features/clip-effects.md) as Camtasia keyframes, in media time.
+    """Keyframes (docs/features/keyframes.md) as Camtasia keyframes, in media time.
 
-    Camtasia scales a clip about its centre; translation moves so the focus point stays in
-    place. A keyframe ramps from the previous value at `time` to `value` at `endTime`.
+    A Camtasia keyframe ramps from the previous value at `time` to `value` at `endTime`;
+    the first one sets the value at its time. Only values that change get keyframes.
     """
-    result: dict[str, list[dict[str, Any]]] = {k: [] for k in base}
-    t = clip.transform
-    for zoom in sorted(clip.zooms, key=lambda z: z.start):
-        if zoom.end <= clip.source_in or zoom.start >= clip.source_out:
+    keys = clip.keyframes
+    if len(keys) < 2:
+        return {}
+    values = [_placement(k.transform, asset, settings) for k in keys]
+    neutral = {"rotation2": 0.0, "opacity": 1.0}
+    result: dict[str, list[dict[str, Any]]] = {}
+    for name in dict.fromkeys(n for v in values for n in v):
+        series = [v.get(name, neutral.get(name, 0.0)) for v in values]
+        if all(v == series[0] for v in series):
             continue
-        ease_in, ease_out = ramps(zoom)
-        k = zoom.scale
-        dx = (t.width / 2 - zoom.x * t.width) * (k - 1)
-        dy = (t.height / 2 - zoom.y * t.height) * (k - 1)
-        zoomed = {
-            "scale0": base["scale0"] * k,
-            "scale1": base["scale1"] * k,
-            "translation0": base["translation0"] + dx,
-            "translation1": base["translation1"] - dy,  # Camtasia y points up
-        }
-        for time, length, values in (
-            (zoom.start, ease_in, zoomed),
-            (zoom.end - ease_out, ease_out, base),
-        ):
-            for key, value in values.items():
-                start, span = ticks(time), ticks(length)
-                result[key].append(
-                    {
-                        "endTime": start + span,
-                        "time": start,
-                        "value": round(value, 6),
-                        "duration": span,
-                    }
-                )
-    return {k: v for k, v in result.items() if v}
+        frames = [k.frame for k in keys]
+        result[name] = [
+            {
+                "endTime": ticks(frame),
+                "time": ticks(frames[max(0, i - 1)]),
+                "value": series[i],
+                "duration": ticks(frame) - ticks(frames[max(0, i - 1)]),
+            }
+            for i, frame in enumerate(frames)
+        ]
+    return result
 
 
-def _placement(clip: EditorClip, asset: Asset, settings: ProjectSettings) -> dict[str, float]:
-    """Centre offset (y up) and scale relative to the source size."""
+def _placement(t: Transform, asset: Asset, settings: ProjectSettings) -> dict[str, float]:
+    """Centre offset (y up), scale relative to the source size, rotation (radians,
+    counter-clockwise) and opacity."""
     video = asset.probe.video
     width, height = (video.width, video.height) if video else (settings.width, settings.height)
     if video and video.rotation in (90, 270):
         width, height = height, width
-    t = clip.transform
-    return {
+    values = {
         "translation0": round(t.x + t.width / 2 - settings.width / 2, 4),
         "translation1": round(settings.height / 2 - (t.y + t.height / 2), 4),
         "scale0": round(t.width / width, 6),
         "scale1": round(t.height / height, 6),
     }
+    if t.rotation:
+        values["rotation2"] = round(-math.radians(t.rotation), 6)
+    if t.opacity != 1:
+        values["opacity"] = round(t.opacity, 6)
+    return values
