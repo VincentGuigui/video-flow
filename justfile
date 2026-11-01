@@ -24,4 +24,4 @@ build:
 
 # Frontend, then the one-folder desktop app in releases/Video-Flow
 package: build
-    uv run --project backend --inexact --extra desktop --group packaging pyinstaller --noconfirm --distpath releases --workpath .cache/pyinstaller scripts/desktop.spec
+    uv run --project backend --inexact --extra desktop --group packaging python scripts/package_release.py

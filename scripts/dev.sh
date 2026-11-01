@@ -17,8 +17,9 @@ case "$cmd" in
     build_frontend
     cd "$ROOT"
     # --inexact keeps the installed inference extras; desktop and PyInstaller are added.
+    # package_release.py keeps models/, tools/, settings.json... beside the executable.
     exec uv run --project backend --inexact --extra desktop --group packaging \
-      pyinstaller --noconfirm --distpath releases --workpath .cache/pyinstaller scripts/desktop.spec
+      python scripts/package_release.py
     ;;
 esac
 cd "$ROOT/backend"
