@@ -76,7 +76,7 @@ uv run videoflow export C:\Rushes\demo.videoflow --otioz
 uv run videoflow export C:\Rushes\demo.videoflow --srt --transcripts words.json
 ```
 
-The input may also be a `project.json` file. With no format flags, export defaults to OTIO. Files are written to the bundle's `exports/` folder, or `--output DIRECTORY`. Use `--overwrite` to replace existing exports. Each run produces `edit.report.json` with resolver warnings and format limitations. `--include-alternates` adds disabled alternate-take tracks to OTIO/OTIOZ.
+The input may also be a `project.json` file. With no format flags, export defaults to OTIO. Files are written to the bundle's `exports/` folder, or `--output DIRECTORY`. Use `--overwrite` to replace existing exports. Each run produces `edit.report.json` with resolver warnings and format limitations. `--include-alternates` adds a disabled track to OTIO/OTIOZ for every disabled video clip (an unpicked take), at its position.
 
 SRT takes a JSON object mapping asset IDs to transcript objects, for example:
 

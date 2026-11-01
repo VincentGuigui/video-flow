@@ -93,7 +93,7 @@ For an editor document, `editor/resolve.py` `resolve_editor` builds the `Resolve
 
 | Format | Files | Content |
 |--------|-------|---------|
-| `otio` | `edit.otio` | Every lane as a track (overlapping clips split onto extra tracks), gaps, markers; dissolve as `SMPTE_Dissolve`, dips as `Custom`, with in/out offsets; `videoflow` metadata on the timeline and every clip (transform, layer, speed, title, gain). `--include-alternates` adds disabled `ALT` tracks (legacy beats only) |
+| `otio` | `edit.otio` | Every lane as a track (overlapping clips split onto extra tracks), gaps, markers; dissolve as `SMPTE_Dissolve`, dips as `Custom`, with in/out offsets; `videoflow` metadata on the timeline and every clip (transform, layer, speed, title, gain). `--include-alternates` adds a disabled `ALT` track per disabled video clip (unpicked take) at its position, or per unused take of legacy beats |
 | `otioz` | `edit.otioz` | The same timeline zipped with each original once under `media/` (fails before publication if a file is missing) |
 | `edl` | `edit.edl`, `edit.reels.json` | CMX 3600, V1 only, non-drop timecode, reels `R0000001`… mapped to paths in JSON and comments; dissolves and dips as `D` events; ≤ 999 events |
 | `srt` | `edit.srt` | Words of `A1` mapped from source to timeline, fillers removed, cues ≤ 2 × 42 characters, ≤ 6 s, split on sentence ends, pauses > 0.6 s and clip changes, ≥ 1 s where room allows, no overlap |

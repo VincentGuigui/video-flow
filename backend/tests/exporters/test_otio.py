@@ -106,6 +106,43 @@ def test_alternates_are_disabled_and_optional():
     assert result.duration().value == resolved.duration
 
 
+def test_editor_alternates_are_disabled_takes_at_their_position():
+    from videoflow.editor.models import EditorClip, EditorDocument
+    from videoflow.editor.resolve import resolve_editor
+    from videoflow.project.commands import SetEditor
+
+    project = ProjectBuilder().asset("a", 20 * S).asset("b", 20 * S).build()
+
+    def take(id, asset, start, layer, enabled=True):
+        return EditorClip(
+            id=id,
+            kind="video",
+            asset_id=asset,
+            name=id,
+            start=start,
+            source_in=0,
+            source_out=60,
+            layer=layer,
+            enabled=enabled,
+        )
+
+    doc = EditorDocument(
+        clips=[
+            take("t1", "a", 0, 0),
+            take("t2", "b", 60, 0),
+            take("alt", "b", 60, 1, enabled=False),
+        ]
+    )
+    project, _ = SetEditor(document=doc).apply(project)
+    resolved = resolve_editor(project, doc)
+    result = compile_timeline(resolved, project, include_alternates=True)
+    alt = next(t for t in result.tracks if t.name.startswith("ALT"))
+    assert alt.name == "ALT alt" and not alt.enabled
+    assert alt[0].source_range.duration.value == 60  # gap up to the take's slot
+    assert alt[1].metadata["videoflow"]["itemId"] == "alt"
+    assert result.duration().value == resolved.duration == 120
+
+
 def test_file_urls_escape_windows_and_posix_paths():
     assert media_url("C:\\Rushes\\take 1 é.mp4").startswith("file:///C:/Rushes/take%201%20")
     assert media_url("/rushes/take 1.mp4") == "file:///rushes/take%201.mp4"

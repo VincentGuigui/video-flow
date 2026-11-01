@@ -5,7 +5,9 @@ from typing import Any
 
 import opentimelineio as otio
 
-from videoflow.core.time import frames
+from videoflow.core.time import frame_to_us, frames
+from videoflow.editor.models import layout
+from videoflow.editor.resolve import document_for
 from videoflow.project.models import Project
 from videoflow.timeline.handles import split
 from videoflow.timeline.resolved import ResolvedClip, ResolvedTimeline, ResolvedTransition
@@ -165,6 +167,45 @@ def compile_timeline(
                     )
                 )
                 timeline.tracks.append(track)
+    if include_alternates and (document := document_for(project)) is not None:
+        # Interactive edits: every disabled video clip (an unpicked take) on its own track.
+        for alternate in document.clips:
+            if alternate.enabled or alternate.kind != "video" or alternate.asset_id not in assets:
+                continue
+            trial = document.model_copy(
+                update={
+                    "clips": [
+                        c.model_copy(update={"enabled": True}) if c.id == alternate.id else c
+                        for c in document.clips
+                    ]
+                }
+            )
+            placed, _ = layout(trial)
+            start = min(next(c.start for c in placed if c.id == alternate.id), resolved.duration)
+            duration = min(alternate.duration, max(0, resolved.duration - start))
+            if not duration:
+                continue
+            track = otio.schema.Track(name=f"ALT {alternate.name}", kind="Video")
+            track.enabled = False
+            track.source_range = time_range(0, resolved.duration)
+            if start:
+                track.append(otio.schema.Gap(source_range=time_range(0, start)))
+            track.append(
+                child(
+                    ResolvedClip(
+                        item_id=alternate.id,
+                        track="V2",
+                        asset_id=alternate.asset_id or "",
+                        timeline_start=start,
+                        duration=duration,
+                        source_in_us=frame_to_us(alternate.source_in, resolved.rate),
+                        source_out_us=frame_to_us(alternate.source_out, resolved.rate),
+                        source_in_frame=alternate.source_in,
+                    ),
+                    "video",
+                )
+            )
+            timeline.tracks.append(track)
     for marker in resolved.markers:
         timeline.tracks.markers.append(
             otio.schema.Marker(
