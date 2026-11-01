@@ -11,10 +11,12 @@ from videoflow import samples
 
 @pytest.fixture(autouse=True, scope="session")
 def _isolated_cache(tmp_path_factory: pytest.TempPathFactory) -> None:
-    """Project caches go to a temporary root, never beside the repository."""
+    """Project caches and the recent-projects list go to temporary files, never the repo."""
     import os
 
     os.environ["VIDEOFLOW_CACHE_DIR"] = str(tmp_path_factory.mktemp("cache"))
+    recent = tmp_path_factory.mktemp("app") / "recent-projects.json"
+    os.environ["VIDEOFLOW_RECENT_PROJECTS"] = str(recent)
 
 
 @pytest.fixture(scope="session")

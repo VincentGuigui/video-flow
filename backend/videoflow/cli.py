@@ -42,15 +42,27 @@ def desktop(
         typer.echo("Desktop runtime missing. Install with: uv sync --extra desktop", err=True)
         raise typer.Exit(1) from exc
     if project is None:
-        from videoflow.project.library import ProjectLibrary
+        from videoflow.project.library import LEGACY_SUFFIX, ProjectLibrary, is_project
+        from videoflow.runtime import application_dir, recent_projects_file
 
-        # The project library: reopen the last saved project, else start an untitled one.
-        root = Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local" / "share"))
-        library = ProjectLibrary(root / "Video-Flow")
-        latest = library.latest() if library.root.is_dir() else None
+        library = ProjectLibrary(recent_projects_file())
+        if not library.entries():
+            # Projects of earlier versions lived in a per-user library: list them once.
+            legacy = Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local" / "share"))
+            for old in sorted((legacy / "Video-Flow").glob(f"*{LEGACY_SUFFIX}")):
+                if is_project(old):
+                    library.add(Bundle(old))
+        latest = library.latest()
         if latest is not None:
             raise typer.Exit(run_desktop(latest))
-        project = root / "Video-Flow" / "Untitled.videoflow"
+        # No project yet: start on the home page; an internal placeholder backs the API.
+        placeholder = application_dir() / "placeholder.video-flow"
+        bundle = (
+            Bundle(placeholder)
+            if (placeholder / "project.json").exists()
+            else Bundle.create(placeholder, new_project("Untitled"))
+        )
+        raise typer.Exit(run_desktop(bundle, project_open=False))
     path = project.resolve()
     bundle = (
         Bundle(path)
@@ -75,7 +87,7 @@ def desktop_check(media: Path, output: Path, features: bool = False) -> None:
 @app.command()
 def serve(
     project: Annotated[Path, typer.Option(help="Project bundle to open or create.")] = Path(
-        "edit.videoflow"
+        "edit.video-flow"
     ),
     port: Annotated[int, typer.Option(min=1024, max=65535)] = 8765,
     media_root: Annotated[

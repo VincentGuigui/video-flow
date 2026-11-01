@@ -17,7 +17,7 @@ One process serves one open project at a time. The home screen closes it first (
 ## Startup
 
 1. `videoflow` with no subcommand runs `videoflow desktop`, and so do `scripts/run.sh` and `scripts/run.ps1` without arguments. The run scripts prepend `tools/ffmpeg/` to `PATH` when it exists. They use `backend/.venv` when it exists, and `uv run --extra desktop` otherwise. In a packaged build, `desktop_entry.py` calls `multiprocessing.freeze_support()` and then the same CLI. If the windowed executable has no console streams, its output goes to `Video-Flow/logs/desktop.log` under `%LOCALAPPDATA%`, or under `~/.local/share` on Linux.
-2. `videoflow desktop [--project PATH]` opens the given bundle, or creates it if `project.json` is missing. Without `--project`, it reopens the most recently saved project in the `Video-Flow` library under the same per-user data folder, or creates `Video-Flow/Untitled.videoflow` when the library is empty. The folder that holds the bundle is the project library listed on the home screen. If PySide6 is missing, the command says to install the `desktop` extra.
+2. `videoflow desktop [--project PATH]` opens the given bundle, or creates it if `project.json` is missing. Without `--project`, it reopens the most recent project of `recent-projects.json` (projects of the earlier per-user library are added to it once); with none, it starts on the home page with an internal placeholder bundle (`placeholder.video-flow` beside the executable) that the user never sees. If PySide6 is missing, the command says to install the `desktop` extra.
 3. `run_desktop` binds port 0 on `127.0.0.1` to pick a free port. It then creates a random launch token and a separate random desktop secret, and starts the backend thread. It waits up to 15 seconds for uvicorn to report that it has started, and fails if the thread dies first.
 4. The window (1440×980, minimum 850×720) loads `http://127.0.0.1:PORT/?token=TOKEN`. The backend checks the token and answers with a 303 redirect to `/`. The redirect sets an `HttpOnly`, `SameSite=Strict` `videoflow` cookie, so the token does not stay in the URL. Later requests authenticate with the cookie.
 5. At document creation, an injected script loads `qwebchannel.js` from Qt resources and connects to the host object. It sets `window.__videoflowDesktop = true` and exposes `window.videoFlowDesktop`. When the channel is ready, it dispatches `videoflow-ready`. The script runs in the main frame only.
@@ -70,6 +70,7 @@ The host object is registered on the `QWebChannel` as `desktop`. The injected sc
 | JS call / event | Host side | Effect |
 |-----------------|-----------|--------|
 | `pickFiles()` | `QFileDialog.getOpenFileNames`, filtered to media extensions | Issues grants, then `videoflow-selection` with `{selections, assetId: null}` |
+| `pickFolder(purpose)` | `QFileDialog.getExistingDirectory` | Issues a folder handle (`workdir` for a new project, `project` for a `.video-flow` folder) through `/api/desktop/folder`, then `videoflow-folder` with `{handle, name, path, purpose}` |
 | `relink(assetId)` | `QFileDialog.getOpenFileName` | Issues one grant bound to `assetId`, then `videoflow-selection` |
 | `saveRenderedVideo(id)` | `QFileDialog.getSaveFileName` for `*.mp4` | Calls `/api/desktop/render-save` |
 | `setZoom(factor)` | `QWebEngineView.setZoomFactor`, clamped to 0.5–2.0 | Page zoom |
@@ -98,7 +99,7 @@ While a dialog is open (Settings, import, help, save, project home dialogs), the
 
 ## Browser diagnostic mode
 
-`videoflow serve [--project PATH] [--port 8765] [--media-root DIR ...] [--no-open-browser]` runs the same API and interface in a normal browser. It prints the launch URL with its token and, unless disabled, opens it after 1.5 seconds. The default project is `edit.videoflow`. It differs from the desktop app in these ways:
+`videoflow serve [--project PATH] [--port 8765] [--media-root DIR ...] [--no-open-browser]` runs the same API and interface in a normal browser. It prints the launch URL with its token and, unless disabled, opens it after 1.5 seconds. The default project is `edit.video-flow` in the current folder. It differs from the desktop app in these ways:
 
 - There is no bridge and no desktop secret. Native selection, relink and render-save endpoints answer 403. `GET /api/project` reports `desktop: false`.
 - Import uses typed paths through `/api/import-path`. A path is accepted only if it is under a `--media-root`, which defaults to the bundle's parent folder, and has a media extension. File drops show a message instead of importing.

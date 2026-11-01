@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from videoflow.api.app import create_app
 from videoflow.editor.analysis import AnalysisFile, cached_path, load_analysis, store_analysis
 from videoflow.editor.resolve import document_for
+from videoflow.project.library import ProjectLibrary
 from videoflow.project.models import new_project
 from videoflow.project.store import Bundle
 
@@ -35,6 +36,7 @@ def app_bundle(tmp_path):
         token="test-token",
         desktop_secret="host-secret",
         media_roots=[tmp_path / "browser-root"],
+        library=ProjectLibrary(tmp_path / "recent-projects.json"),
     )
     return app, bundle
 
@@ -67,39 +69,82 @@ def await_job(client, job_id):
     raise AssertionError("Import did not finish")
 
 
-def test_save_copy_home_and_scoped_projects(client, app_bundle):
+def test_save_copy_home_and_scoped_projects(client, app_bundle, tmp_path):
     _, original = app_bundle
     identifier = original.project.id
     response = client.post("/api/project/save", json={"baseRevision": 0, "name": "First"})
     assert response.status_code == 200, response.text
-    assert original.project.name == "First"
+    assert client.get("/api/project").json()["project"]["name"] == "First"
+    assert (tmp_path / "project" / "First.video-flow" / "project.json").is_file()
+    revision = client.get("/api/project").json()["project"]["revision"]
     assert client.post("/api/project/save", json={"baseRevision": 0}).status_code == 409
     response = client.post(
-        "/api/project/save",
-        json={
-            "baseRevision": original.project.revision,
-            "name": "Second",
-            "copy": True,
-        },
+        "/api/project/save", json={"baseRevision": revision, "name": "Second", "copy": True}
     )
     assert response.status_code == 200, response.text
-    second = client.get("/api/project").json()["project"]
-    assert second["id"] != identifier
-    assert len(client.get("/api/projects").json()) == 2
-    assert (
-        client.post("/api/projects/action", json={"kind": "open", "id": identifier}).status_code
-        == 200
-    )
+    second = client.get("/api/project").json()
+    assert second["project"]["id"] != identifier and second["open"]
+    assert (tmp_path / "project" / "Second.video-flow").is_dir()  # beside the original
+    assert [e["name"] for e in client.get("/api/projects").json()] == ["Second", "First"]
+    opened = client.post("/api/projects/action", json={"kind": "open", "id": identifier})
+    assert opened.status_code == 200
     assert client.get("/api/project").json()["project"]["name"] == "First"
-    assert (
-        client.post("/api/projects/action", json={"kind": "delete", "id": second["id"]}).status_code
-        == 200
+    removed = client.post(
+        "/api/projects/action", json={"kind": "remove", "id": second["project"]["id"]}
     )
-    assert len(client.get("/api/projects").json()) == 1
+    assert removed.status_code == 200
+    assert [e["name"] for e in client.get("/api/projects").json()] == ["First"]
+    assert (tmp_path / "project" / "Second.video-flow").is_dir()  # files untouched
+    bad = client.post("/api/projects/action", json={"kind": "open", "id": "../other"})
+    assert bad.status_code == 422
+
+
+def test_new_and_open_projects_through_native_folder_selections(client, tmp_path):
+    work = tmp_path / "Holiday"
+    work.mkdir()
+
+    def folder(path, purpose):
+        response = client.post(
+            "/api/desktop/folder",
+            headers={"X-VideoFlow-Desktop": "host-secret"},
+            json={"path": str(path), "purpose": purpose},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()["handle"]
+
     assert (
-        client.post("/api/projects/action", json={"kind": "open", "id": "../other"}).status_code
+        client.post(
+            "/api/desktop/folder", json={"path": str(work), "purpose": "workdir"}
+        ).status_code
+        == 403
+    )  # the renderer cannot name folders
+    handle = folder(work, "workdir")
+    created = client.post(
+        "/api/projects/action", json={"kind": "new", "name": "Day 1", "folder": handle}
+    )
+    assert created.status_code == 200, created.text
+    assert (work / "Day 1.video-flow" / "project.json").is_file()
+    reused = client.post(
+        "/api/projects/action", json={"kind": "new", "name": "Day 2", "folder": handle}
+    )
+    assert reused.status_code == 422  # handles are single use
+    assert (
+        client.post(
+            "/api/desktop/folder",
+            headers={"X-VideoFlow-Desktop": "host-secret"},
+            json={"path": str(work), "purpose": "project"},
+        ).status_code
         == 422
+    )  # not a project folder
+    client.post("/api/projects/action", json={"kind": "close"})
+    assert not client.get("/api/project").json()["open"]
+    opened = client.post(
+        "/api/projects/action",
+        json={"kind": "open", "folder": folder(work / "Day 1.video-flow", "project")},
     )
+    assert opened.status_code == 200, opened.text
+    project = client.get("/api/project").json()
+    assert project["open"] and project["project"]["name"] == "Day 1"
 
 
 def test_render_api_progress_download_and_native_save(client, original, tmp_path):
@@ -337,15 +382,15 @@ def test_cache_lists_sizes_opens_root_and_clears(client, app_bundle, monkeypatch
     assert next(p for p in after["projects"] if p["current"])["size"] < 1000
 
 
-def test_close_and_rename_release_and_move_the_open_project(client, app_bundle):
+def test_close_and_rename_release_and_move_the_open_project(client, app_bundle, tmp_path):
     _, original = app_bundle
     identifier = original.project.id
     revision = client.get("/api/project").json()["project"]["revision"]
     response = client.post("/api/project/save", json={"baseRevision": revision, "name": "Cut A"})
     assert response.status_code == 200, response.text
-    folders = [e["path"] for e in client.get("/api/projects").json()]
-    assert len(folders) == 1 and Path(folders[0]).name.startswith("Cut A-")
-    assert client.get("/api/project").json()["project"]["name"] == "Cut A"
+    assert [Path(e["path"]).name for e in client.get("/api/projects").json()] == [
+        "Cut A.video-flow"
+    ]
     closed = client.post("/api/projects/action", json={"kind": "close"})
     assert closed.status_code == 200, closed.text
     renamed = client.post(
@@ -353,7 +398,7 @@ def test_close_and_rename_release_and_move_the_open_project(client, app_bundle):
     )
     assert renamed.status_code == 200, renamed.text
     entry = client.get("/api/projects").json()[0]
-    assert entry["name"] == "Cut B" and Path(entry["path"]).name.startswith("Cut B-")
+    assert entry["name"] == "Cut B" and Path(entry["path"]).name == "Cut B.video-flow"
     opened = client.post("/api/projects/action", json={"kind": "open", "id": identifier})
     assert opened.status_code == 200
     assert client.get("/api/project").json()["project"]["name"] == "Cut B"

@@ -2,6 +2,12 @@ export interface NativeFile {
   handle: string;
   name: string;
 }
+export interface NativeFolder {
+  handle: string;
+  name: string;
+  path: string;
+  purpose: "workdir" | "project";
+}
 export interface NativeSelection {
   selections: NativeFile[];
   assetId: string | null;
@@ -14,6 +20,7 @@ declare global {
       setZoom: (factor: number) => void;
       saveRenderedVideo: (id: string) => void;
       relink: (assetId: string) => void;
+      pickFolder: (purpose: "workdir" | "project") => void;
     };
   }
 }

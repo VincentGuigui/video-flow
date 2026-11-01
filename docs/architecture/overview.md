@@ -17,14 +17,14 @@ flowchart LR
   QT -- "native selections<br/>(desktop secret)" --> API
   API --> FF["ffmpeg / ffprobe<br/>subprocesses"]
   API --> W["ML worker processes<br/>(spawn)"]
-  API --> B[("*.videoflow bundle")]
+  API --> B[("<name>.video-flow bundle")]
 ```
 
 - **Desktop host** (`desktop/host.py`, `videoflow desktop`): picks a free loopback port, starts uvicorn in a thread, opens a `QMainWindow` with a `QWebEngineView` on `http://127.0.0.1:<port>/?token=…`. Navigation and requests are restricted to that origin. A `QWebChannel` bridge exposes only native file dialogs, OS file drops, relink, interface zoom and "save rendered video". Closing the window shuts down the server, which cancels imports, renders and downloads and stops their child processes. Details: [desktop shell](desktop-shell.md).
 - **Browser mode** (`videoflow serve`): the same API and SPA for diagnostics; the launch URL is printed and opened in the browser. Imports go through `POST /api/import-path`, limited to `--media-root` folders (default: the bundle's parent).
 - **Authentication** (`api/app.py` middleware): requests must carry the exact `Host` (and `Origin`, when present) of the loopback server. `/?token=` is exchanged once for an `HttpOnly`, `SameSite=Strict` cookie `videoflow`; every other request needs that cookie. Native-only endpoints also require the `x-videoflow-desktop` secret that only the Qt host holds.
 - **Trusted sources**: a native selection is turned into single-use handles (`desktop/grants.py`); the SPA imports or relinks only through a handle. `PATCH /api/project` accepts `SetEditor`, `SetSettings`, `RenameProject`, `RemoveAsset`, `Batch`, and `AddAsset` / `RelinkAsset` only for sources the server already trusts, so the interface cannot introduce arbitrary file paths. Byte uploads are disabled.
-- **One project per process**: the API holds one open bundle; the project library (`project/library.py`) creates, opens, renames and deletes bundles next to it and switches the open one when no import or render is running. The default desktop project is `Video-Flow/Untitled.videoflow` under `%LOCALAPPDATA%` (Windows) or `~/.local/share` (Linux).
+- **One project per process**: the API holds one open bundle (or, on the home page, an unseen placeholder with `open: false`). `project/library.py` creates projects in a working folder, opens, renames and copies them, and keeps the recent list (`recent-projects.json` beside the executable); see [projects](../features/projects.md). Switching closes the import queue, worker processes and renders first, and is refused while an import or render runs.
 - **Packaging**: `scripts/desktop.spec` (PyInstaller) with `desktop_entry.py` builds a standalone folder that bundles the built SPA; Node, uv and Vite are not needed at runtime. Application files (`settings.json`, `models/`, `templates/`) live beside the executable (`runtime.py`).
 
 ## 2. Repository layout
@@ -64,7 +64,7 @@ flowchart LR
 React 19, Vite and Zustand; no other state or UI framework (icons from `lucide-react`).
 
 - **Pure logic** (`*.ts`, each with a `*.test.ts`): `model.ts` (edit document types, layout, lanes, linking; mirrors `editor/models.py`), `transitions.ts`, `volume.ts`, `zoom.ts` and `titles.ts` (mirrors of the backend modules of the same name, kept in step), `range.ts`, `snap.ts`, `compare.ts`, `transcript.ts`, `zones.ts`, `timeline.ts`, `playback.ts`, `desktop.ts` (Qt bridge and media URLs).
-- **UI** (`ui/`): `App.tsx` (editor shell), `Home.tsx` (project library), `Flow.tsx` (clip flow), `Preview.tsx`, `Transport.tsx`, `Transcript.tsx`, `Compare.tsx`, `Imports.tsx`, `RenderPanel.tsx`, `Settings.tsx`, `ProjectSave.tsx` and property controls.
+- **UI** (`ui/`): `App.tsx` (editor shell), `Home.tsx` (recent projects, new, open), `Flow.tsx` (clip flow), `Preview.tsx`, `Transport.tsx`, `Transcript.tsx`, `Compare.tsx`, `Imports.tsx`, `RenderPanel.tsx`, `Settings.tsx`, `ProjectSave.tsx` and property controls.
 - **State** (`store.ts`): one Zustand store holds the project, the edit document, selection, zone, focus, cursor frame, range and the undo/redo stacks.
 - **Saving**: every edit sends the whole document as `{baseRevision, commands: [SetEditor, ...]}` through `PATCH /api/project`. The backend applies the batch atomically, bumps the revision and returns the project, the resolved editor document and the inverse commands. A stale `baseRevision` is rejected with 409 and the store reloads.
 - **Undo/redo**: the client owns the stacks (last 100 steps). Undo sends the stored inverses as a new batch and pushes the returned inverses on the redo stack. Imports return their inverses too, so an import is one undo step.
@@ -132,7 +132,7 @@ All under `/api`, JSON in camelCase.
 
 ## 9. Project bundle
 
-A `*.videoflow` folder: `project.json` (schema-versioned decisions, including the editor document), `history.jsonl` (write-ahead command log, replayed on load), `project.v<N>.bak.json` after a migration, `analysis/` (analysis sidecar cache), `features/`, `cache/`, `exports/`, `renders/`. Writes are atomic (temp file, fsync, rename). Details: [data model](data-model.md).
+A `<name>.video-flow` folder in the working folder: `project.json` (schema-versioned decisions, including the editor document), `history.jsonl` (write-ahead command log, replayed on load), `project.v<N>.bak.json` after a migration, `analysis/` (analysis sidecar cache), `features/`, `cache/`, `exports/`, `renders/`. Writes are atomic (temp file, fsync, rename). Details: [data model](data-model.md).
 
 The edit document holds clips in integer project-rate frames: video, audio, empty and text clips on numbered lanes, linked video/audio pairs and transitions. Render compiles it into FFmpeg filter graphs; exporters read the same edit through the timeline resolver. See [render and export](render-export.md).
 

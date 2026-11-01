@@ -46,6 +46,8 @@ interface State {
   future: Command[][];
   roots: string[];
   offline: string[];
+  // No project open (home page): the server keeps an unseen placeholder.
+  closed: boolean;
   load: () => Promise<void>;
   save: (
     doc: Document,
@@ -62,6 +64,7 @@ interface Result {
   inverses: Command[];
   mediaRoots?: string[];
   offline?: string[];
+  open?: boolean;
 }
 export const useEditor = create<State>((set, get) => ({
   project: null,
@@ -82,6 +85,7 @@ export const useEditor = create<State>((set, get) => ({
   future: [],
   roots: [],
   offline: [],
+  closed: false,
   // Picking one clip ends a multiple selection.
   set: (values) =>
     set(
@@ -92,6 +96,16 @@ export const useEditor = create<State>((set, get) => ({
   load: async () => {
     try {
       const r = await api<Result>("/project");
+      if (r.open === false) {
+        set({
+          closed: true,
+          project: null,
+          document: { version: 1, clips: [] },
+          history: [],
+          future: [],
+        });
+        return;
+      }
       if (get().project?.id !== r.project.id) {
         pendingClipUpdates.clear();
         clearTimeout(editTimer);
@@ -111,6 +125,7 @@ export const useEditor = create<State>((set, get) => ({
               future: [],
             }
           : {}),
+        closed: false,
         project: r.project,
         document: r.editor,
         roots: r.mediaRoots ?? [],

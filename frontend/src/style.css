@@ -2509,3 +2509,22 @@ button.timecode:hover {
 .app:has(.modal-backdrop) .modal-backdrop {
   visibility: visible;
 }
+.home-actions {
+  display: flex;
+  gap: 10px;
+}
+.project-list small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.folder-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+.folder-choice .button {
+  justify-content: flex-start;
+  overflow-wrap: anywhere;
+  text-align: left;
+}

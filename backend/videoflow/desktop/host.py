@@ -39,13 +39,20 @@ LOG = logging.getLogger(__name__)
 class Backend:
     """An owned server thread; its lifespan closes imports and their child processes."""
 
-    def __init__(self, bundle: Bundle, port: int, roots: list[Path] | None) -> None:
+    def __init__(
+        self, bundle: Bundle, port: int, roots: list[Path] | None, project_open: bool = True
+    ) -> None:
         import uvicorn
 
         self.token, self.secret = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
         self.origin = f"http://127.0.0.1:{port}"
         app = create_app(
-            bundle, token=self.token, port=port, media_roots=roots, desktop_secret=self.secret
+            bundle,
+            token=self.token,
+            port=port,
+            media_roots=roots,
+            desktop_secret=self.secret,
+            project_open=project_open,
         )
         self.server = uvicorn.Server(
             uvicorn.Config(
@@ -91,6 +98,21 @@ class Backend:
         request = urllib.request.Request(
             self.origin + "/api/desktop/selection",
             data=body,
+            headers={
+                "Content-Type": "application/json",
+                "Cookie": f"videoflow={self.token}",
+                "X-VideoFlow-Desktop": self.secret,
+            },
+        )
+        with urllib.request.urlopen(request, timeout=10) as response:
+            result: dict[str, Any] = json.load(response)
+            return result
+
+    def folder(self, path: Path, purpose: str) -> dict[str, Any]:
+        """A single-use handle for a natively selected working or project folder."""
+        request = urllib.request.Request(
+            self.origin + "/api/desktop/folder",
+            data=json.dumps({"path": str(path), "purpose": purpose}).encode(),
             headers={
                 "Content-Type": "application/json",
                 "Cookie": f"videoflow={self.token}",
@@ -173,6 +195,7 @@ class LocalRequests(QWebEngineUrlRequestInterceptor):
 
 class NativeBridge(QObject):
     filesSelected = Signal(str)
+    folderSelected = Signal(str)
     failed = Signal(str)
 
     def __init__(self, window: QMainWindow, view: QWebEngineView, backend: Backend) -> None:
@@ -209,6 +232,27 @@ class NativeBridge(QObject):
             self.window, "Import original media", "", f"Video and audio ({extensions})"
         )
         self.select([Path(path) for path in paths])
+
+    @Slot(str)
+    def pickFolder(self, purpose: str) -> None:
+        """A working folder for a new project, or an existing `.video-flow` project folder."""
+        if not self.trusted() or purpose not in ("workdir", "project"):
+            return
+        title = (
+            "Choose the working folder (with your media)"
+            if purpose == "workdir"
+            else "Open a Video-Flow project folder (.video-flow)"
+        )
+        path = QFileDialog.getExistingDirectory(self.window, title)
+        if not path:
+            return
+        try:
+            self.folderSelected.emit(json.dumps(self.backend.folder(Path(path), purpose)))
+        except urllib.error.HTTPError as exc:
+            detail = json.loads(exc.read() or b"{}").get("detail", str(exc))
+            self.failed.emit(str(detail))
+        except (OSError, ValueError) as exc:
+            self.failed.emit(f"Could not use {path}: {exc}")
 
     @Slot(str)
     def relink(self, asset_id: str) -> None:
@@ -305,7 +349,10 @@ new QWebChannel(qt.webChannelTransport, function(channel) {
   const host = channel.objects.desktop;
   window.videoFlowDesktop = {pickFiles: () => host.pickFiles(),
     setZoom: factor => host.setZoom(factor),
-    relink: id => host.relink(id), saveRenderedVideo: id => host.saveRenderedVideo(id)};
+    relink: id => host.relink(id), saveRenderedVideo: id => host.saveRenderedVideo(id),
+    pickFolder: purpose => host.pickFolder(purpose)};
+  host.folderSelected.connect(value => window.dispatchEvent(
+    new CustomEvent('videoflow-folder', {detail: JSON.parse(value)})));
   host.filesSelected.connect(value => window.dispatchEvent(
     new CustomEvent('videoflow-selection', {detail: JSON.parse(value)})));
   host.failed.connect(message => window.dispatchEvent(
@@ -355,7 +402,13 @@ def group_taskbar_entry() -> None:
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_USER_MODEL_ID)
 
 
-def run_desktop(bundle: Bundle, *, port: int = 0, roots: list[Path] | None = None) -> int:
+def run_desktop(
+    bundle: Bundle,
+    *,
+    port: int = 0,
+    roots: list[Path] | None = None,
+    project_open: bool = True,
+) -> int:
     if not port:
         with socket.socket() as candidate:
             candidate.bind(("127.0.0.1", 0))
@@ -365,7 +418,7 @@ def run_desktop(bundle: Bundle, *, port: int = 0, roots: list[Path] | None = Non
     app.setApplicationName("Video-Flow")
     app.setOrganizationName("Video-Flow")
     QApplication.setWindowIcon(app_icon())
-    backend = Backend(bundle, port, roots)
+    backend = Backend(bundle, port, roots, project_open)
     app.aboutToQuit.connect(backend.close)
     try:
         backend.start()

@@ -39,10 +39,10 @@ from videoflow.media.proxy import build_proxy
 from videoflow.preferences import Preferences, load_preferences, save_preferences
 from videoflow.project import cache
 from videoflow.project.commands import Command, RelinkAsset
-from videoflow.project.library import ProjectLibrary
+from videoflow.project.library import ProjectLibrary, open_bundle
 from videoflow.project.store import Bundle, ProjectStoreError, StaleRevisionError
 from videoflow.render.jobs import Renders
-from videoflow.runtime import cache_root, open_folder
+from videoflow.runtime import cache_root, open_folder, recent_projects_file
 
 
 class Patch(CamelModel):
@@ -71,9 +71,18 @@ class RenderSave(CamelModel):
 
 
 class ProjectAction(CamelModel):
-    kind: Literal["new", "open", "close", "rename", "delete"]
+    kind: Literal["new", "open", "close", "rename", "remove"]
     id: str | None = None
     name: str = "Untitled"
+    folder: str | None = None
+    """Handle of a native folder selection (desktop)."""
+    path: str | None = None
+    """A typed folder path under a media root (browser mode only)."""
+
+
+class NativeFolder(CamelModel):
+    path: str
+    purpose: Literal["workdir", "project"]
 
 
 class ProjectSave(CamelModel):
@@ -102,8 +111,13 @@ def create_app(
     frontend: Path | None = None,
     desktop_secret: str | None = None,
     allow_uploads: bool = False,
+    library: ProjectLibrary | None = None,
+    project_open: bool = True,
 ) -> FastAPI:
-    library = ProjectLibrary(bundle.path.parent)
+    """`project_open=False` starts on the home page with `bundle` as an unseen placeholder."""
+    library = library or ProjectLibrary(recent_projects_file())
+    if project_open:
+        library.add(bundle)
     preferences = load_preferences()
     downloads = ModelDownloads()
     imports = Imports(bundle, preferences=preferences, require_models=True)
@@ -118,7 +132,6 @@ def create_app(
     grants = SelectionGrants()
     trusted_assets = {a.id: a.dump() for a in bundle.project.assets}
     trusted_paths = {a.id: {a.path} for a in bundle.project.assets}
-    project_open = True  # False on the home page, after the project was closed
 
     def check_commands(commands: list[Command]) -> None:
         # The renderer cannot manufacture source paths through general project commands.
@@ -250,6 +263,7 @@ def create_app(
             "editor": editable_document(p).dump(),
             "mediaRoots": [str(p) for p in roots],
             "desktop": desktop_secret is not None,
+            "open": project_open,
             "offline": await asyncio.to_thread(
                 lambda: [a.id for a in p.assets if not Path(a.path).is_file()]
             ),
@@ -301,6 +315,25 @@ def create_app(
         await switch_project(bundle)
         await switch_project(await asyncio.to_thread(library.rename, bundle, name))
 
+    async def project_folder(payload: ProjectAction, purpose: str) -> Path:
+        """The folder of a project action: a native selection, or a path under a media root."""
+        if payload.folder:
+            return grants.consume_folder(payload.folder, purpose)
+        if payload.path and desktop_secret is None:
+
+            def check(typed: str) -> Path:
+                folder = Path(typed).expanduser().resolve()
+                if not any(folder == r or folder.is_relative_to(r) for r in roots):
+                    raise ValueError("Use a folder under a --media-root")
+                if not folder.is_dir():
+                    raise ValueError(f"Folder not found: {folder}")
+                if purpose == "project" and not (folder / "project.json").is_file():
+                    raise ValueError(f"{folder} is not a Video-Flow project folder")
+                return folder
+
+            return await asyncio.to_thread(check, payload.path)
+        raise ValueError("Choose a folder first")
+
     @app.get("/api/projects")
     async def projects() -> Any:
         return await asyncio.to_thread(library.entries)
@@ -317,10 +350,20 @@ def create_app(
                 if renders.active:
                     raise HTTPException(409, "Finish or cancel renders before managing projects")
                 if payload.kind == "new":
-                    await switch_project(await asyncio.to_thread(library.create, payload.name))
+                    folder = await project_folder(payload, "workdir")
+                    created = await asyncio.to_thread(library.create, folder, payload.name)
+                    await switch_project(created)
                     project_open = True
                 elif payload.kind == "open":
-                    await switch_project(await asyncio.to_thread(library.find, payload.id or ""))
+                    target = (
+                        await asyncio.to_thread(library.find, payload.id)
+                        if payload.id
+                        else await asyncio.to_thread(
+                            open_bundle, await project_folder(payload, "project")
+                        )
+                    )
+                    library.add(target)
+                    await switch_project(target)
                     project_open = True
                 elif payload.kind == "close":
                     # Home page: release workers, renders and file handles of the project.
@@ -334,11 +377,7 @@ def create_app(
                     )
                     await rename_project(target, payload.name)
                 else:
-                    if payload.id == bundle.project.id and project_open:
-                        await switch_project(await asyncio.to_thread(library.create, "Untitled"))
-                    elif payload.id == bundle.project.id:
-                        await switch_project(bundle)  # closed: just let go of its files
-                    await asyncio.to_thread(library.delete, payload.id or "")
+                    library.remove(payload.id or "")  # the folder itself is left untouched
             except (ValueError, OSError, ProjectStoreError) as exc:
                 raise HTTPException(422, str(exc)) from exc
             return {"ok": True}
@@ -358,7 +397,7 @@ def create_app(
                     ):
                         raise HTTPException(409, "Finish or cancel imports before Save as")
                     target = await asyncio.to_thread(
-                        library.create, payload.name or "Untitled copy", bundle
+                        library.create, bundle.path.parent, payload.name or "Untitled copy", bundle
                     )
                     await switch_project(target)
                 elif payload.name is not None:
@@ -455,6 +494,19 @@ def create_app(
             return {
                 "selections": grants.issue([Path(p) for p in payload.paths], payload.asset_id),
                 "assetId": payload.asset_id,
+            }
+        except (OSError, ValueError) as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @app.post("/api/desktop/folder")
+    async def native_folder(payload: NativeFolder, request: Request) -> Any:
+        supplied = request.headers.get("x-videoflow-desktop", "")
+        if desktop_secret is None or not secrets.compare_digest(supplied, desktop_secret):
+            raise HTTPException(403, "Native host authentication required")
+        try:
+            return {
+                **grants.issue_folder(Path(payload.path), payload.purpose),
+                "purpose": payload.purpose,
             }
         except (OSError, ValueError) as exc:
             raise HTTPException(422, str(exc)) from exc

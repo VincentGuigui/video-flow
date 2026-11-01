@@ -112,7 +112,9 @@ export function App() {
     [exporting, setExporting] = useState(false);
   const picker = useRef<HTMLInputElement>(null);
   const resolved = layout(document),
-    rate = project ? fps(project.settings) : 30;
+    rate = project ? fps(project.settings) : 30,
+    // The home page shows when the logo closed the project or none is open at launch.
+    showHome = home || state.closed;
   const selectedClip = document.clips.find((c) => c.id === selected),
     focused = resolved.clips.find((c) => c.id === focus);
   useEffect(() => {
@@ -198,6 +200,7 @@ export function App() {
         target.closest('input,textarea,select,[contenteditable="true"]') ||
         settings ||
         home ||
+        useEditor.getState().closed ||
         importFiles ||
         help ||
         output ||
@@ -307,6 +310,7 @@ export function App() {
       return;
     }
     set({
+      closed: true,
       project: null,
       document: { version: 1, clips: [] },
       selected: null,
@@ -439,8 +443,11 @@ export function App() {
           </button>
         </div>
       </header>
-      {home && <Home onClose={() => setHome(false)} />}
-      <div className="workspace" style={home ? { display: "none" } : undefined}>
+      {showHome && <Home onClose={() => setHome(false)} />}
+      <div
+        className="workspace"
+        style={showHome ? { display: "none" } : undefined}
+      >
         <aside
           className={`media-library ${state.zone === "media" ? "zone-active" : ""}`}
           onPointerDownCapture={() => set({ zone: "media" })}

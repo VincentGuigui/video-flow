@@ -1,6 +1,6 @@
 # Data model and project format
 
-A project is a `*.videoflow` folder. Its `project.json` holds a schema-versioned `Project` (`backend/videoflow/project/models.py`) whose `editor` field carries the interactive edit, the `EditorDocument` (`backend/videoflow/editor/models.py`, mirrored in `frontend/src/model.ts`). Exporters and the renderer read the edit through one resolved, frame-quantised timeline. See [overview](overview.md) for the components, [analysis pipeline](analysis-pipeline.md) for derived data and [render and export](render-export.md) for the consumers.
+A project is a `<name>.video-flow` folder inside the user's working folder ([projects](../features/projects.md)). Its `project.json` holds a schema-versioned `Project` (`backend/videoflow/project/models.py`) whose `editor` field carries the interactive edit, the `EditorDocument` (`backend/videoflow/editor/models.py`, mirrored in `frontend/src/model.ts`). Exporters and the renderer read the edit through one resolved, frame-quantised timeline. See [overview](overview.md) for the components, [analysis pipeline](analysis-pipeline.md) for derived data and [render and export](render-export.md) for the consumers.
 
 ## Conventions
 

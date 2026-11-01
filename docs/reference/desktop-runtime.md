@@ -4,7 +4,7 @@ Video-Flow uses PySide6 and Qt WebEngine to host the built React interface. Norm
 
 ## Development
 
-Install `uv sync --extra desktop --extra cpu` in `backend/`, then `npm install` and `npm run build` in `frontend/`. Run `videoflow desktop --project PATH.videoflow`. Native picks and drops use single-use, file-scoped grants; the browser renderer receives opaque handles, not arbitrary filesystem capabilities. Typed-path diagnostic imports retain configured-root restrictions. Browser uploads are disabled by default and are always disabled in the desktop host.
+Install `uv sync --extra desktop --extra cpu` in `backend/`, then `npm install` and `npm run build` in `frontend/`. Run `videoflow desktop --project PATH.video-flow`. Native picks and drops use single-use, file-scoped grants; the browser renderer receives opaque handles, not arbitrary filesystem capabilities. Typed-path diagnostic imports retain configured-root restrictions. Browser uploads are disabled by default and are always disabled in the desktop host.
 
 The selected Qt WebEngine build may lack H.264/AAC codecs. The frontend checks codec support and requests a cached VP9/Opus WebM playback proxy when needed. The existing H.264 SDR proxy remains the normalization stage for video. These are generated caches, never copies of original rushes. The renderer has no general local-file access and cannot navigate to privileged external pages.
 

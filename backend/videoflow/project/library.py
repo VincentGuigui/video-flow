@@ -1,14 +1,26 @@
-"""Project operations scoped to the application's project directory."""
+"""Projects in working folders, and the list of recently used projects.
 
+A project is a `<name>.video-flow` folder inside the user's working folder, next to (or
+above) the original media it references with relative paths. Copying the working
+folder copies a working project. The application keeps only a list of recent
+projects (`recent-projects.json` beside the executable); projects live where the user
+put them.
+"""
+
+import contextlib
 import json
+import os
 import re
 import shutil
-import uuid
 from pathlib import Path
 
 from videoflow.project.commands import RenameProject
 from videoflow.project.models import new_project
 from videoflow.project.store import Bundle
+
+SUFFIX = ".video-flow"
+LEGACY_SUFFIX = ".videoflow"
+MAX_RECENT = 20
 
 
 def project_name(name: str) -> str:
@@ -18,93 +30,129 @@ def project_name(name: str) -> str:
     return name
 
 
+def folder_name(name: str) -> str:
+    """A file-system safe `<name>.video-flow` on Windows and Linux."""
+    safe = re.sub(r'[<>:"/\\|?*]', "", project_name(name)).strip(" .")[:80] or "Project"
+    return safe + SUFFIX
+
+
+def is_project(path: Path) -> bool:
+    return (path / "project.json").is_file()
+
+
+def open_bundle(path: Path) -> Bundle:
+    if not is_project(path):
+        raise ValueError(f"{path} is not a Video-Flow project")
+    bundle = Bundle(path.resolve())
+    bundle.load()
+    return bundle
+
+
 class ProjectLibrary:
-    def __init__(self, root: Path) -> None:
-        self.root = root.resolve()
+    def __init__(self, recent_file: Path) -> None:
+        self.recent_file = recent_file
+
+    # -- recent list -------------------------------------------------------------
+
+    def _paths(self) -> list[Path]:
+        try:
+            data = json.loads(self.recent_file.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return []
+        return [Path(p) for p in data if isinstance(p, str)] if isinstance(data, list) else []
+
+    def _write(self, paths: list[Path]) -> None:
+        unique = list(dict.fromkeys(str(p) for p in paths))[:MAX_RECENT]
+        with contextlib.suppress(OSError):
+            self.recent_file.parent.mkdir(parents=True, exist_ok=True)
+            self.recent_file.write_text(json.dumps(unique, indent=2), encoding="utf-8")
+
+    def add(self, bundle: Bundle) -> None:
+        """Put a project first in the recent list."""
+        path = bundle.path.resolve()
+        self._write([path, *[p for p in self._paths() if p != path]])
+
+    def remove(self, identifier: str) -> None:
+        """Forget a project; its folder is left untouched."""
+        keep = [Path(e["path"]) for e in self.entries() if e["id"] != identifier]
+        self._write(keep)
 
     def entries(self) -> list[dict[str, str]]:
+        """Recent projects that still exist, most recent first."""
         entries = []
-        for path in self.root.glob("*.videoflow"):
-            if path.is_symlink() or path.resolve().parent != self.root:
-                continue
+        for path in self._paths():
             try:
                 data = json.loads((path / "project.json").read_bytes())
-                entries.append({"id": data["id"], "name": data["name"], "path": str(path)})
+                entries.append(
+                    {
+                        "id": data["id"],
+                        "name": data["name"],
+                        "path": str(path),
+                        "folder": str(path.parent),
+                    }
+                )
             except (OSError, ValueError, KeyError):
                 continue
-        return sorted(entries, key=lambda e: e["name"].casefold())
+        return entries
 
     def latest(self) -> Bundle | None:
-        """The most recently saved project, opened at launch."""
-        paths = [Path(e["path"]) for e in self.entries()]
-        if not paths:
-            return None
-        bundle = Bundle(max(paths, key=lambda p: (p / "project.json").stat().st_mtime))
-        bundle.load()
-        return bundle
+        """The most recently used project, opened at launch."""
+        for entry in self.entries():
+            with contextlib.suppress(OSError, ValueError):
+                return open_bundle(Path(entry["path"]))
+        return None
 
     def find(self, identifier: str) -> Bundle:
         entries = [e for e in self.entries() if e["id"] == identifier]
         if len(entries) != 1:
             raise ValueError("Unknown or ambiguous project")
-        bundle = Bundle(entries[0]["path"])
-        bundle.load()
-        return bundle
+        return open_bundle(Path(entries[0]["path"]))
 
-    def folder(self, name: str, suffix: str | None = None) -> Path:
-        """`<name>-<suffix>.videoflow`: readable, and unique through the suffix."""
-        slug = re.sub(r"[^\w -]", "", project_name(name))[:60].strip() or "Project"
-        return self.root / f"{slug}-{suffix or uuid.uuid4().hex[:12]}.videoflow"
+    # -- projects ----------------------------------------------------------------
 
-    def create(self, name: str, source: Bundle | None = None) -> Bundle:
+    def create(self, folder: Path, name: str, source: Bundle | None = None) -> Bundle:
+        """A new project (or a copy of `source`) as `<folder>/<name>.video-flow`."""
         name = project_name(name)
-        path = self.folder(name)
+        if not folder.is_dir():
+            raise ValueError(f"Working folder not found: {folder}")
+        path = folder.resolve() / folder_name(name)
+        if path.exists():
+            raise ValueError(f"{path.name} already exists in {folder}")
         project = new_project(name)
         if source is not None:
             project = source.project.model_copy(
-                deep=True,
-                update={
-                    "id": project.id,
-                    "name": name,
-                    "revision": 0,
-                },
+                deep=True, update={"id": project.id, "name": name, "revision": 0}
             )
-            # Reference originals by their existing absolute paths, never duplicate media.
+            base = path.parent
             for asset in project.assets:
-                asset.rel_path = None
+                # Media keep working from the new folder through their relative paths.
+                with contextlib.suppress(ValueError):
+                    asset.rel_path = Path(os.path.relpath(asset.path, base)).as_posix()
                 if asset.model_extra:
                     asset.model_extra.pop("previewPath", None)
         target = Bundle.create(path, project)
         if source is not None:
-            for folder in ("analysis", "features"):
-                shutil.copytree(source.path / folder, target.path / folder, dirs_exist_ok=True)
+            for sub in ("analysis", "features"):
+                if (source.path / sub).is_dir():
+                    shutil.copytree(source.path / sub, target.path / sub, dirs_exist_ok=True)
+        self.add(target)
         return target
 
     def rename(self, bundle: Bundle, name: str) -> Bundle:
-        """Rename the project and its folder (keeping its unique suffix); returns the bundle.
+        """Rename the project and its folder (`<name>.video-flow`); returns the bundle.
 
         The caller must have closed everything that uses the bundle's files.
         """
         bundle.commit(bundle.project.revision, [RenameProject(name=project_name(name))])
-        match = re.search(r"-([0-9a-f]{12})$", bundle.path.stem)
-        target = self.folder(name, match.group(1) if match else None)
-        if target == bundle.path or bundle.path.parent.resolve() != self.root:
+        target = bundle.path.parent / folder_name(name)
+        if target == bundle.path:
             return bundle
         if target.exists():
-            raise ValueError(f"A project folder named {target.name} already exists")
+            raise ValueError(f"{target.name} already exists in {target.parent}")
+        old = bundle.path.resolve()
         try:
             bundle.path.rename(target)
         except PermissionError:
             return bundle  # a file is still in use (Windows): keep the folder, name is saved
-        moved = Bundle(target)
-        moved.load()
-        return moved
-
-    def delete(self, identifier: str) -> None:
-        bundle = self.find(identifier)
-        trash = self.root / ".trash"
-        trash.mkdir(exist_ok=True)
-        if trash.is_symlink() or trash.resolve().parent != self.root:
-            raise ValueError("Invalid project trash directory")
-        # Recoverable deletion: only this registered bundle moves, never its source files.
-        bundle.path.rename(trash / f"{uuid.uuid4().hex}.videoflow")
+        self._write([target.resolve() if p == old else p for p in self._paths()])
+        return open_bundle(target)

@@ -18,6 +18,12 @@ def assets_dir() -> Path:
     return application_dir() / "assets"
 
 
+def recent_projects_file() -> Path:
+    """The list of recently used projects (VIDEOFLOW_RECENT_PROJECTS overrides)."""
+    override = os.environ.get("VIDEOFLOW_RECENT_PROJECTS")
+    return Path(override) if override else application_dir() / "recent-projects.json"
+
+
 def cache_root() -> Path:
     """Rebuildable per-project caches: `cache/<project id>/` beside the executable.
 

@@ -1,4 +1,4 @@
-"""Single-use native selections. Handles confer access to one selected file only."""
+"""Single-use native selections. A handle confers access to one selected file or folder."""
 
 import secrets
 import time
@@ -13,6 +13,8 @@ class Grant:
     path: Path
     asset_id: str | None
     expires: float
+    purpose: str = "media"
+    """"media" (a file), "workdir" (a working folder) or "project" (a project folder)."""
 
 
 class SelectionGrants:
@@ -32,9 +34,34 @@ class SelectionGrants:
             result.append({"handle": handle, "name": canonical.name})
         return result
 
+    def issue_folder(self, path: Path, purpose: str) -> dict[str, str]:
+        """A handle for a working folder, or for a project folder (holding project.json)."""
+        canonical = path.resolve(strict=True)
+        if purpose not in ("workdir", "project") or not canonical.is_dir():
+            raise ValueError(f"Not a folder: {path.name}")
+        if purpose == "project" and not (canonical / "project.json").is_file():
+            raise ValueError(f"{canonical.name} is not a Video-Flow project folder")
+        handle = secrets.token_urlsafe(32)
+        self._grants[handle] = Grant(canonical, None, time.monotonic() + 3600, purpose)
+        return {"handle": handle, "name": canonical.name, "path": str(canonical)}
+
+    def consume_folder(self, handle: str, purpose: str) -> Path:
+        grant = self._grants.get(handle)
+        if grant is None or grant.expires < time.monotonic() or grant.purpose != purpose:
+            raise ValueError("Folder selection is invalid, expired or for another operation")
+        del self._grants[handle]
+        if not grant.path.is_dir():
+            raise ValueError("Selected folder is no longer available")
+        return grant.path
+
     def consume(self, handle: str, *, asset_id: str | None = None) -> Path:
         grant = self._grants.get(handle)
-        if grant is None or grant.expires < time.monotonic() or grant.asset_id != asset_id:
+        if (
+            grant is None
+            or grant.expires < time.monotonic()
+            or grant.asset_id != asset_id
+            or grant.purpose != "media"
+        ):
             raise ValueError("Native file selection is invalid, expired or for another operation")
         del self._grants[handle]
         if not grant.path.is_file():

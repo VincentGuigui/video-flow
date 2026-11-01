@@ -32,7 +32,7 @@ scripts/run.sh --help          # any other arguments go to the videoflow CLI
 ```
 (`scripts\3-run.bat` or `scripts\run.ps1` on Windows; double-clicking `3-run.bat` opens the app.)
 
-Use `videoflow desktop --project PATH.videoflow` to open/create a particular project. Import uses native dialogs and OS file drops: originals stay in place, and derived proxies, thumbnails and waveforms live in the project bundle. Read-only source folders use bundle-cached analysis. Offline sources can be relinked through a native picker without losing edits. `videoflow serve --project PATH.videoflow` is an explicit browser diagnostic option; normal desktop import never uploads or copies original media.
+Projects live in your working folder, next to your media: `<name>.video-flow` with media referenced by relative paths, so the whole folder can be moved or copied. Use `videoflow desktop --project PATH.video-flow` to open/create a particular project. Import uses native dialogs and OS file drops: originals stay in place, and derived proxies, thumbnails and waveforms live in the project bundle. Read-only source folders use bundle-cached analysis. Offline sources can be relinked through a native picker without losing edits. `videoflow serve --project PATH.videoflow` is an explicit browser diagnostic option; normal desktop import never uploads or copies original media.
 
 Keyboard: Space plays the timeline range (start/end markers on the ruler; with a marker selected, 2 s around it); arrows one frame; Shift+arrows one second; Ctrl+arrows ten seconds; Home/End or Ctrl+Shift+arrows timeline bounds; S split; Delete lift with an empty clip; Backspace ripple delete; Ctrl+A select all in the clicked zone; Escape leave clip focus; Ctrl+Z undo, Ctrl+Shift+Z redo. Ctrl+wheel zooms around the pointer. Double-click a clip to focus it with two seconds of context; top trim handles ripple, bottom handles preserve time with empty clips. Shift stretches scale/crop; Alt edits symmetrically.
 
@@ -64,16 +64,16 @@ Everything plays in the preview, renders in the MP4 and is exported to Camtasia;
 
 Use Settings in the editor header to select transcription and summary engines, manage model downloads, set import/export defaults, and see, open or clear the cache (proxies, thumbnails and waveforms of every project, kept outside the projects and rebuilt when needed). Models always live in the application `models/` subdirectory; `VIDEOFLOW_MODELS_DIR` points there. Missing weights require an explicit download action. Compatible analysis JSON is reused first. Deterministic summaries need no generative model; optional Qwen summaries run locally on CPU. Development installs offering both optional engines use `uv sync --extra desktop --extra cpu --extra whisper --extra qwen` in `backend/`.
 
-The logo closes the current project and opens the project library (open, new, rename, delete); renaming also renames the project folder. Save names an untitled project; Save as copies the edit with source references retained and opens the copy. The window title shows the open project, and the app reopens the last saved project at launch. Export → Save as MP4 video renders the enabled edit with progress, cancellation and a native save dialog. Other handoff formats remain available below it.
+The logo closes the current project and opens the home page: recent projects (open, rename, remove from list), New project (name and working folder) and Open project…. Save names an untitled project; Save as copies the edit with source references retained and opens the copy. The window title shows the open project, and the app reopens the last saved project at launch. Export → Save as MP4 video renders the enabled edit with progress, cancellation and a native save dialog. Other handoff formats remain available below it.
 
 ## Export an edit
 
 From `backend/` after installation:
 
 ```powershell
-uv run videoflow export C:\Rushes\demo.videoflow --otio --edl --paper-edit
-uv run videoflow export C:\Rushes\demo.videoflow --otioz
-uv run videoflow export C:\Rushes\demo.videoflow --srt --transcripts words.json
+uv run videoflow export C:\Rushes\demo.video-flow --otio --edl --paper-edit
+uv run videoflow export C:\Rushes\demo.video-flow --otioz
+uv run videoflow export C:\Rushes\demo.video-flow --srt --transcripts words.json
 ```
 
 The input may also be a `project.json` file. With no format flags, export defaults to OTIO. Files are written to the bundle's `exports/` folder, or `--output DIRECTORY`. Use `--overwrite` to replace existing exports. Each run produces `edit.report.json` with resolver warnings and format limitations. `--include-alternates` adds a disabled track to OTIO/OTIOZ for every disabled video clip (an unpicked take), at its position.

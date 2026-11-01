@@ -1,37 +1,51 @@
 import { useEffect, useState } from "react";
-import { Film, Plus, X } from "lucide-react";
+import { Film, FolderOpen, Plus, X } from "lucide-react";
 import { api, useEditor, flushClipUpdates } from "../store";
+import { native, type NativeFolder } from "../desktop";
 
 interface Entry {
   id: string;
   name: string;
   path: string;
+  folder: string;
 }
+type Action =
+  { kind: "new" } | { kind: "open" } | { kind: "rename"; entry: Entry };
+
+// Recent projects. A project is a `<name>.video-flow` folder inside a working folder;
+// in the desktop app folders are chosen natively, in a browser they are typed.
 export function Home({ onClose }: { onClose: () => void }) {
-  const { project, load, set } = useEditor();
+  const { load, set } = useEditor();
   const [projects, setProjects] = useState<Entry[]>([]),
     [busy, setBusy] = useState(false),
-    [action, setAction] = useState<{
-      kind: "new" | "rename" | "delete";
-      entry?: Entry;
-    } | null>(null),
-    [name, setName] = useState("");
+    [action, setAction] = useState<Action | null>(null),
+    [name, setName] = useState(""),
+    [folder, setFolder] = useState<NativeFolder | null>(null),
+    [path, setPath] = useState("");
   const refresh = () =>
     api<Entry[]>("/projects")
       .then(setProjects)
       .catch((e) => set({ error: String(e) }));
   useEffect(() => {
     void refresh();
+    const chosen = (event: Event) => {
+      const detail = (event as CustomEvent<NativeFolder>).detail;
+      if (detail.purpose === "project")
+        void perform({ kind: "open", folder: detail.handle });
+      else setFolder(detail);
+    };
+    window.addEventListener("videoflow-folder", chosen);
+    return () => window.removeEventListener("videoflow-folder", chosen);
   }, []);
-  async function perform(kind: string, id?: string) {
+  async function perform(body: Record<string, unknown>) {
     setBusy(true);
     try {
       await flushClipUpdates();
       await api("/projects/action", {
         method: "POST",
-        body: JSON.stringify({ kind, id, name }),
+        body: JSON.stringify(body),
       });
-      if (kind === "open" || kind === "new") {
+      if (body.kind === "open" || body.kind === "new") {
         set({
           selected: null,
           focus: null,
@@ -50,6 +64,24 @@ export function Home({ onClose }: { onClose: () => void }) {
       setBusy(false);
     }
   }
+  function submit() {
+    if (!action) return;
+    if (action.kind === "rename")
+      void perform({ kind: "rename", id: action.entry.id, name });
+    else if (action.kind === "new")
+      void perform({
+        kind: "new",
+        name,
+        ...(native() ? { folder: folder?.handle } : { path }),
+      });
+    else void perform({ kind: "open", path });
+  }
+  const ready =
+    action?.kind === "rename"
+      ? !!name.trim()
+      : action?.kind === "new"
+        ? !!name.trim() && (native() ? !!folder : !!path.trim())
+        : !!path.trim();
   return (
     <div className="home-page">
       <div className="home-heading">
@@ -58,28 +90,47 @@ export function Home({ onClose }: { onClose: () => void }) {
           <h1>Your projects</h1>
         </div>
       </div>
-      <button
-        className="primary"
-        disabled={busy}
-        onClick={() => {
-          setName("Untitled");
-          setAction({ kind: "new" });
-        }}
-      >
-        <Plus size={16} />
-        New project
-      </button>
+      <div className="home-actions">
+        <button
+          className="primary"
+          disabled={busy}
+          onClick={() => {
+            setName("Untitled");
+            setFolder(null);
+            setPath("");
+            setAction({ kind: "new" });
+          }}
+        >
+          <Plus size={16} />
+          New project
+        </button>
+        <button
+          className="button"
+          disabled={busy}
+          title="Open a <name>.video-flow project folder"
+          onClick={() => {
+            if (native()) window.videoFlowDesktop?.pickFolder("project");
+            else {
+              setPath("");
+              setAction({ kind: "open" });
+            }
+          }}
+        >
+          <FolderOpen size={16} />
+          Open project…
+        </button>
+      </div>
       <div className="project-list">
         {projects.map((entry) => (
           <article key={entry.id}>
             <div>
               <h2>{entry.name}</h2>
-              {entry.id === project?.id && <small>Open project</small>}
+              <small title={entry.path}>{entry.folder}</small>
             </div>
             <button
               className="button"
               disabled={busy}
-              onClick={() => void perform("open", entry.id)}
+              onClick={() => void perform({ kind: "open", id: entry.id })}
             >
               Open
             </button>
@@ -96,12 +147,19 @@ export function Home({ onClose }: { onClose: () => void }) {
             <button
               className="button"
               disabled={busy}
-              onClick={() => setAction({ kind: "delete", entry })}
+              title="Forget this project here; its folder and media are kept"
+              onClick={() => void perform({ kind: "remove", id: entry.id })}
             >
-              Delete
+              Remove from list
             </button>
           </article>
         ))}
+        {!projects.length && (
+          <p className="muted">
+            No recent project. Create one in the folder that holds your media,
+            or open an existing project folder.
+          </p>
+        )}
       </div>
       {action && (
         <div className="modal-backdrop">
@@ -111,27 +169,22 @@ export function Home({ onClose }: { onClose: () => void }) {
             aria-label={`${action.kind} project`}
             onSubmit={(e) => {
               e.preventDefault();
-              void perform(action.kind, action.entry?.id);
+              submit();
             }}
           >
             <div className="modal-heading">
               <h2>
-                {action.kind === "delete"
-                  ? `Delete ${action.entry?.name}?`
-                  : action.kind === "new"
-                    ? "New project"
+                {action.kind === "new"
+                  ? "New project"
+                  : action.kind === "open"
+                    ? "Open project"
                     : "Rename project"}
               </h2>
               <button type="button" onClick={() => setAction(null)}>
                 <X size={18} />
               </button>
             </div>
-            {action.kind === "delete" ? (
-              <p>
-                The project bundle moves to the project trash folder. Original
-                media remains in place.
-              </p>
-            ) : (
+            {action.kind !== "open" && (
               <label>
                 Project name
                 <input
@@ -143,11 +196,46 @@ export function Home({ onClose }: { onClose: () => void }) {
                 />
               </label>
             )}
-            <button
-              className="primary"
-              disabled={busy || (action.kind !== "delete" && !name.trim())}
-            >
-              {action.kind === "delete" ? "Delete project" : "Save"}
+            {action.kind === "new" && native() && (
+              <div className="folder-choice">
+                <span>Working folder (with your media)</span>
+                <button
+                  type="button"
+                  className="button"
+                  onClick={() => window.videoFlowDesktop?.pickFolder("workdir")}
+                >
+                  <FolderOpen size={15} />
+                  {folder ? folder.path : "Choose folder…"}
+                </button>
+              </div>
+            )}
+            {action.kind !== "rename" && !native() && (
+              <label>
+                {action.kind === "new"
+                  ? "Working folder (with your media)"
+                  : "Project folder (.video-flow)"}
+                <input
+                  required
+                  value={path}
+                  onChange={(e) => setPath(e.target.value)}
+                  placeholder="/path/to/folder"
+                />
+              </label>
+            )}
+            {action.kind === "new" && (
+              <p className="muted">
+                The project is saved as{" "}
+                <code>{(name.trim() || "Untitled") + ".video-flow"}</code> in
+                this folder. Media are referenced relative to it, so the whole
+                folder can be moved or copied.
+              </p>
+            )}
+            <button className="primary" disabled={busy || !ready}>
+              {action.kind === "open"
+                ? "Open"
+                : action.kind === "new"
+                  ? "Create project"
+                  : "Save"}
             </button>
           </form>
         </div>

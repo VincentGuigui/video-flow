@@ -1,57 +1,74 @@
+import os
+from pathlib import Path
+
 import pytest
 
-from videoflow.project.library import ProjectLibrary
-from videoflow.project.models import new_project
-from videoflow.project.store import Bundle
+from videoflow.project.library import ProjectLibrary, folder_name
+from videoflow.project.models import Asset, AssetProbe
 
 
-def test_save_copy_and_recoverable_delete(tmp_path):
-    source = Bundle.create(tmp_path / "Untitled.videoflow", new_project("Untitled"))
-    (source.analysis_dir / "words.json").write_text('{"words":[]}')
-    library = ProjectLibrary(tmp_path)
-    source = library.rename(source, "My edit")
-    assert source.project.name == "My edit"
-    assert source.path.name.startswith("My edit-") and source.path.suffix == ".videoflow"
-    copy = library.create("My copy", source)
+def library(tmp_path: Path) -> ProjectLibrary:
+    return ProjectLibrary(tmp_path / "app" / "recent-projects.json")
+
+
+def test_projects_are_named_folders_in_the_working_folder(tmp_path):
+    work = tmp_path / "Trip"
+    work.mkdir()
+    lib = library(tmp_path)
+    bundle = lib.create(work, "Day one")
+    assert bundle.path == (work / "Day one.video-flow").resolve()
+    assert [e["name"] for e in lib.entries()] == ["Day one"]
+    assert lib.entries()[0]["folder"] == str(work.resolve())
+    with pytest.raises(ValueError, match="already exists"):
+        lib.create(work, "Day one")
+    with pytest.raises(ValueError):
+        lib.create(work, " ")
+    with pytest.raises(ValueError, match="not found"):
+        lib.create(tmp_path / "missing", "X")
+    assert folder_name('a/b:c*?"<>|') == "abc.video-flow"
+
+
+def test_save_as_copies_beside_the_original_and_keeps_media_relative(tmp_path):
+    work = tmp_path / "work"
+    (work / "rushes").mkdir(parents=True)
+    clip = work / "rushes" / "a.mp4"
+    clip.write_bytes(b"x")
+    lib = library(tmp_path)
+    source = lib.create(work, "Cut")
+    project = source.project
+    project.assets = [
+        Asset(id="ast_a", path=str(clip), content_hash="h", probe=AssetProbe(duration_us=1))
+    ]
+    source.save(project)
+    (source.analysis_dir / "words.json").write_text("{}")
+    copy = lib.create(work, "Cut copy", source)
     assert copy.project.id != source.project.id
-    assert (copy.analysis_dir / "words.json").read_text() == '{"words":[]}'
-    assert not list(copy.cache_dir.rglob("*.mp4"))
-    assert library.find(copy.project.id).project.name == "My copy"
-    library.delete(copy.project.id)
-    assert len(library.entries()) == 1
-    assert list((tmp_path / ".trash").glob("*/project.json"))
-    assert source.exists()
+    assert copy.project.assets[0].rel_path == "rushes/a.mp4"
+    assert (copy.analysis_dir / "words.json").read_text() == "{}"
+    assert [e["name"] for e in lib.entries()] == ["Cut copy", "Cut"]
 
 
-def test_names_cannot_escape_project_root(tmp_path):
-    library = ProjectLibrary(tmp_path)
-    bundle = library.create("../../outside")
-    assert bundle.path.parent == tmp_path
-    with pytest.raises(ValueError):
-        library.find("../../outside")
-    with pytest.raises(ValueError):
-        library.create(" ")
+def test_rename_moves_the_folder_and_updates_the_list(tmp_path):
+    lib = library(tmp_path)
+    bundle = lib.create(tmp_path, "Draft")
+    (bundle.analysis_dir / "x.json").write_text("{}")
+    renamed = lib.rename(bundle, "Final cut")
+    assert renamed.path == (tmp_path / "Final cut.video-flow").resolve()
+    assert not bundle.path.exists() and (renamed.analysis_dir / "x.json").is_file()
+    assert lib.find(renamed.project.id).project.name == "Final cut"
+    assert lib.entries()[0]["path"] == str(renamed.path)
 
 
-def test_rename_moves_the_folder_and_keeps_its_suffix(tmp_path):
-    library = ProjectLibrary(tmp_path)
-    bundle = library.create("Draft")
-    (bundle.cache_dir / "proxies" / "p.mp4").write_bytes(b"x")
-    suffix = bundle.path.stem.rsplit("-", 1)[1]
-    renamed = library.rename(bundle, "Final cut")
-    assert renamed.path == tmp_path / f"Final cut-{suffix}.videoflow"
-    assert not bundle.path.exists()
-    assert (renamed.cache_dir / "proxies" / "p.mp4").read_bytes() == b"x"
-    assert library.find(renamed.project.id).project.name == "Final cut"
-    other = library.rename(library.create("Other"), "Final cut")
-    assert other.path != renamed.path  # same name, distinct folders
-
-
-def test_latest_is_the_most_recently_saved_project(tmp_path):
-    import os
-
-    library = ProjectLibrary(tmp_path)
-    assert library.latest() is None
-    first, second = library.create("First"), library.create("Second")
-    os.utime(first.project_file, (1, 1))
-    assert library.latest().project.id == second.project.id
+def test_recent_list_order_removal_and_latest(tmp_path):
+    lib = library(tmp_path)
+    assert lib.latest() is None
+    first = lib.create(tmp_path, "First")
+    second = lib.create(tmp_path, "Second")
+    assert lib.latest().project.id == second.project.id
+    lib.add(first)
+    assert lib.latest().project.id == first.project.id
+    lib.remove(first.project.id)
+    assert [e["name"] for e in lib.entries()] == ["Second"]
+    assert first.path.is_dir()  # removing from the list never deletes files
+    os.rename(second.path, tmp_path / "moved.video-flow")
+    assert lib.entries() == [] and lib.latest() is None
