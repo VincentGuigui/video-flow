@@ -3,13 +3,15 @@
   Video-Flow installer for Windows 11 (x64 and ARM64).
 .DESCRIPTION
   Installs uv (if missing), Python 3.13, the backend with the accelerator extra matching the
-  detected hardware, FFmpeg >= 6.1 (static build in tools\ffmpeg) and checks Node 22 + pnpm
-  (only needed to build the frontend).
+  detected hardware, FFmpeg >= 6.1 (after your consent, a pinned and checksum-verified static
+  build in tools\ffmpeg) and checks Node 22 + pnpm (only needed to build the frontend).
 .PARAMETER CpuOnly
   Skip hardware detection, install the CPU extra.
 .PARAMETER Extra
   Extras to install (repeatable). Accelerator extras are mutually exclusive:
   cpu | openvino | cuda | directml | qnn. Others: whisper.
+.PARAMETER Yes
+  Accept the FFmpeg download without asking.
 .PARAMETER NoFfmpeg
   Do not check or install FFmpeg.
 .PARAMETER NoFrontendCheck
@@ -21,6 +23,7 @@
 param(
     [switch]$CpuOnly,
     [string[]]$Extra = @(),
+    [switch]$Yes,
     [switch]$NoFfmpeg,
     [switch]$NoFrontendCheck
 )
@@ -29,15 +32,27 @@ $Root = Split-Path -Parent $PSScriptRoot
 $FfmpegMin = [version]'6.1'
 $IsArm = ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') -or ($env:PROCESSOR_ARCHITEW6432 -eq 'ARM64')
 
-# Pinned static builds (override with VIDEOFLOW_FFMPEG_URL / VIDEOFLOW_FFMPEG_SHA256).
+# Pinned static build for x64, the same as backend\videoflow\media\ffmpeg_install.py (a test
+# checks it). FFmpeg is a separate GPL-3.0 program built and distributed by gyan.dev; it is
+# installed unchanged with its licence files. The full build is used because the sample
+# generator needs flite. No build is pinned for ARM64: set both VIDEOFLOW_FFMPEG_URL and
+# VIDEOFLOW_FFMPEG_SHA256 to use another archive (the checksum is always verified).
 if ($IsArm) {
-    $DefaultUrl = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-winarm64-gpl-7.1.zip'
+    $DefaultUrl = $null
+    $DefaultSha256 = $null
 } else {
-    # The sample generator needs flite, which is absent from the essentials build.
     $DefaultUrl = 'https://github.com/GyanD/codexffmpeg/releases/download/7.1.1/ffmpeg-7.1.1-full_build.zip'
+    $DefaultSha256 = 'd760e1b3574402ed18b4865851f87d87e73965a982e6453212df8621fed1c508'
 }
-$FfmpegUrl = if ($env:VIDEOFLOW_FFMPEG_URL) { $env:VIDEOFLOW_FFMPEG_URL } else { $DefaultUrl }
-$FfmpegSha256 = $env:VIDEOFLOW_FFMPEG_SHA256
+if ($env:VIDEOFLOW_FFMPEG_URL) {
+    $FfmpegUrl = $env:VIDEOFLOW_FFMPEG_URL
+    $FfmpegSha256 = $env:VIDEOFLOW_FFMPEG_SHA256
+    $FfmpegOrigin = 'the archive set in VIDEOFLOW_FFMPEG_URL'
+} else {
+    $FfmpegUrl = $DefaultUrl
+    $FfmpegSha256 = $DefaultSha256
+    $FfmpegOrigin = 'built and distributed by gyan.dev (https://www.gyan.dev/ffmpeg/builds/), about 178 MB'
+}
 
 function Log($m) { Write-Host "[install] $m" }
 function Warn($m) { Write-Warning "[install] $m" }
@@ -99,17 +114,34 @@ function Install-Ffmpeg {
         if ($v -and $v -ge $FfmpegMin) { Log "system FFmpeg $v is recent enough"; return }
         Warn "system FFmpeg '$v' is older than $FfmpegMin"
     }
+    if (-not $FfmpegUrl -or -not $FfmpegSha256) {
+        Warn "FFmpeg not installed: no pinned build for this machine. Install FFmpeg >= $FfmpegMin and put it on PATH or in tools\ffmpeg, or set VIDEOFLOW_FFMPEG_URL and VIDEOFLOW_FFMPEG_SHA256."
+        return
+    }
+    Log "FFmpeg >= $FfmpegMin is needed. Video-Flow can download a static build into tools\ffmpeg:"
+    Log "  source:  $FfmpegUrl"
+    Log "  $FfmpegOrigin"
+    Log '  licence: GPL-3.0; FFmpeg is a separate program, installed unchanged with its licence files'
+    if (-not $Yes) {
+        if (-not [Environment]::UserInteractive -or [Console]::IsInputRedirected) {
+            Warn "FFmpeg not installed: rerun with -Yes to accept the download, or install it later from the app"
+            return
+        }
+        $answer = Read-Host '[install] Download and install FFmpeg? [y/N]'
+        if ($answer -notmatch '^(y|yes)$') {
+            Warn "FFmpeg not installed: install FFmpeg >= $FfmpegMin yourself, or later from the app"
+            return
+        }
+    }
     Log 'downloading static FFmpeg into tools\ffmpeg'
     $tmp = Join-Path ([IO.Path]::GetTempPath()) ("videoflow-ffmpeg-" + [guid]::NewGuid())
     New-Item -ItemType Directory -Path $tmp | Out-Null
     try {
         $zip = Join-Path $tmp 'ffmpeg.zip'
         Invoke-WebRequest -Uri $FfmpegUrl -OutFile $zip -UseBasicParsing
-        if ($FfmpegSha256) {
-            $actual = (Get-FileHash $zip -Algorithm SHA256).Hash
-            if ($actual -ne $FfmpegSha256.ToUpper()) { throw 'FFmpeg checksum mismatch' }
-        } else {
-            Warn 'VIDEOFLOW_FFMPEG_SHA256 not set: archive integrity not verified'
+        $actual = (Get-FileHash $zip -Algorithm SHA256).Hash
+        if ($actual -ne $FfmpegSha256.ToUpper()) {
+            throw 'FFmpeg checksum mismatch (the distributor may have published a new build); nothing was installed'
         }
         Expand-Archive -Path $zip -DestinationPath (Join-Path $tmp 'x') -Force
         $found = Get-ChildItem -Path (Join-Path $tmp 'x') -Recurse -Filter ffmpeg.exe | Select-Object -First 1
@@ -117,6 +149,11 @@ function Install-Ffmpeg {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
         Copy-Item $found.FullName $dir -Force
         Copy-Item (Join-Path $found.DirectoryName 'ffprobe.exe') $dir -Force
+        # The licence and readme files sit at the root of the archive folder, above bin\.
+        foreach ($notice in 'LICENSE', 'README.txt') {
+            $file = Get-ChildItem -Path (Join-Path $tmp 'x') -Recurse -Filter $notice | Select-Object -First 1
+            if ($file) { Copy-Item $file.FullName $dir -Force }
+        }
         Log "installed FFmpeg $(Get-FfmpegVersion $local) in tools\ffmpeg"
     } finally {
         Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue

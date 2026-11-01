@@ -1,17 +1,24 @@
 #!/usr/bin/env bash
 # Video-Flow installer for Linux.
-#   scripts/install.sh [--cpu-only] [--extra X]... [--no-ffmpeg] [--no-frontend-check] [--help]
+#   scripts/install.sh [--cpu-only] [--extra X]... [--yes] [--no-ffmpeg] [--no-frontend-check] [--help]
 # Installs uv (if missing), Python 3.13, the backend with the accelerator extra matching the
-# detected hardware, FFmpeg >= 6.1 (system one if recent enough, else a static build in
-# tools/ffmpeg/) and checks Node 22 + pnpm (only needed to build the frontend).
+# detected hardware, FFmpeg >= 6.1 (system one if recent enough, else, after your consent, a
+# pinned and checksum-verified static build in tools/ffmpeg/) and checks Node 22 + pnpm
+# (only needed to build the frontend).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FFMPEG_MIN="6.1"
-FFMPEG_STATIC_URL="${VIDEOFLOW_FFMPEG_URL:-https://johnvansickle.com/ffmpeg/old-releases/ffmpeg-7.0.2-amd64-static.tar.xz}"
-FFMPEG_STATIC_SHA256="${VIDEOFLOW_FFMPEG_SHA256:-}"
+# Pinned static build, the same as backend/videoflow/media/ffmpeg_install.py (a test checks it).
+# FFmpeg is a separate GPL-3.0 program built and distributed by John Van Sickle; it is
+# installed unchanged with its licence files. Override both with VIDEOFLOW_FFMPEG_URL and
+# VIDEOFLOW_FFMPEG_SHA256 (the checksum is always verified).
+FFMPEG_STATIC_URL="${VIDEOFLOW_FFMPEG_URL:-https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz}"
+FFMPEG_STATIC_SHA256="${VIDEOFLOW_FFMPEG_SHA256:-abda8d77ce8309141f83ab8edf0596834087c52467f6badf376a6a2a4c87cf67}"
+FFMPEG_STATIC_SIZE="about 42 MB"
 
 CPU_ONLY=0
+YES=0
 NO_FFMPEG=0
 NO_FRONTEND=0
 EXTRAS=()
@@ -21,13 +28,14 @@ warn() { printf '[install] WARNING: %s\n' "$*" >&2; }
 die() { printf '[install] ERROR: %s\n' "$*" >&2; exit 1; }
 
 usage() {
-  sed -n '2,6p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,7p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
   cat <<'USAGE'
 
 Flags:
   --cpu-only           skip hardware detection, install the CPU extra
   --extra X            add extra X (repeatable). Accelerator extras are mutually exclusive:
                        cpu | openvino | cuda | directml | qnn. Others: whisper
+  --yes                accept the FFmpeg download without asking
   --no-ffmpeg          do not check or install FFmpeg
   --no-frontend-check  do not check Node / pnpm
 USAGE
@@ -37,6 +45,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --cpu-only) CPU_ONLY=1 ;;
     --extra) shift; [ $# -gt 0 ] || die "--extra needs a value"; EXTRAS+=("$1") ;;
+    --yes|-y) YES=1 ;;
     --no-ffmpeg) NO_FFMPEG=1 ;;
     --no-frontend-check) NO_FRONTEND=1 ;;
     -h|--help) usage; exit 0 ;;
@@ -102,21 +111,38 @@ install_ffmpeg() {
     warn "system FFmpeg '${v:-unknown}' is older than $FFMPEG_MIN"
   fi
   if [ "$(uname -m)" != "x86_64" ]; then
-    die "no static FFmpeg build is pinned for $(uname -m); install FFmpeg >= $FFMPEG_MIN with your package manager"
+    warn "no static FFmpeg build is pinned for $(uname -m); install FFmpeg >= $FFMPEG_MIN with your package manager"; return
+  fi
+  log "FFmpeg >= $FFMPEG_MIN is needed. Video-Flow can download a static build into tools/ffmpeg:"
+  log "  source:  $FFMPEG_STATIC_URL ($FFMPEG_STATIC_SIZE)"
+  log "  built and distributed by John Van Sickle (https://johnvansickle.com/ffmpeg/)"
+  log "  licence: GPL-3.0; FFmpeg is a separate program, installed unchanged with its licence files"
+  if [ "$YES" -eq 0 ]; then
+    if [ ! -t 0 ]; then
+      warn "FFmpeg not installed: rerun with --yes to accept the download, install FFmpeg >= $FFMPEG_MIN with your package manager, or install it later from the app"
+      return
+    fi
+    local answer
+    read -r -p "[install] Download and install FFmpeg? [y/N] " answer
+    case "$answer" in
+      y|Y|yes|YES) ;;
+      *) warn "FFmpeg not installed: install FFmpeg >= $FFMPEG_MIN with your package manager, or later from the app"; return ;;
+    esac
   fi
   log "downloading static FFmpeg into tools/ffmpeg"
   local tmp; tmp="$(mktemp -d)"
   fetch "$FFMPEG_STATIC_URL" "$tmp/ffmpeg.tar.xz"
-  if [ -n "$FFMPEG_STATIC_SHA256" ]; then
-    echo "$FFMPEG_STATIC_SHA256  $tmp/ffmpeg.tar.xz" | sha256sum -c - || die "FFmpeg checksum mismatch"
-  else
-    warn "VIDEOFLOW_FFMPEG_SHA256 not set: archive integrity not verified"
-  fi
+  echo "$FFMPEG_STATIC_SHA256  $tmp/ffmpeg.tar.xz" | sha256sum -c --quiet - \
+    || { rm -rf "$tmp"; die "FFmpeg checksum mismatch (the distributor may have published a new build); nothing was installed"; }
   tar -xf "$tmp/ffmpeg.tar.xz" -C "$tmp"
   mkdir -p "$dir"
   local src; src="$(find "$tmp" -maxdepth 2 -name ffmpeg -type f | head -n1)"
   [ -n "$src" ] || die "ffmpeg binary not found in archive"
-  cp "$(dirname "$src")/ffmpeg" "$(dirname "$src")/ffprobe" "$dir/"
+  local from; from="$(dirname "$src")"
+  cp "$from/ffmpeg" "$from/ffprobe" "$dir/"
+  for notice in GPLv3.txt readme.txt; do
+    if [ -f "$from/$notice" ]; then cp "$from/$notice" "$dir/"; fi
+  done
   chmod +x "$dir/ffmpeg" "$dir/ffprobe"
   rm -rf "$tmp"
   log "installed FFmpeg $(ffmpeg_version "$dir/ffmpeg") in tools/ffmpeg"
