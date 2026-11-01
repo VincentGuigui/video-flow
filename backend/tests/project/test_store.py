@@ -220,3 +220,27 @@ def test_invalid_files_are_reported(tmp_path: Path) -> None:
     bundle.project_file.write_text('{"schemaVersion": 1, "id": "prj_x"}', encoding="utf-8")
     with pytest.raises(ProjectStoreError):
         bundle.load()
+
+
+def test_media_follow_a_copied_working_folder(tmp_path: Path) -> None:
+    import shutil
+
+    from videoflow.project.models import Asset, AssetProbe, new_project
+
+    work = tmp_path / "work"
+    (work / "rushes").mkdir(parents=True)
+    clip = work / "rushes" / "a.mp4"
+    clip.write_bytes(b"x")
+    project = new_project("Trip")
+    project.assets = [
+        Asset(id="ast_a", path=str(clip), content_hash="h", probe=AssetProbe(duration_us=1))
+    ]
+    bundle = Bundle.create(work / "Trip.video-flow", project)
+    reopened = Bundle(bundle.path)
+    assert reopened.load().assets[0].rel_path == "rushes/a.mp4"
+    reopened.save(reopened.project)  # persists the relative path
+    moved = tmp_path / "elsewhere" / "work"
+    shutil.copytree(work, moved)
+    shutil.rmtree(work)
+    asset = Bundle(moved / "Trip.video-flow").load().assets[0]
+    assert Path(asset.path) == (moved / "rushes" / "a.mp4").resolve()

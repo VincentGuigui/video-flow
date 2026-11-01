@@ -236,10 +236,30 @@ class Bundle:
                 if not backup.exists():
                     save_atomic(backup, raw_bytes)
             project = self._replay_history(project)
+            self._resolve_media(project)
             self._project = project
             if (applied or project.revision != data.get("revision")) and not self.read_only:
                 save_atomic(self.project_file, dumps_project(project))
             return project
+
+    def _resolve_media(self, project: Project) -> None:
+        """Follow media through moves of the whole working folder.
+
+        `relPath` (relative to the folder that holds the bundle) wins when it points to an
+        existing file; otherwise the stored absolute path is kept. Assets without `relPath`
+        (older projects) get one, so the project becomes portable on its next save.
+        """
+        base = self.path.parent.resolve()
+        for asset in project.assets:
+            if asset.rel_path:
+                candidate = (base / asset.rel_path).resolve()
+                if candidate.is_file():
+                    asset.path = str(candidate)
+                    continue
+            if not asset.rel_path and Path(asset.path).is_file():
+                # On another Windows drive only the absolute path can work.
+                with contextlib.suppress(ValueError):
+                    asset.rel_path = Path(os.path.relpath(asset.path, base)).as_posix()
 
     def save(self, project: Project) -> None:
         """Atomically write ``project.json`` (refused for read-only files)."""

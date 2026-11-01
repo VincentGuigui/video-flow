@@ -58,7 +58,7 @@ A project is a `*.videoflow` folder. Its `project.json` holds a schema-versioned
 |-------|---------|
 | `revision` | Incremented once per committed command batch; used for optimistic locking. |
 | `settings` | `width`, `height` (output canvas), `frameRate`, `sampleRate`, `language`, plus `loudnessTarget`, `clipPadding`, `defaultTransition`, `grouping`, `llmProvider`. |
-| `assets[]` | One per imported source: absolute `path`, `relPath` relative to the bundle's parent (relink), `contentHash` (full hash up to 64 MB, sampled fingerprint beyond; cache key and duplicate detection), `probe`. Import adds `previewPath` as an extra field. |
+| `assets[]` | One per imported source: absolute `path` and `relPath` relative to the folder that holds the bundle (the working folder). On load, `relPath` wins when it points to an existing file, so a working folder copied elsewhere (media and project together) keeps working; assets without `relPath` get one; `contentHash` (full hash up to 64 MB, sampled fingerprint beyond; cache key and duplicate detection), `probe`. Import adds `previewPath` as an extra field. |
 | `probe` | `durationUs`, `video` (`width`, `height`, `rotation`, `frameRate`, `vfr`, `hdr`, `codec`) or `null`, `audioStreams[]` (`index`, `channels`, `sampleRate`, `codec`, `language`), `creationTime`, `creationTimeReliable`. |
 | `editor` | The `EditorDocument`, stored as an extra field (absent until the first interactive edit). |
 | `syncGroups`, `beats`, `overlays`, `transitions`, `constraints`, `markers`, `overrides`, `pipelineVersion` | Legacy beats/cut model, see below. |
