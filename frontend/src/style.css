@@ -1386,8 +1386,8 @@ kbd {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  /* No backdrop-filter: blurring the live editor under a scrolling dialog
-     corrupts compositing tiles in Qt WebEngine (flicker). */
+  /* No backdrop-filter, and the editor is hidden while a dialog is open (below):
+     video layers repainting under a dialog corrupt compositing tiles in Qt WebEngine. */
   background: #11281bd9;
   z-index: 100;
   display: flex;
@@ -2488,4 +2488,12 @@ button.timecode:hover {
 .overview-clip.selected {
   outline: 2px solid #438267;
   outline-offset: -1px;
+}
+/* While a dialog is open, take the editor (and its video layers) out of compositing.
+   A dialog rendered inside the workspace stays visible. */
+.app:has(.modal-backdrop) .workspace {
+  visibility: hidden;
+}
+.app:has(.modal-backdrop) .modal-backdrop {
+  visibility: visible;
 }
