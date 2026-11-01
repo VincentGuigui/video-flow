@@ -33,8 +33,9 @@ Initial draft: 2026-10-23. Latest accepted architecture revision: 2026-10-25. Re
 | 19 | [19-camtasia-export.md](19-camtasia-export.md) | Camtasia .tscproj export: template-driven writer, mapping, limits |
 | 20 | [20-camtasia-inspired-backlog.md](20-camtasia-inspired-backlog.md) | Findings from the user's Camtasia projects and the resulting feature backlog |
 | 21 | [21-clip-effects.md](21-clip-effects.md) | Clip effects: edge fades, clip speed, zoom & pan, mute ranges and ducking, titles and lower thirds |
+| 22 | [22-workspace-zones.md](22-workspace-zones.md) | Workspace zones (Ctrl+A, Delete per zone), media removal, thumbnail fit, cache folder |
 
-Suggested reading order: 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 09 and 08 for current decisions, then 02, 04 and 05 for product behavior and data, 03 and 06 for implementation, and 07 for historical roadmap context.
+Suggested reading order: 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 09 and 08 for current decisions, then 02, 04 and 05 for product behavior and data, 03 and 06 for implementation, and 07 for historical roadmap context.
 
 ## Key decisions at a glance
 
