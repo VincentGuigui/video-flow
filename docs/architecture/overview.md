@@ -1,213 +1,154 @@
 # Architecture
 
-Current architecture: [review and plan](../decisions/0002-review-and-plan.md), [interactive editor](../features/interactive-editor.md) and [desktop shell](desktop-shell.md) supersede conflicting historical details below, including job storage, Python version and desktop packaging.
+Video-Flow is a local-first desktop editor for footage shot with many retakes. A Python backend does media, analysis, render and export work; a React interface edits one project at a time. Everything runs on the user's machine: originals are referenced in place and never copied or modified, and the only network access is an explicit model download from Settings.
 
-## 1. Overview
+Related documents: [desktop shell](desktop-shell.md), [data model](data-model.md), [analysis pipeline](analysis-pipeline.md), [render and export](render-export.md). Behaviour is described per feature in [`../features/`](../README.md#features).
 
-Video-Flow is a desktop application: a PySide6 host embeds the React interface in Qt WebEngine, while the Python backend performs media and ML work and serves the trusted editor origin on loopback. Native drag-and-drop and file dialogs pass local path references to the import service without copying originals. Normal launch opens a native window; browser mode is optional for development/diagnostics. See [desktop shell](desktop-shell.md) for the bridge, lifecycle and platform gates.
+## 1. Process model
 
 ```mermaid
-flowchart TB
-  subgraph Desktop["PySide6 + Qt WebEngine (React SPA)"]
-    UI[Views: Prepare / Triage / Edit / Output]
-    ST[Editor state store<br/>undo/redo]
-    PL[Proxy player<br/>double-buffered video]
+flowchart LR
+  subgraph Host["videoflow desktop (one process)"]
+    QT["PySide6 window<br/>Qt WebEngine + QWebChannel bridge"]
+    API["FastAPI on 127.0.0.1<br/>(uvicorn thread)"]
   end
-
-  subgraph Backend["Python backend (FastAPI)"]
-    API[REST API + SSE events]
-    PRJ[Project service<br/>project.json, compile to OTIO]
-    JOB[Job runner<br/>SQLite job table, worker processes]
-    ANA[Analysis pipeline]
-    RND[Render service<br/>FFmpeg graph builder]
-    EXP[Exporters<br/>OTIO, FCPXML, EDL, Camtasia, SRT]
-    MED[Media service<br/>probe, proxies, thumbs, peaks, ranges]
-  end
-
-  subgraph Engines["Pluggable engines"]
-    ASR[ASR: faster-whisper / WhisperX / whisper.cpp / Parakeet]
-    EMB[Text + visual embeddings]
-    LLM[LLM: Ollama / llama.cpp / optional Anthropic API]
-    FF[FFmpeg / ffprobe binaries]
-  end
-
-  UI <--> API
-  PL -- HTTP range requests --> MED
-  API --> PRJ & JOB & RND & EXP & MED
-  JOB --> ANA & RND & MED
-  ANA --> ASR & EMB & LLM & FF
-  RND --> FF
-  MED --> FF
-  PRJ --> DISK[(Project bundle on disk)]
-  ANA --> DISK
+  UI["React SPA<br/>(frontend/dist)"] -- "/api, cookie" --> API
+  QT -- hosts --> UI
+  QT -- "native selections<br/>(desktop secret)" --> API
+  API --> FF["ffmpeg / ffprobe<br/>subprocesses"]
+  API --> W["ML worker processes<br/>(spawn)"]
+  API --> B[("*.videoflow bundle")]
 ```
 
-## 2. Decisions
+- **Desktop host** (`desktop/host.py`, `videoflow desktop`): picks a free loopback port, starts uvicorn in a thread, opens a `QMainWindow` with a `QWebEngineView` on `http://127.0.0.1:<port>/?token=…`. Navigation and requests are restricted to that origin. A `QWebChannel` bridge exposes only native file dialogs, OS file drops, relink, interface zoom and "save rendered video". Closing the window shuts down the server, which cancels imports, renders and downloads and stops their child processes. Details: [desktop shell](desktop-shell.md).
+- **Browser mode** (`videoflow serve`): the same API and SPA for diagnostics; the launch URL is printed and opened in the browser. Imports go through `POST /api/import-path`, limited to `--media-root` folders (default: the bundle's parent).
+- **Authentication** (`api/app.py` middleware): requests must carry the exact `Host` (and `Origin`, when present) of the loopback server. `/?token=` is exchanged once for an `HttpOnly`, `SameSite=Strict` cookie `videoflow`; every other request needs that cookie. Native-only endpoints also require the `x-videoflow-desktop` secret that only the Qt host holds.
+- **Trusted sources**: a native selection is turned into single-use handles (`desktop/grants.py`); the SPA imports or relinks only through a handle. `PATCH /api/project` accepts `SetEditor`, `SetSettings`, `RenameProject`, `RemoveAsset`, `Batch`, and `AddAsset` / `RelinkAsset` only for sources the server already trusts, so the interface cannot introduce arbitrary file paths. Byte uploads are disabled.
+- **One project per process**: the API holds one open bundle; the project library (`project/library.py`) creates, opens, renames and deletes bundles next to it and switches the open one when no import or render is running. The default desktop project is `Video-Flow/Untitled.videoflow` under `%LOCALAPPDATA%` (Windows) or `~/.local/share` (Linux).
+- **Packaging**: `scripts/desktop.spec` (PyInstaller) with `desktop_entry.py` builds a standalone folder that bundles the built SPA; Node, uv and Vite are not needed at runtime. Application files (`settings.json`, `models/`, `templates/`) live beside the executable (`runtime.py`).
 
-| ID | Decision | Rationale | Alternatives considered |
-|----|----------|-----------|-------------------------|
-| D-1 | PySide6 + Qt WebEngine desktop window, React UI and Python backend | Native local-path imports without copying; preserves interactive frontend and processing services | Browser mode remains optional for diagnostics; earlier pywebview/Tauri proposals are superseded by 10. |
-| D-2 | **Python 3.12 backend (FastAPI, Pydantic v2)** | The whole critical ecosystem is Python: OTIO bindings and adapters, faster-whisper / WhisperX / NeMo, sentence-transformers, PySceneDetect, pyaaf2, Camtasia libraries. One runtime only. | Hono/Node orchestrator + Python worker: reuses TypeScript skills but adds a second runtime, IPC and duplicated schemas. Can be revisited if the backend grows a large non-ML surface. |
-| D-3 | React 19 + Vite + TanStack Query + Zustand + shadcn/ui (Radix) | Known stack. TanStack Query for server state, Zustand (with Immer patches) for the latency-sensitive editor state and undo/redo. | Preact (lighter but React Flow and some libs target React) |
-| D-4 | Custom canvas timeline, React Flow (xyflow) for the flow overview | Off-the-shelf timeline components do not support branch lanes and word snapping; canvas keeps 300+ clips smooth | `react-timeline-editor` (too limited), PixiJS (only if canvas 2D proves too slow) |
-| D-5 | FFmpeg and ffprobe as external CLI binaries via subprocess | Full feature set, easy upgrade, process isolation, progress via `-progress pipe:1` | PyAV bindings (useful for frame access in analysis only) |
-| D-6 | OTIO as canonical interchange; `project.json` as source of truth | See [data model](data-model.md) | OTIO as the only file (take graph squeezed into metadata: possible but awkward to evolve) |
-| D-7 | SQLite (WAL) for jobs and analysis index; NumPy `.npy` files for embeddings | Zero-ops, portable inside the project bundle; embeddings counts are small (thousands) so brute-force cosine is enough | sqlite-vec / FAISS (unnecessary at this scale) |
-| D-8 | All engines behind interfaces, selected by config and hardware detection | Models evolve fast (ASR and small LLMs change every few months) | Hard-wiring one model |
-| D-9 | Local-only by default; cloud LLM provider is opt-in per project | Privacy, offline use | |
+## 2. Repository layout
 
-## 3. Backend modules
+| Path | Content |
+|------|---------|
+| `backend/` | `videoflow` package (uv project, `pyproject.toml`, `uv.lock`) and `tests/` |
+| `frontend/` | Vite + React app: `src/*.ts` pure logic with vitest tests, `src/ui/*.tsx` components; built into `frontend/dist` |
+| `scripts/` | `install`, `run`, `dev` (`.sh` and `.ps1`), `gen_samples.py`, `desktop.spec`, `desktop_smoke.py` |
+| `docs/` | Product, features, architecture, decisions, reference, validation |
+| `tools/` | Git-ignored; the installer's static FFmpeg in `tools/ffmpeg/`, looked up before `PATH` |
+
+## 3. Backend modules (`backend/videoflow/`)
 
 | Module | Responsibility |
 |--------|----------------|
-| `api/` | FastAPI routers, request/response models, SSE event stream |
-| `project/` | Load/save/migrate `project.json`, command log (undo history on disk), compile to OTIO |
-| `media/` | ffprobe wrapper, proxy/thumbnail/waveform generation, HTTP range serving of proxies |
-| `jobs/` | Persistent job queue (SQLite), worker process pool, cancellation, progress events |
-| `analysis/` | Pipeline stages (see [analysis pipeline](analysis-pipeline.md)), stage cache keyed by content hash + stage version + parameters |
-| `engines/asr`, `engines/embed`, `engines/vision`, `engines/llm`, `engines/vad` | Engine adapters behind Protocols |
-| `render/` | Timeline normalisation, FFmpeg graph builder, presets, loudness passes, render runner |
-| `exporters/` | OTIO, OTIOZ, FCPXML (+ auditions post-processor), FCP7 XML, EDL, AAF, Camtasia, SRT/VTT, paper edit |
-| `hw/` | Hardware detection: CUDA, Apple MPS/MLX, VideoToolbox/NVENC/QSV/AMF encoders, available RAM |
-| `settings/` | Global settings (model paths, cache size) and project settings |
+| `api/` | `app.py`: FastAPI app factory, authentication middleware, every endpoint, SPA static files. `events.py`: typed event union (job, asset, project events) |
+| `core/` | Shared base model (camelCase JSON, unknown fields kept, open enums), `<prefix>_<ULID>` ids, integer-microsecond time and rational frame rates |
+| `project/` | Project schema (`models.py`), semantic commands with inverses (`commands.py`), bundle store with atomic save, `history.jsonl` and revisions (`store.py`), migrations, JSON Schema goldens (`schema.py`), project library |
+| `editor/` | The interactive edit document (`models.py`), import queue (`imports.py`), analysis sidecars and the transcriber worker (`analysis.py`), retake grouping, topics and summaries, transitions, volume, zoom, titles (Pillow + bundled Inter), playback WebM fallback, resolution of the document for render and export (`resolve.py`) |
+| `timeline/` | Resolved timeline contract (flat, frame-quantised tracks), resolver, transition handle maths, invariant checks; shared by exporters and render |
+| `media/` | FFmpeg capability probe and binary lookup (`caps.py`), async FFmpeg runner with progress and cancellation plus ffprobe parsing, content hashing, ingest (probe, hash, duplicate detection), proxies, thumbnail sprites, waveform peaks |
+| `analysis/` | Analysis library: text normalisation, segmentation, relations, clustering, intra-group alignment, scoring, ordering, reconciliation, GCC-PHAT audio sync, shot detection, content-hash stage cache. See [analysis pipeline](analysis-pipeline.md) |
+| `engines/` | Engine protocols and deterministic fakes, registry (`registry.py`), adapters (`asr/`, `vad/`, `embed/`, `vision/`), Qwen summaries, pinned model manifest and explicit downloads |
+| `hw/` | AI provider chain and ONNX session factory (`ai.py`), hardware video decode/encode probing (`video.py`), doctor report |
+| `jobs/` | Long-lived spawned ML worker processes (`workers.py`); job contracts and an in-memory priority registry (`registry.py`, `types.py`) |
+| `render/` | Filter graph compiler (`graph.py`), cancellable runner with output validation, two-pass loudness, render job owner (`jobs.py`) |
+| `exporters/` | OTIO, OTIOZ, CMX 3600 EDL, SRT, paper edit (Markdown + CSV), Camtasia `.tscproj`; `service.py` writes them with `edit.report.json` |
+| `desktop/` | Qt host and bridge, selection grants, native smoke check |
+| `preferences.py` | Application preferences (ASR engine, summary engine, AI device, import and render defaults) in `settings.json` |
+| `runtime.py` | Application directory (beside the executable or the repository root), opening folders |
+| `samples.py` | Deterministic synthetic rushes (lavfi + flite TTS) with a ground-truth manifest |
+| `cli.py` | Typer CLI `videoflow`: `desktop` (default via `scripts/run`), `serve`, `export`, `version`, hidden `desktop-check` |
 
-## 4. API surface
+## 4. Frontend (`frontend/src/`)
 
-REST over JSON, all under `/api`. Long operations return a `job_id`; progress and state changes are pushed on one SSE stream.
+React 19, Vite and Zustand; no other state or UI framework (icons from `lucide-react`).
+
+- **Pure logic** (`*.ts`, each with a `*.test.ts`): `model.ts` (edit document types, layout, lanes, linking; mirrors `editor/models.py`), `transitions.ts`, `volume.ts`, `zoom.ts` and `titles.ts` (mirrors of the backend modules of the same name, kept in step), `range.ts`, `snap.ts`, `compare.ts`, `transcript.ts`, `zones.ts`, `timeline.ts`, `playback.ts`, `desktop.ts` (Qt bridge and media URLs).
+- **UI** (`ui/`): `App.tsx` (editor shell), `Home.tsx` (project library), `Flow.tsx` (clip flow), `Preview.tsx`, `Transport.tsx`, `Transcript.tsx`, `Compare.tsx`, `Imports.tsx`, `RenderPanel.tsx`, `Settings.tsx`, `ProjectSave.tsx` and property controls.
+- **State** (`store.ts`): one Zustand store holds the project, the edit document, selection, zone, focus, cursor frame, range and the undo/redo stacks.
+- **Saving**: every edit sends the whole document as `{baseRevision, commands: [SetEditor, ...]}` through `PATCH /api/project`. The backend applies the batch atomically, bumps the revision and returns the project, the resolved editor document and the inverse commands. A stale `baseRevision` is rejected with 409 and the store reloads.
+- **Undo/redo**: the client owns the stacks (last 100 steps). Undo sends the stored inverses as a new batch and pushes the returned inverses on the redo stack. Imports return their inverses too, so an import is one undo step.
+- **Preview**: each visible clip plays its proxy in its own `<video>` element, positioned with the clip transform, crop, opacity and zoom; audio gain (fades, mutes, ducking) is applied through the media element volume. H.264 proxies are used when the engine can play them, else a VP9 WebM (`/api/media/{id}?codec=webm`). Titles are the PNG the render uses (`/api/title`). The FFmpeg render is the reference.
+- **Progress**: the UI polls `/api/jobs`, `/api/renders` and `/api/settings`. `GET /api/events` also streams a `{revision, jobs}` snapshot as server-sent events every 0.5 s when it changes.
+
+## 5. API
+
+All under `/api`, JSON in camelCase.
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| POST | `/projects` | Create project from a folder |
-| GET | `/projects/{id}` | Project document (beats, takes, sequence, settings) |
-| PATCH | `/projects/{id}` | Apply a batch of edit commands (JSON Patch-like, versioned with `base_revision`) |
-| POST | `/projects/{id}/assets` | Add files or folders |
-| GET | `/assets/{id}` | Probe data, analysis status |
-| GET | `/assets/{id}/proxy` | Proxy video (HTTP range) |
-| GET | `/assets/{id}/thumbs` | Sprite sheet + index JSON |
-| GET | `/assets/{id}/peaks` | Waveform peaks (binary, multi-resolution) |
-| GET | `/assets/{id}/transcript` | Words, segments |
-| POST | `/projects/{id}/analyse` | Start or resume analysis (optional stage subset, `force` flag) |
-| POST | `/projects/{id}/regroup` | Re-cluster with new parameters (fast, no heavy stage) |
-| GET | `/beats/{id}/alignment` | Word alignment between takes of a beat |
-| POST | `/projects/{id}/preview-render` | Low-res render of a range or of one transition |
-| POST | `/projects/{id}/render` | Full render with preset |
-| POST | `/projects/{id}/export` | Export to format(s) |
-| GET | `/jobs/{id}` / DELETE | Job status / cancel |
-| GET | `/events` | SSE: `job.progress`, `job.done`, `asset.updated`, `project.updated` |
+| GET / PATCH | `/project` | Open project, resolved editor document, media roots, offline assets / apply a command batch |
+| POST | `/project/save` | Save, name, or Save as (copy) |
+| GET / POST | `/projects`, `/projects/action` | Project library / new, open, rename, delete |
+| GET / PUT | `/settings` | Preferences, cache folder, model states / update preferences (refused while imports run) |
+| POST | `/open-cache` | Open the project cache folder |
+| POST | `/models/{key}/download`, `/models/{key}/cancel` | Explicit model download / cancel |
+| POST | `/desktop/selection` | Host only: issue single-use handles for natively selected files |
+| POST | `/native-import`, `/native-relink` | Import or relink (content hash checked) through a handle |
+| POST | `/import-path` | Browser mode: import a file under a media root |
+| POST | `/uploads/{batch}/{file}` | Byte upload; disabled in the shipped app |
+| GET / POST | `/jobs`, `/jobs/cancel` | Import jobs / cancel one or all |
+| GET | `/media/{asset}` | Proxy (or source audio), with byte ranges; `?codec=webm` fallback |
+| GET | `/analysis/{asset}` | Transcript words, summary, keywords, topics |
+| GET | `/waveform/{asset}`, `/thumbnail/{asset}` | Peaks (RMS, downsampled) / one 240 px JPEG frame |
+| GET | `/title?spec=` | Title picture at project size |
+| POST | `/export` | Export formats into `exports/` |
+| POST / GET | `/render`, `/renders` | Start an MP4 render (`draft`/`final`, loudness normalisation) / list renders |
+| POST / GET | `/renders/{id}/cancel`, `/renders/{id}/file` | Cancel / download |
+| POST | `/desktop/render-save` | Host only: copy a finished render to the path chosen in the native save dialog |
+| GET | `/events` | Server-sent `{revision, jobs}` snapshots |
 
-Concurrency rule: the browser is the only editor; the backend rejects a PATCH whose `base_revision` is stale (simple optimistic locking, prevents lost updates with two tabs).
+## 6. Jobs, imports, renders and downloads
 
-Types: Pydantic models are the single source of truth; TypeScript types are generated from the OpenAPI schema (`openapi-typescript`) at build time.
+- **Imports** (`editor/imports.py`): one asyncio task per file, run one at a time. Steps: probe and hash (duplicates reuse the existing asset), build the proxy, load analysis (sidecar beside the source, then the bundle cache), otherwise wait for missing models (`waiting-models`), extract 16 kHz mono PCM, transcribe in the worker, derive summary, keywords and topics, store the analysis, match retakes, then publish `AddAsset` + `SetEditor` as one commit. Progress, phase, warnings and inverses are on the job. See [interactive editor](../features/interactive-editor.md), [retake grouping](../features/retake-grouping.md).
+- **ML workers** (`jobs/workers.py`): engines run in long-lived processes started with `spawn`; a worker builds its engine once and serves calls over a pipe. Cancelling a call kills the process and respawns it, since ONNX and CTranslate2 calls cannot be interrupted.
+- **Renders** (`render/jobs.py`): one render at a time from an immutable project snapshot; cancellable; the MP4 is published to `renders/` only after frame and duration checks.
+- **Downloads** (`engines/downloads.py`): one cancellable download per model, in a worker process, from the pinned Hugging Face revision into `models/`. Inference never triggers a download.
+- Jobs are in memory only. After a restart the user re-imports; cached proxies and analysis make that fast.
 
-## 5. Job system
+## 7. Media handling
 
-- Job table in `analysis.sqlite`: id, kind, asset/project, stage, status, progress, params hash, error, timestamps.
-- Worker pool: separate processes (ML libraries hold the GIL and large memory). Pool size from hardware detection; GPU-bound stages serialised on one GPU worker.
-- Scheduling order: probe and proxies for all assets first (so the bin becomes usable quickly), then per-asset ASR, then cross-asset stages (relations, clustering) once all assets have their per-asset features.
-- Every stage is idempotent and writes its output atomically (temp file + rename). A crash leaves at most one stage to redo.
-- Cancellation: cooperative flag checked between chunks; FFmpeg processes are terminated.
+- **FFmpeg** >= 6.1 (installer check), run as subprocesses with `-progress` parsing; `media/caps.py` probes version, filters, encoders, hardware accelerations and the filter-graph file flag.
+- **Content hash** (`media/hashing.py`): BLAKE2b of the whole file up to 64 MiB, else of its size plus 16 evenly spaced chunks. It keys duplicates, caches and sidecars, and checks relinks.
+- **Proxies** (`media/proxy.py`): H.264 8-bit SDR BT.709, short side at most 540 px, CFR, a keyframe every second, rotation baked in, HDR tone-mapped when `zscale` and `tonemap` exist; proxy time equals source time. Hardware decode/encode from `hw/video.py`, with a software retry.
+- **Thumbnails**: one 240 px JPEG per video asset, from the proxy, on first request. **Waveforms**: one-resolution peaks file (`VFPK`: min, max, RMS per bucket) on first request.
+- Proxies, thumbnails, peaks, title pictures, WebM fallbacks and render scratch files are in the bundle `cache/`; sentence vectors in `features/`. See [workspace zones](../features/workspace-zones.md) for the cache folder.
 
-## 6. Media handling and preview
+## 8. AI engines and device selection
 
-### Proxies
-- 720p (or 540p for 4K-heavy projects), H.264 8-bit SDR, CFR at project rate, GOP of 12 frames (fast seeking), AAC stereo 48 kHz, `+faststart`.
-- HDR sources are tone-mapped in the proxy so the preview looks like the SDR render.
-- Rotation baked in. Timestamps preserved so proxy time = source time (no offset), verified at generation.
+| Purpose | Default | Alternatives | Runtime |
+|---------|---------|--------------|---------|
+| VAD | Silero VAD | — | ONNX Runtime |
+| ASR | Parakeet TDT 0.6B v3 int8 (`onnx-asr`) | faster-whisper tiny (`whisper` extra, CPU/CUDA) | ONNX Runtime / CTranslate2 |
+| Retake grouping | paraphrase-multilingual-MiniLM-L12-v2 | word overlap only, without the model | ONNX Runtime |
+| Summary and topic titles | Deterministic (extractive, TextTiling-style) | Qwen2.5-0.5B-Instruct (`qwen` extra) | Python / PyTorch on CPU |
+| Visual similarity | DINOv2-small, perceptual hash | — | ONNX Runtime; library and tests only |
+| Shots | PySceneDetect | — | OpenCV; library and tests only |
 
-### Thumbnails and waveforms
-- Sprite sheets: one thumbnail per second (160 px wide) + index; denser sprites generated on demand for zoomed views.
-- Waveform peaks precomputed at several resolutions (e.g. 100, 400, 1600 samples per second of min/max pairs), stored as binary.
+- Models are pinned to immutable revisions with licence and gating checks in `engines/manifest.toml`, and stored in the application `models/` folder (`VIDEOFLOW_MODELS_DIR`).
+- `engines/registry.py` maps `(kind, name)` to adapters with lazy imports; a missing extra raises `EngineUnavailableError` naming what to install. Fakes replay fixtures for tests.
+- `hw/ai.py` orders the available ONNX Runtime providers **NPU → GPU → CPU**: OpenVINO NPU, VitisAI, QNN; then CUDA, DirectML, OpenVINO GPU, ROCm, MIGraphX; then CPU. The `aiDevice` preference (`auto`, `npu`, `gpu`, `cpu`) chooses the first tier. Each model walks the chain on its own and keeps the first provider that creates a session, is actually active and passes a warm-up run.
+- Accelerator extras (`cpu`/`smoke`, `openvino`, `directml`, `cuda`, `qnn`) are mutually exclusive onnxruntime flavours on top of `ml`; the installer picks one from the detected hardware. See [dependencies](../reference/dependencies.md).
 
-### Playback of the cut
-- Two `<video>` elements, double-buffered: while clip N plays, clip N+1 is loaded and seeked to its in point; switch at the cut using `requestVideoFrameCallback` timing.
-- Dissolves and fades are previewed with CSS opacity on the two elements; audio crossfade with Web Audio gain nodes.
-- Other transitions: the backend renders the transition region (plus 0.5 s around it) at low resolution and the player inserts that short file. Cached by transition parameters hash.
-- Known limitation: browser seeking is not strictly frame-accurate; acceptable for preview. The FFmpeg render is the reference.
+## 9. Project bundle
 
-### Compare view playback
-- N players (proxies) started at per-take offsets computed from the alignment anchor; one audio source active at a time (solo), others muted.
+A `*.videoflow` folder: `project.json` (schema-versioned decisions, including the editor document), `history.jsonl` (write-ahead command log, replayed on load), `project.v<N>.bak.json` after a migration, `analysis/` (analysis sidecar cache), `features/`, `cache/`, `exports/`, `renders/`. Writes are atomic (temp file, fsync, rename). Details: [data model](data-model.md).
 
-## 7. Engine interfaces (sketch)
+The edit document holds clips in integer project-rate frames: video, audio, empty and text clips on numbered lanes, linked video/audio pairs and transitions. Render compiles it into FFmpeg filter graphs; exporters read the same edit through the timeline resolver. See [render and export](render-export.md).
 
-```python
-class AsrEngine(Protocol):
-    name: str
-    def transcribe(self, wav_path: Path, language: str | None) -> Transcript: ...
-    # Transcript: language, words[(text, start, end, prob)], segments[(start, end, text)]
+## 10. Testing
 
-class TextEmbedder(Protocol):
-    dim: int
-    def embed(self, texts: list[str]) -> np.ndarray: ...   # L2-normalised
+- **Unit tier** (`uv run pytest`, default): CPU only, no network, synthetic media generated by the tests, fake engines; tests needing the `ml` extra are skipped without it. Covers contracts and schema goldens, commands and store, time, analysis library, engines, grouping benchmark (`tests/fixtures/retake_pairs.json`), exporters, render graphs and output, API.
+- **Smoke tier** (`uv run pytest -m smoke`): downloads small real models and runs them on CPU.
+- **Frontend**: vitest on the pure logic modules, `tsc` type check, Prettier.
+- **Desktop**: `scripts/desktop_smoke.py` (`videoflow desktop-check`) drives the real Qt window on generated media and writes a screenshot and report.
+- Lint and types: Ruff and strict mypy. Commands are listed in `AGENTS.md`.
 
-class VisualEmbedder(Protocol):
-    dim: int
-    def embed_frames(self, frames: list[np.ndarray]) -> np.ndarray: ...
+## 11. Not implemented
 
-class LlmClient(Protocol):
-    def complete_json(self, system: str, user: str, schema: dict, max_tokens: int) -> dict: ...
+- FCPXML, FCP7 XML and AAF export; OTIO re-import.
+- Multicam sync groups, comping, script-guided grouping; the clustering and scoring pipeline in `analysis/` is not wired into the editor import.
+- Extended transitions (wipes, slides), subtitle burn-in.
+- Cloud or remote LLM providers.
 
-class VadEngine(Protocol):
-    def speech_ranges(self, wav_path: Path) -> list[tuple[float, float]]: ...
-```
-
-Default engine selection:
-
-| Engine | Apple Silicon | NVIDIA | CPU only |
-|--------|---------------|--------|----------|
-| ASR | whisper.cpp (Metal) or MLX Whisper, large-v3-turbo; or Parakeet v3 (MLX port) | faster-whisper large-v3-turbo (CUDA) + WhisperX alignment, or Parakeet v3 (NeMo) | Parakeet v3 (ONNX, int8) or faster-whisper `small`/`medium` int8 |
-| VAD | Silero VAD | Silero VAD | Silero VAD |
-| Text embeddings | paraphrase-multilingual-MiniLM-L12-v2 (chosen by benchmark, see [retake grouping](../features/retake-grouping.md)) | same | same |
-| Visual embeddings | DINOv2-small (near-duplicate shots) | same | same, lower sampling rate |
-| LLM | Ollama with a ~2B to 4B instruct model (Gemma 4 E2B/E4B or Qwen3 class) | same | same, smallest size |
-
-Model choices are configuration, not code. Models are downloaded on first use into a shared cache outside project bundles.
-
-## 8. Repository layout
-
-```
-videoflow/
-├── README.md
-├── docs/                      # this specification, ADRs, user guide
-├── backend/
-│   ├── pyproject.toml         # uv-managed
-│   ├── videoflow/
-│   │   ├── api/  project/  media/  jobs/  analysis/
-│   │   ├── engines/{asr,embed,vision,llm,vad}/
-│   │   ├── render/  exporters/  hw/  settings/
-│   │   └── cli.py             # `videoflow serve`, `videoflow analyse`, `videoflow render`
-│   └── tests/                 # unit + golden-file tests (OTIO, FFmpeg graphs, exports)
-├── frontend/
-│   ├── package.json           # pnpm
-│   └── src/
-│       ├── api/               # generated types, TanStack Query hooks
-│       ├── state/             # Zustand stores, commands, undo/redo
-│       ├── features/{bin,branch-timeline,compare,flow,player,inspector,output}/
-│       └── components/ui/     # shadcn
-└── samples/                   # tiny test rushes (generated with FFmpeg lavfi + TTS)
-```
-
-The CLI is part of the deliverable: `videoflow analyse <folder>` and `videoflow render <project>` work headless, which makes Phase 0 and automated tests possible.
-
-## 9. Runtime requirements
-
-| Item | Requirement |
-|------|-------------|
-| FFmpeg / ffprobe | 7.0 minimum, 8.x recommended; must include libx264, zimg (`zscale`) for HDR tone mapping; hardware encoders used when present. Path configurable; version checked at startup. |
-| Python | 3.12, managed with `uv`; optional extras per engine (`[cuda]`, `[mlx]`, `[cpu]`) |
-| Node | Only for building the frontend; the built SPA is served by the backend |
-| RAM | 16 GB recommended (8 GB works with smaller models) |
-| Disk | Proxies ≈ 1 to 1.5 GB per hour of footage; models 2 to 6 GB shared |
-
-## 10. Security and privacy
-
-- Server binds to `127.0.0.1` only, random port, session token in the launch URL (prevents other local pages from calling the API).
-- No outbound network calls except model downloads (explicit) and the optional cloud LLM provider (explicit, per project, with a visible indicator).
-- Paths received from the UI are validated against the project's media roots (no arbitrary file read).
-
-## 11. Testing strategy
-
-- **Golden files**: compile fixtures `project.json` → expected `.otio`, expected FFmpeg argument list, expected FCPXML / EDL / tscproj. Diffed in CI.
-- **Synthetic media**: test rushes generated with FFmpeg `lavfi` sources plus TTS audio, covering retakes, false starts, simultaneous recordings, VFR and HDR flags.
-- **Render checks**: ffprobe duration and stream properties, `ebur128` loudness measurement, frame-hash spot checks at cut points.
-- **Grouping benchmark**: a small hand-labelled set from real rushes; pairwise precision/recall tracked per pipeline version (see [analysis pipeline](analysis-pipeline.md) §11).
-- **Interop smoke tests** (manual, per release): open exports in Resolve, Premiere, Final Cut Pro, Kdenlive, Camtasia.
+See the [roadmap](../roadmap.md) for what comes next.
