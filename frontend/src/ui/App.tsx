@@ -409,12 +409,7 @@ export function App() {
                     <img
                       src={`/api/thumbnail/${asset.id}`}
                       alt=""
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "contain",
-                        borderRadius: 5,
-                      }}
+                      draggable={false}
                     />
                   ) : (
                     <Music2 size={24} />

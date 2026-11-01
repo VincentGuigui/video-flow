@@ -1973,8 +1973,15 @@ kbd {
   background: #e3e8df;
   overflow: hidden;
 }
+/* Absolute so the whole frame fits the 16:9 viewport: a grid item with height
+   100% would keep its intrinsic height and be cropped. */
 .asset-thumbnail img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+  border-radius: 5px;
 }
 
 .background-selector,
