@@ -18,7 +18,7 @@ Linux x86_64 and Windows ARM64 remain unqualified until the same native, media, 
 
 ## Packaging
 
-Run `scripts\dev.bat package` or `scripts/dev.ps1 package` (Windows) or `scripts/dev.sh package` (Linux), or `just package`. It builds the frontend, then runs PyInstaller with the `desktop` extra and the `packaging` group added to the installed environment (the selected inference extra, and `whisper` / `qwen` when offered, must already be installed):
+Run `scripts\5-package.bat` or `scripts/dev.ps1 package` (Windows) or `scripts/dev.sh package` (Linux), or `just package`. It builds the frontend, then runs PyInstaller with the `desktop` extra and the `packaging` group added to the installed environment (the selected inference extra, and `whisper` / `qwen` when offered, must already be installed):
 
 ```text
 uv run --project backend --inexact --extra desktop --group packaging pyinstaller --noconfirm --distpath releases --workpath .cache/pyinstaller scripts/desktop.spec

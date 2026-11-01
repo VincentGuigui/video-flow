@@ -19,7 +19,7 @@ Targets Windows 11 x64 and Linux x86_64; Windows ARM64 requires qualification. N
 scripts/install.sh            # Linux
 ```
 ```powershell
-scripts\install.bat           # Windows (or install.ps1 from PowerShell)
+scripts\1-install.bat         # Windows (or install.ps1 from PowerShell)
 ```
 
 The installer sets up uv, Python 3.13, FFmpeg, checks Node/pnpm, detects the hardware and runs `uv sync` with the desktop extra and matching inference extra (`openvino`, `cuda`, `directml`, `qnn` or `cpu`). Build the interface once with `npm install` then `npm run build` in `frontend/`. Flags: `--cpu-only`, `--extra X` (repeatable, e.g. `--extra whisper`), `--no-ffmpeg`, `--no-frontend-check` (PowerShell: `-CpuOnly`, `-Extra X`, `-NoFfmpeg`, `-NoFrontendCheck`). The accelerator extras are mutually exclusive; see [docs/reference/dependencies.md](docs/reference/dependencies.md).
@@ -30,7 +30,7 @@ The installer sets up uv, Python 3.13, FFmpeg, checks Node/pnpm, detects the har
 scripts/run.sh                 # native desktop window
 scripts/run.sh --help          # any other arguments go to the videoflow CLI
 ```
-(`scripts\run.bat` or `scripts\run.ps1` on Windows; double-clicking `run.bat` opens the app.)
+(`scripts\3-run.bat` or `scripts\run.ps1` on Windows; double-clicking `3-run.bat` opens the app.)
 
 Use `videoflow desktop --project PATH.videoflow` to open/create a particular project. Import uses native dialogs and OS file drops: originals stay in place, and derived proxies, thumbnails and waveforms live in the project bundle. Read-only source folders use bundle-cached analysis. Offline sources can be relinked through a native picker without losing edits. `videoflow serve --project PATH.videoflow` is an explicit browser diagnostic option; normal desktop import never uploads or copies original media.
 
@@ -41,12 +41,12 @@ See [desktop runtime and platform checks](docs/reference/desktop-runtime.md) and
 ## Develop
 
 ```bash
-just test | smoke | lint | serve | build | package   # or scripts/dev.sh … (scripts\dev.bat or dev.ps1 on Windows)
+just test | smoke | lint | serve | build | package   # or scripts/dev.sh … (scripts\2-dev.bat or dev.ps1 on Windows)
 ```
 
 `test` runs the unit tier (CPU, synthetic media, no network; tests that need the `ml` extra are skipped without it); `smoke` runs the tests marked `smoke` (small CPU models, downloads them; needs an inference extra such as `cpu`/`smoke`, and `whisper` for the faster-whisper test). Synthetic samples are generated with FFmpeg (needs the `flite` filter) and cached under `VIDEOFLOW_SAMPLES_CACHE`.
 
-`build` rebuilds the editor interface (`frontend/dist`): run it after pulling frontend changes, since `scripts/run.*` serves the built files. `package` builds the interface, then the standalone desktop app with PyInstaller (only needed to distribute the app or to run it without the source tree). The standalone desktop build is in `releases/Video-Flow/Video-Flow.exe`. Keep the entire `Video-Flow/` folder together when moving or distributing it. Repository `tools/` is reserved for development dependencies.
+`build` (`scripts\4-build.bat`) rebuilds the editor interface (`frontend/dist`): run it after pulling frontend changes, since `scripts/run.*` serves the built files. `package` (`scripts\5-package.bat`) builds the interface, then the standalone desktop app with PyInstaller (only needed to distribute the app or to run it without the source tree). The standalone desktop build is in `releases/Video-Flow/Video-Flow.exe`. Keep the entire `Video-Flow/` folder together when moving or distributing it. Repository `tools/` is reserved for development dependencies.
 
 ## Features
 
