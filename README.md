@@ -95,5 +95,6 @@ Camtasia: Export → Camtasia project, or `uv run videoflow export BUNDLE --camt
 
 - [Documentation index](docs/README.md): product, features, architecture, decisions, reference
 - [Roadmap](docs/roadmap.md): what is built and what comes next
+- [Release notes](docs/release_notes.md): major changes per version
 - [Dependencies and accelerator matrix](docs/reference/dependencies.md)
 - [Agent guidelines](AGENTS.md): conventions for contributors and coding agents

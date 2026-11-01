@@ -30,6 +30,7 @@ Targets Windows and Linux (x64). AI runs on the NPU, then the GPU, then the CPU.
 
 - `README.md`: a snapshot of what is developed (what it does, install, run, usage). Always update and consolidate it with each feature: describe the current state, no history or changelog.
 - `docs/roadmap.md`: built / next / later. Update it with each feature.
+- `docs/release_notes.md`: major feature changes per version. Add an entry for every major feature change.
 - `docs/README.md`: index of the documentation. `docs/product/` functional spec, `docs/features/` one document per built feature (current behaviour), `docs/architecture/` how it is built, `docs/decisions/` dated decision records (history, not rewritten), `docs/reference/` dependencies and runtime notes, `docs/validation/` validation records.
 - `docs/reference/dependencies.md`: every dependency with version, licence and purpose. Update it with any dependency change.
 
@@ -37,6 +38,7 @@ Targets Windows and Linux (x64). AI runs on the NPU, then the GPU, then the CPU.
 
 - **Commits:** atomic, one feature or fix per commit, with a concise message prefixed by its type: `FEATURE:`, `FIX:`, `DOC:`, `DEV:` (tooling, tests, build, refactoring). Never add a `Co-Authored-By` or any other trailer mentioning AI co-authoring.
 - **Docs:** document every feature in `docs/features/` (new document or section, listed in `docs/README.md`), and update `README.md` and `docs/roadmap.md` in the same change. When a feature is removed or replaced, amend every description of it in `docs/`. Refer to documents by path (e.g. `docs/features/clip-effects.md`), not by number.
+- **Version:** bump the app version when a release-worthy change lands (minor for features, patch for fixes), in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json` together, and give it a section in `docs/release_notes.md`.
 - No refactoring, rollback, framework or major-version change without asking first.
 - Windows and Linux: pathlib, no `shell=True`, both `.sh` and `.ps1` scripts.
 - English everywhere (code, comments, docs, commit messages).

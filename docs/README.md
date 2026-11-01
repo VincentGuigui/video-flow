@@ -1,6 +1,6 @@
 # Video-Flow documentation
 
-Start with the [project README](../README.md) for what Video-Flow does and how to install and run it. The [roadmap](roadmap.md) lists what is built and what comes next.
+Start with the [project README](../README.md) for what Video-Flow does and how to install and run it. The [roadmap](roadmap.md) lists what is built and what comes next; the [release notes](release_notes.md) list major changes per version.
 
 | Folder | Content |
 |--------|---------|
@@ -39,6 +39,6 @@ Start with the [project README](../README.md) for what Video-Flow does and how t
 
 ## Writing rules
 
-- A new feature gets a document in `features/` (or a section in the closest one) and a row above; `README.md` and the [roadmap](roadmap.md) are updated in the same change.
+- A new feature gets a document in `features/` (or a section in the closest one) and a row above; `README.md`, the [roadmap](roadmap.md) and, for a major change, the [release notes](release_notes.md) are updated in the same change.
 - A replaced or removed behaviour is amended everywhere in `docs/`, so no document describes something that no longer exists. Decision records are history and are not rewritten.
 - Architecture documents predate the implementation; where they conflict with `features/`, the feature documents describe the actual behaviour.
