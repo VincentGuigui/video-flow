@@ -23,7 +23,7 @@ MiniLM blended with word overlap separates every pair, like mpnet, at 2.4× less
 ## Algorithm
 
 - Sentences: the transcript split as in [transcript panel](transcript-panel.md) (punctuation, pauses ≥ 0.7 s, 30 words), keeping sentences of two words or more.
-- Two sentences match when `0.5 × cosine + 0.5 × word overlap ≥ 0.68`. Without vectors (model not downloaded), word overlap alone must reach 0.60.
+- Two sentences match when `0.5 × cosine + 0.5 × word overlap ≥ 0.68`. Without vectors, word overlap alone must reach 0.60. MiniLM is a required model, so an import that needs transcription waits for it; the word-overlap-only fallback applies when an existing analysis sidecar is reused while MiniLM is missing.
 - Coverage of clip A in clip B: share of A's words in sentences that match some sentence of B. Retake score = max(coverage A→B, B→A), so a partial retake matches its full take in either order.
 - On analysed import, the new clip is compared with every clip already in the edit that has a transcript; the best score ≥ 0.5 wins. The new clip is placed at that clip's position on a new lane (its video clip if it has one), so it appears in Compare takes ([compare takes](compare-takes.md)). Otherwise it is appended.
 - Sentence vectors are computed in the import worker and cached per source in `features/sentences/` of the bundle; the speech engines are not loaded for that. No model is downloaded implicitly: the model is required in Settings, and grouping falls back to word overlap while it is missing.
