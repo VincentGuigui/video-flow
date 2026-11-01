@@ -23,7 +23,7 @@ Targets Windows and Linux (x64). AI runs on the NPU, then the GPU, then the CPU.
 |------|---------|
 | `backend/` | API, editor model, media, analysis engines, render, exporters, desktop shell, tests |
 | `frontend/` | Editor UI; `src/*.ts` pure logic with vitest tests, `src/ui/` React components |
-| `scripts/` | Install, run and dev scripts (`*.sh` Linux, `*.ps1` Windows), desktop build spec |
+| `scripts/` | Install, run and dev scripts (`*.sh` Linux, `*.ps1` and `*.bat` Windows), desktop build spec |
 | `docs/` | Documentation |
 
 ## Documentation
@@ -40,7 +40,7 @@ Targets Windows and Linux (x64). AI runs on the NPU, then the GPU, then the CPU.
 - **Docs:** document every feature in `docs/features/` (new document or section, listed in `docs/README.md`), and update `README.md` and `docs/roadmap.md` in the same change. When a feature is removed or replaced, amend every description of it in `docs/`. Refer to documents by path (e.g. `docs/features/clip-effects.md`), not by number.
 - **Version:** bump the app version when a release-worthy change lands (minor for features, patch for fixes), in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json` together, and give it a section in `docs/release_notes.md`.
 - No refactoring, rollback, framework or major-version change without asking first.
-- Windows and Linux: pathlib, no `shell=True`, both `.sh` and `.ps1` scripts.
+- Windows and Linux: pathlib, no `shell=True`; every script exists as `.sh` (Linux), `.ps1` (Windows) and a `.bat` wrapper that runs the `.ps1`.
 - English everywhere (code, comments, docs, commit messages).
 
 ## Checks
