@@ -81,13 +81,15 @@ def load_analysis(source: Path, digest: str, bundle: Bundle) -> AnalysisFile | N
     return None
 
 
-def store_analysis(source: Path, analysis: AnalysisFile, bundle: Bundle) -> tuple[Path, str | None]:
-    """Always cache first, then attempt a non-overwriting source-adjacent sidecar."""
+def store_analysis(
+    source: Path, analysis: AnalysisFile, bundle: Bundle, *, overwrite: bool = False
+) -> tuple[Path, str | None]:
+    """Always cache first, then attempt a source-adjacent sidecar (replaced on re-analysis)."""
     cache = cached_path(bundle, analysis.source_hash or "")
     cache.parent.mkdir(parents=True, exist_ok=True)
     save_atomic(cache, (json.dumps(analysis.dump(), ensure_ascii=False, indent=2) + "\n").encode())
     try:
-        write_sidecar(source, analysis)
+        write_sidecar(source, analysis, overwrite=overwrite)
         return sidecar_path(source), None
     except OSError as exc:
         return (
@@ -112,9 +114,9 @@ def describe(transcript: Transcript, digest: str) -> AnalysisFile:
     )
 
 
-def write_sidecar(source: Path, analysis: AnalysisFile) -> None:
+def write_sidecar(source: Path, analysis: AnalysisFile, *, overwrite: bool = False) -> None:
     target = sidecar_path(source)
-    if target.exists():
+    if target.exists() and not overwrite:
         raise FileExistsError(f"Will not overwrite existing analysis: {target}")
     save_atomic(target, (json.dumps(analysis.dump(), ensure_ascii=False, indent=2) + "\n").encode())
 

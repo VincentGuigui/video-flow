@@ -32,12 +32,16 @@ interface Item {
   id?: string;
 }
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// Imports media, or (with `reanalyse`) analyses one imported medium again, replacing its
+// analysis JSON: the same dialog, progress and model prompt serve both.
 export function ImportDialog({
   selections,
   onClose,
+  reanalyse,
 }: {
   selections: NativeFile[];
   onClose: () => void;
+  reanalyse?: { assetId: string; name: string };
 }) {
   const { load, roots, set } = useEditor();
   const [analyse, setAnalyse] = useState(true),
@@ -52,7 +56,9 @@ export function ImportDialog({
     active = useRef<string | null>(null);
   useEffect(() => {
     void api<SettingsData>("/settings")
-      .then((data) => setAnalyse(data.preferences.analyseImports))
+      .then((data) =>
+        setAnalyse(!!reanalyse || data.preferences.analyseImports),
+      )
       .catch((e) => setError(String(e)));
   }, []);
   const prompted = useRef(false);
@@ -65,9 +71,11 @@ export function ImportDialog({
     stopped.current = false;
     setRunning(true);
     setError("");
-    const names = selections.length
-      ? selections.map((f) => f.name)
-      : [path.split(/[\\/]/).at(-1) ?? path];
+    const names = reanalyse
+      ? [reanalyse.name]
+      : selections.length
+        ? selections.map((f) => f.name)
+        : [path.split(/[\\/]/).at(-1) ?? path];
     setItems(
       names.map((name) => ({
         name,
@@ -82,15 +90,22 @@ export function ImportDialog({
         skip.current = false;
         update(i, { state: "running", phase: "Referencing original file" });
         try {
-          const job = selections.length
-            ? await api<Job>("/native-import", {
+          const job = reanalyse
+            ? await api<Job>(`/assets/${reanalyse.assetId}/analyse`, {
                 method: "POST",
-                body: JSON.stringify({ handle: selections[i].handle, analyse }),
               })
-            : await api<Job>("/import-path", {
-                method: "POST",
-                body: JSON.stringify({ path, analyse }),
-              });
+            : selections.length
+              ? await api<Job>("/native-import", {
+                  method: "POST",
+                  body: JSON.stringify({
+                    handle: selections[i].handle,
+                    analyse,
+                  }),
+                })
+              : await api<Job>("/import-path", {
+                  method: "POST",
+                  body: JSON.stringify({ path, analyse }),
+                });
           active.current = job.id;
           if (stopped.current || skip.current)
             await api("/jobs/cancel?job_id=" + job.id, { method: "POST" });
@@ -173,11 +188,17 @@ export function ImportDialog({
           <div>
             <span className="overline">BRING YOUR STORY IN</span>
             <h2>
-              {running
-                ? "Importing clips"
-                : finished
-                  ? "Import complete"
-                  : "Add to your assembly"}
+              {reanalyse
+                ? running
+                  ? "Analysing"
+                  : finished
+                    ? "Analysis complete"
+                    : "Analyse again"
+                : running
+                  ? "Importing clips"
+                  : finished
+                    ? "Import complete"
+                    : "Add to your assembly"}
             </h2>
           </div>
           <button
@@ -192,11 +213,13 @@ export function ImportDialog({
         {!running && !finished ? (
           <>
             <p className="muted">
-              {selections.length
-                ? `${selections.length} original file${selections.length === 1 ? "" : "s"} selected. No media will be copied.`
-                : "Import a local video or audio file using its full path."}
+              {reanalyse
+                ? `${reanalyse.name}: the existing analysis (transcript, summary, keywords, topics) is replaced. The clips in your edit are kept.`
+                : selections.length
+                  ? `${selections.length} original file${selections.length === 1 ? "" : "s"} selected. No media will be copied.`
+                  : "Import a local video or audio file using its full path."}
             </p>
-            {!selections.length && (
+            {!selections.length && !reanalyse && (
               <label className="field-label">
                 Local file path
                 <input
@@ -216,26 +239,33 @@ export function ImportDialog({
             >
               <span className="radio-dot" />
               <div>
-                <strong>Analyse & group similar takes</strong>
+                <strong>
+                  {reanalyse
+                    ? "Analyse again"
+                    : "Analyse & group similar takes"}
+                </strong>
                 <p>
-                  Reuse existing JSON, or transcribe and create a summary and
-                  keywords. Matching clips become parallel choices.
+                  {reanalyse
+                    ? "Transcribe again and create a new summary, keywords and topics."
+                    : "Reuse existing JSON, or transcribe and create a summary and keywords. Matching clips become parallel choices."}
                 </p>
                 <small>
                   Missing models require your approval before downloading.
                 </small>
               </div>
             </button>
-            <button
-              className={`analysis-option ${!analyse ? "chosen" : ""}`}
-              onClick={() => setAnalyse(false)}
-            >
-              <span className="radio-dot" />
-              <div>
-                <strong>Import only</strong>
-                <p>Add clips in sequence. Start editing immediately.</p>
-              </div>
-            </button>
+            {!reanalyse && (
+              <button
+                className={`analysis-option ${!analyse ? "chosen" : ""}`}
+                onClick={() => setAnalyse(false)}
+              >
+                <span className="radio-dot" />
+                <div>
+                  <strong>Import only</strong>
+                  <p>Add clips in sequence. Start editing immediately.</p>
+                </div>
+              </button>
+            )}
             <div className="modal-footer">
               <span>
                 <FolderOpen size={14} />
@@ -243,10 +273,13 @@ export function ImportDialog({
               </span>
               <button
                 className="primary"
-                disabled={!selections.length && !path.trim()}
+                disabled={!reanalyse && !selections.length && !path.trim()}
                 onClick={() => void run()}
               >
-                Import {selections.length || "clip"} <ArrowRight size={15} />
+                {reanalyse
+                  ? "Analyse"
+                  : `Import ${selections.length || "clip"}`}{" "}
+                <ArrowRight size={15} />
               </button>
             </div>
           </>

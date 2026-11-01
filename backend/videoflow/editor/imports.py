@@ -78,10 +78,11 @@ class Imports:
         )
         self.proxies: dict[str, Path] = {}
 
-    def submit(self, path: Path, analyse: bool) -> ImportJob:
+    def submit(self, path: Path, analyse: bool, *, reanalyse: bool = False) -> ImportJob:
+        """Import (and analyse) a source; `reanalyse` ignores and replaces its analysis."""
         job = ImportJob(id=new_id("job"), filename=path.name)
         self.jobs[job.id] = job
-        self.tasks[job.id] = asyncio.create_task(self._run(job, path, analyse))
+        self.tasks[job.id] = asyncio.create_task(self._run(job, path, analyse, reanalyse))
         return job
 
     async def cancel(self, job_id: str | None = None) -> None:
@@ -101,7 +102,9 @@ class Imports:
         await self.cancel()
         await self.workers.aclose()
 
-    async def _run(self, job: ImportJob, path: Path, analyse: bool) -> None:
+    async def _run(
+        self, job: ImportJob, path: Path, analyse: bool, reanalyse: bool = False
+    ) -> None:
         try:
             async with self.lock:
                 job.state, job.phase = "running", "Reading media"
@@ -138,7 +141,9 @@ class Imports:
                 qwen_warning = ""
                 if analyse:
                     job.phase, job.progress = "Checking analysis JSON", 0.45
-                    analysis = load_analysis(path, asset.content_hash, self.bundle)
+                    analysis = (
+                        None if reanalyse else load_analysis(path, asset.content_hash, self.bundle)
+                    )
                     job.cached = analysis is not None
                     if analysis is None:
                         if asset.probe.has_audio:
@@ -209,7 +214,9 @@ class Imports:
                                 pcm.unlink(missing_ok=True)
                         else:
                             analysis = AnalysisFile(source_hash=asset.content_hash)
-                        location, job.warning = store_analysis(path, analysis, self.bundle)
+                        location, job.warning = store_analysis(
+                            path, analysis, self.bundle, overwrite=reanalyse
+                        )
                         if qwen_warning:
                             job.warning = " ".join(filter(None, [qwen_warning, job.warning]))
                         job.analysis_path = str(location)

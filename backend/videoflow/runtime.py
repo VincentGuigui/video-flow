@@ -43,6 +43,19 @@ def model_directory() -> Path:
     return path
 
 
+def reveal_file(path: Path) -> None:
+    """Show a file selected in the system file manager (its folder where selection is not
+    supported)."""
+    import subprocess
+
+    if sys.platform == "win32":
+        subprocess.Popen(["explorer", f"/select,{path}"])  # noqa: S607
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", "-R", str(path)])  # noqa: S607
+    else:
+        open_folder(path.parent)
+
+
 def open_folder(path: Path) -> None:
     """Show a folder in the system file manager (Windows Explorer or the Linux default)."""
     path.mkdir(parents=True, exist_ok=True)

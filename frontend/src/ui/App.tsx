@@ -41,6 +41,7 @@ import {
   restoreAudio,
   split,
   timecode,
+  type Asset,
   type Clip,
 } from "../model";
 import { api, updateClip, useEditor, flushClipUpdates } from "../store";
@@ -69,6 +70,7 @@ import { useAnalysis } from "./useAnalysis";
 import { currentRange, currentWindow, togglePlay } from "../playback";
 import { autoTrim, deleteRange, trimToRange } from "../range";
 import { ImportDialog } from "./Imports";
+import { MediaInfoDialog, MediaMenu } from "./MediaInfo";
 import { native, type NativeFile, type NativeSelection } from "../desktop";
 
 const RESOLUTIONS = [
@@ -103,6 +105,13 @@ export function App() {
     } = state;
   const [importFiles, setImportFiles] = useState<NativeFile[] | null>(null),
     [home, setHome] = useState(false),
+    [mediaMenu, setMediaMenu] = useState<{
+      asset: Asset;
+      x: number;
+      y: number;
+    } | null>(null),
+    [mediaInfo, setMediaInfo] = useState<Asset | null>(null),
+    [reanalyse, setReanalyse] = useState<Asset | null>(null),
     [settings, setSettings] = useState(false),
     [modelPrompt, setModelPrompt] = useState(false),
     [help, setHelp] = useState(false),
@@ -460,6 +469,11 @@ export function App() {
               <div
                 className={`library-asset ${state.selectedAssets.includes(asset.id) ? "selected" : ""}`}
                 key={asset.id}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  set({ selectedAssets: [asset.id] });
+                  setMediaMenu({ asset, x: e.clientX, y: e.clientY });
+                }}
                 onClick={(e) =>
                   set({
                     selectedAssets:
@@ -619,6 +633,34 @@ export function App() {
           onClose={() => setImportFiles(null)}
         />
       )}
+      {mediaMenu && (
+        <MediaMenu
+          x={mediaMenu.x}
+          y={mediaMenu.y}
+          onClose={() => setMediaMenu(null)}
+          onAnalyse={() => {
+            setReanalyse(mediaMenu.asset);
+            setMediaMenu(null);
+          }}
+          onInfo={() => {
+            setMediaInfo(mediaMenu.asset);
+            setMediaMenu(null);
+          }}
+        />
+      )}
+      {mediaInfo && (
+        <MediaInfoDialog asset={mediaInfo} onClose={() => setMediaInfo(null)} />
+      )}
+      {reanalyse && (
+        <ImportDialog
+          selections={[]}
+          reanalyse={{
+            assetId: reanalyse.id,
+            name: reanalyse.path.split(/[\\/]/).at(-1) ?? reanalyse.id,
+          }}
+          onClose={() => setReanalyse(null)}
+        />
+      )}
       {state.compare && <Compare clipId={state.compare} />}
       {settings && (
         <Settings requested={modelPrompt} onClose={() => setSettings(false)} />
@@ -748,7 +790,9 @@ export function App() {
 function Inspector({ clip }: { clip: Clip | undefined }) {
   const selectedClips = useEditor((s) => s.selectedClips);
   const { project, document, save, busy } = useEditor();
-  const [tab, setTab] = useState("Clip");
+  const tab = useEditor((s) => s.inspectorTab),
+    setTab = (inspectorTab: typeof tab) =>
+      useEditor.getState().set({ inspectorTab });
   const analysis = useAnalysis(clip?.assetId ?? null);
   const rate = project ? fps(project.settings) : 30;
   const candidates = clip ? linkCandidates(pack(document), clip.id) : [];
@@ -776,8 +820,8 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
     <aside className="inspector">
       <div className="inspector-tabs">
         {(clip && clip.kind !== "text"
-          ? ["Clip", "Transcript", "Project"]
-          : ["Clip", "Project"]
+          ? (["Clip", "Transcript", "Project"] as const)
+          : (["Clip", "Project"] as const)
         ).map((t) => (
           <button
             key={t}

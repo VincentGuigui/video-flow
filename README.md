@@ -56,6 +56,7 @@ just test | smoke | lint | serve | build | package   # or scripts/dev.sh … (sc
 - **Transitions:** Cut, Cross dissolve, Dip to black or Dip to white on the cut before or after a video clip, or on all cuts. Dissolves use media beyond the cut and are shortened (with a warning) when there is not enough.
 - **Clip effects:** fade in/out (picture and sound); speed 25–400 % or fit to the range, audio keeping its pitch; zoom & pan toward a clicked point; mute a range; duck music (an audio clip not linked to a video) by 15 dB under transcribed speech.
 - **Titles:** Title and Lower third in the clip flow toolbar add a text clip at the cursor, above the picture; edit text, style, size, colours and box in clip properties.
+- **Media menu:** right-click a medium in Project media for Info (size, duration, location shown in the file manager, analysis and transcript) or Analysis… (transcribe again and replace its analysis).
 - **Zones:** Ctrl+A selects everything in the zone last clicked (project media, timeline, clip flow or editor); Delete removes it. Removing media also removes its clips; undo restores both.
 
 Everything plays in the preview, renders in the MP4 and is exported to Camtasia; the [feature documents](docs/README.md#features) give the details.

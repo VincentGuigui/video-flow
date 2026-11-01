@@ -261,7 +261,7 @@ def test_cached_analysis_reused_and_readonly_fallback(client, app_bundle, origin
     analysis = AnalysisFile(source_hash=digest, words=[], summary="Cached", keywords=["test"])
     monkeypatch.setattr(
         "videoflow.editor.analysis.write_sidecar",
-        lambda *_: (_ for _ in ()).throw(PermissionError("read-only")),
+        lambda *_, **__: (_ for _ in ()).throw(PermissionError("read-only")),
     )
     location, warning = store_analysis(original, analysis, bundle)
     assert warning and location == cached_path(bundle, digest)
@@ -402,3 +402,41 @@ def test_close_and_rename_release_and_move_the_open_project(client, app_bundle, 
     opened = client.post("/api/projects/action", json={"kind": "open", "id": identifier})
     assert opened.status_code == 200
     assert client.get("/api/project").json()["project"]["name"] == "Cut B"
+
+
+def test_media_info_reveal_and_reanalysis(client, app_bundle, original, monkeypatch):
+    from videoflow.api import app as module
+    from videoflow.media.hashing import content_hash_sync
+
+    revealed = []
+    monkeypatch.setattr(module, "reveal_file", revealed.append)
+    job = client.post(
+        "/api/native-import", json={"handle": grant(client, original), "analyse": False}
+    ).json()
+    assert await_job(client, job["id"])["state"] == "done"
+    _, bundle = app_bundle
+    asset = bundle.project.assets[0]
+    info = client.get(f"/api/assets/{asset.id}/info").json()
+    assert info["online"] and info["size"] == original.stat().st_size
+    assert info["analysis"] is None and info["sidecar"] is None
+    analysis = AnalysisFile(
+        source_hash=content_hash_sync(original), summary="Before", keywords=["k"], words=[]
+    )
+    original.with_suffix(".json").write_text(json.dumps(analysis.dump()), encoding="utf-8")
+    info = client.get(f"/api/assets/{asset.id}/info").json()
+    assert info["analysis"]["summary"] == "Before"
+    assert info["sidecar"] == str(original.with_suffix(".json"))
+    assert client.post(f"/api/assets/{asset.id}/reveal").status_code == 200
+    assert client.post(f"/api/assets/{asset.id}/reveal?target=analysis").status_code == 200
+    assert revealed == [Path(asset.path), original.with_suffix(".json")]
+    # Re-analysis ignores the existing JSON: it transcribes (or waits for the models).
+    rerun = client.post(f"/api/assets/{asset.id}/analyse").json()
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        current = next(j for j in client.get("/api/jobs").json() if j["id"] == rerun["id"])
+        if current["phase"] not in ("Waiting", "Reading media", "Preparing playback"):
+            break
+        time.sleep(0.05)
+    assert not current["cached"] and current["state"] in ("running", "waiting-models", "done")
+    client.post(f"/api/jobs/cancel?job_id={rerun['id']}")
+    assert client.post("/api/assets/missing/analyse").status_code == 404

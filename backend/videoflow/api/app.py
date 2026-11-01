@@ -23,7 +23,12 @@ from pydantic import Field
 
 from videoflow.core.base import CamelModel
 from videoflow.desktop.grants import SelectionGrants
-from videoflow.editor.analysis import AnalysisFile, load_analysis
+from videoflow.editor.analysis import (
+    AnalysisFile,
+    cached_path,
+    load_analysis,
+    sidecar_path,
+)
 from videoflow.editor.imports import Imports
 from videoflow.editor.models import Title
 from videoflow.editor.playback import PlaybackProxies
@@ -42,7 +47,7 @@ from videoflow.project.commands import Command, RelinkAsset
 from videoflow.project.library import ProjectLibrary, open_bundle
 from videoflow.project.store import Bundle, ProjectStoreError, StaleRevisionError
 from videoflow.render.jobs import Renders
-from videoflow.runtime import cache_root, open_folder, recent_projects_file
+from videoflow.runtime import cache_root, open_folder, recent_projects_file, reveal_file
 
 
 class Patch(CamelModel):
@@ -633,6 +638,67 @@ def create_app(
         except (ValueError, OSError) as exc:
             raise HTTPException(422, str(exc)) from exc
         return result.dump() if result else None
+
+    def known_asset(asset_id: str) -> Any:
+        asset = bundle.project.asset(asset_id)
+        if asset is None:
+            raise HTTPException(404, "Unknown asset")
+        return asset
+
+    @app.get("/api/assets/{asset_id}/info")
+    async def asset_info(asset_id: str) -> Any:
+        """File, analysis and transcript facts for the media Info dialog."""
+        asset = known_asset(asset_id)
+
+        def facts() -> dict[str, Any]:
+            source = Path(asset.path)
+            sidecar, cached = sidecar_path(source), cached_path(bundle, asset.content_hash)
+            analysis = load_analysis(source, asset.content_hash, bundle)
+            return {
+                "path": str(source),
+                "relPath": asset.rel_path,
+                "online": source.is_file(),
+                "size": source.stat().st_size if source.is_file() else None,
+                "sidecar": str(sidecar) if sidecar.is_file() else None,
+                "cachedAnalysis": str(cached) if cached.is_file() else None,
+                "analysis": None
+                if analysis is None
+                else {
+                    "words": len(analysis.words),
+                    "topics": len(analysis.topics or []),
+                    "summary": analysis.summary,
+                    "keywords": analysis.keywords,
+                    "summaryEngine": analysis.summary_engine,
+                },
+            }
+
+        return await asyncio.to_thread(facts)
+
+    @app.post("/api/assets/{asset_id}/reveal")
+    async def reveal_asset(asset_id: str, target: Literal["media", "analysis"] = "media") -> Any:
+        """Show the media file, or its analysis JSON, selected in the file manager."""
+        asset = known_asset(asset_id)
+        source = Path(asset.path)
+        path = source
+        if target == "analysis":
+            sidecar = sidecar_path(source)
+            path = sidecar if sidecar.is_file() else cached_path(bundle, asset.content_hash)
+        if not await asyncio.to_thread(path.is_file):
+            raise HTTPException(404, f"{path.name} not found")
+        try:
+            await asyncio.to_thread(reveal_file, path)
+        except OSError as exc:
+            raise HTTPException(422, f"Could not show {path}: {exc}") from exc
+        return {"path": str(path)}
+
+    @app.post("/api/assets/{asset_id}/analyse")
+    async def reanalyse_asset(asset_id: str) -> Any:
+        """Analyse a source again, replacing its analysis JSON (import job progress)."""
+        asset = known_asset(asset_id)
+        source = Path(asset.path)
+        if not await asyncio.to_thread(source.is_file):
+            raise HTTPException(422, "The original media is offline; relink it first")
+        return imports.submit(source, True, reanalyse=True).dump()
 
     @app.get("/api/waveform/{asset_id}")
     async def waveform(asset_id: str) -> Any:
