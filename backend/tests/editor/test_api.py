@@ -463,3 +463,42 @@ def test_delete_moves_a_closed_project_to_the_trash(client, app_bundle, monkeypa
         == 200
     )
     assert client.get("/api/projects").json() == []
+
+
+def test_ffmpeg_status_and_consented_install(client, tmp_path, monkeypatch):
+    from dataclasses import replace
+    from io import BytesIO
+    from zipfile import ZipFile
+
+    from videoflow.media import ffmpeg_install
+
+    buffer = BytesIO()
+    with ZipFile(buffer, "w") as bundle:
+        for name in ("bin/ffmpeg.exe", "bin/ffprobe.exe", "LICENSE"):
+            bundle.writestr(f"ffmpeg-7.1.1-full_build/{name}", b"x")
+    source = tmp_path / "ffmpeg.zip"
+    source.write_bytes(buffer.getvalue())
+    build = replace(
+        ffmpeg_install.BUILDS["windows-x64"],
+        url=source.as_uri(),
+        sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+        size=source.stat().st_size,
+    )
+    target = tmp_path / "tools" / "ffmpeg"
+    monkeypatch.setattr(ffmpeg_install, "current_build", lambda: build)
+    monkeypatch.setattr(ffmpeg_install, "tools_dir", lambda: target)
+
+    state = client.get("/api/ffmpeg").json()
+    assert state["build"]["sha256"] == build.sha256 and state["job"] is None
+    assert state["minimum"] == "6.1" and state["target"] == str(target)
+    client.post("/api/ffmpeg/install")
+    for _ in range(100):
+        job = client.get("/api/ffmpeg").json()["job"]
+        if job["state"] != "running":
+            break
+        time.sleep(0.05)
+    assert job["state"] == "done", job
+    assert sorted(p.name for p in target.iterdir()) == ["LICENSE", "ffmpeg.exe", "ffprobe.exe"]
+
+    monkeypatch.setattr(ffmpeg_install, "current_build", lambda: None)
+    assert client.post("/api/ffmpeg/install").status_code == 422

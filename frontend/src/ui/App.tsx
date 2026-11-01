@@ -47,6 +47,7 @@ import {
 import { api, updateClip, useEditor, flushClipUpdates } from "../store";
 import { Settings, type SettingsData } from "./Settings";
 import { ManageModels } from "./ManageModels";
+import { FfmpegSetup, type FfmpegState } from "./FfmpegSetup";
 import { InterfaceZoom } from "./InterfaceZoom";
 import { RenderPanel } from "./RenderPanel";
 import { Home } from "./Home";
@@ -115,6 +116,7 @@ export function App() {
     [reanalyse, setReanalyse] = useState<Asset | null>(null),
     [settings, setSettings] = useState(false),
     [modelPrompt, setModelPrompt] = useState(false),
+    [ffmpegPrompt, setFfmpegPrompt] = useState(false),
     [help, setHelp] = useState(false),
     [drag, setDrag] = useState(false),
     [output, setOutput] = useState(false),
@@ -135,6 +137,10 @@ export function App() {
   }, [project?.name]);
   useEffect(() => {
     void load();
+    // FFmpeg first: without it nothing can be imported or rendered.
+    void api<FfmpegState>("/ffmpeg")
+      .then((data) => setFfmpegPrompt(!data.available))
+      .catch((e) => set({ error: String(e) }));
     void api<SettingsData>("/settings")
       .then((data) => {
         if (
@@ -209,6 +215,7 @@ export function App() {
         target.closest('input,textarea,select,[contenteditable="true"]') ||
         settings ||
         modelPrompt ||
+        ffmpegPrompt ||
         home ||
         useEditor.getState().closed ||
         importFiles ||
@@ -305,7 +312,7 @@ export function App() {
     }
     window.addEventListener("keydown", keyboard);
     return () => window.removeEventListener("keydown", keyboard);
-  }, [settings, modelPrompt, home, importFiles, help, output]);
+  }, [settings, modelPrompt, ffmpegPrompt, home, importFiles, help, output]);
   // The home page closes the project: the server releases its workers and files, and
   // the editor unmounts its media. Opening or creating a project loads it again.
   async function closeProject() {
@@ -664,7 +671,10 @@ export function App() {
       )}
       {state.compare && <Compare clipId={state.compare} />}
       {settings && <Settings onClose={() => setSettings(false)} />}
-      {modelPrompt && (
+      {ffmpegPrompt && (
+        <FfmpegSetup requested onClose={() => setFfmpegPrompt(false)} />
+      )}
+      {modelPrompt && !ffmpegPrompt && (
         <ManageModels requested onClose={() => setModelPrompt(false)} />
       )}
       {help && (

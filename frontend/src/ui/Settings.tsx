@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Cpu, X } from "lucide-react";
+import { Cpu, Film, X } from "lucide-react";
 import { api, useEditor } from "../store";
 import { CacheSettings } from "./CacheSettings";
 import { ManageModels } from "./ManageModels";
+import { FfmpegSetup } from "./FfmpegSetup";
 
 export interface Preferences {
   summaryEngine: "deterministic" | "qwen";
@@ -41,7 +42,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
     [preferences, setPreferences] = useState<Preferences | null>(null),
     [saving, setSaving] = useState(false),
     [message, setMessage] = useState(""),
-    [models, setModels] = useState(false);
+    [models, setModels] = useState(false),
+    [ffmpeg, setFfmpeg] = useState(false);
   const { set } = useEditor();
   useEffect(() => {
     let stopped = false;
@@ -222,10 +224,24 @@ export function Settings({ onClose }: { onClose: () => void }) {
                 </button>
               </div>
             </div>
+            <h3>FFmpeg</h3>
+            <div className="settings-cache">
+              <p className="muted">
+                The media tool used to read, preview and render video. Check its
+                version or install it.
+              </p>
+              <div className="cache-actions">
+                <button className="button" onClick={() => setFfmpeg(true)}>
+                  <Film size={15} />
+                  FFmpeg…
+                </button>
+              </div>
+            </div>
           </>
         )}
       </section>
       {models && <ManageModels onClose={() => setModels(false)} />}
+      {ffmpeg && <FfmpegSetup onClose={() => setFfmpeg(false)} />}
     </div>
   );
 }

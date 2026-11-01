@@ -6,6 +6,7 @@ import os
 import secrets
 import shutil
 import sys
+import threading
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -36,7 +37,7 @@ from videoflow.editor.resolve import editable_document
 from videoflow.editor.titles import title_png
 from videoflow.engines.downloads import ModelDownloads, fetch_download_sizes
 from videoflow.exporters.service import export_project
-from videoflow.media import ffmpeg
+from videoflow.media import ffmpeg, ffmpeg_install
 from videoflow.media.hashing import content_hash
 from videoflow.media.ingest import MEDIA_EXTENSIONS
 from videoflow.media.peaks import compute_peaks, read_peaks
@@ -193,6 +194,74 @@ def create_app(
             "preferences": preferences.dump(),
             **await asyncio.to_thread(downloads.status, preferences),
         }
+
+    ffmpeg_job: dict[str, Any] = {}
+    ffmpeg_cancel = threading.Event()
+    ffmpeg_tasks: set[asyncio.Task[None]] = set()
+
+    def ffmpeg_status() -> dict[str, Any]:
+        from videoflow.media.caps import get_caps
+
+        try:
+            caps = get_caps(refresh=True)
+            available = caps.version_tuple >= (6, 1, 0)
+            found: dict[str, Any] = {"version": caps.version, "path": str(caps.ffmpeg)}
+        except (OSError, ValueError, RuntimeError):
+            available, found = False, {"version": None, "path": None}
+        build = ffmpeg_install.current_build()
+        return {
+            "available": available,
+            **found,
+            "minimum": "6.1",
+            "build": ffmpeg_install.describe(build) if build else None,
+            "target": str(ffmpeg_install.tools_dir()),
+            "job": dict(ffmpeg_job) or None,
+        }
+
+    @app.get("/api/ffmpeg")
+    async def ffmpeg_state() -> Any:
+        """Whether a usable FFmpeg (6.1+) is found, and the pinned build that can be installed."""
+        return await asyncio.to_thread(ffmpeg_status)
+
+    @app.post("/api/ffmpeg/install")
+    async def ffmpeg_download() -> Any:
+        """Download the pinned FFmpeg build into tools/ffmpeg/, on the user's request."""
+        build = ffmpeg_install.current_build()
+        if build is None:
+            raise HTTPException(422, "No FFmpeg build is pinned for this system; install it")
+        if ffmpeg_job.get("state") == "running":
+            return dict(ffmpeg_job)
+        ffmpeg_cancel.clear()
+        ffmpeg_job.clear()
+        ffmpeg_job.update(state="running", progress=0.0, phase="Starting", error=None)
+
+        def progress(value: float, phase: str) -> None:
+            ffmpeg_job.update(progress=value, phase=phase)
+
+        async def run() -> None:
+            try:
+                await asyncio.to_thread(
+                    ffmpeg_install.install,
+                    build,
+                    ffmpeg_install.tools_dir(),
+                    progress,
+                    ffmpeg_cancel,
+                )
+                ffmpeg_job.update(state="done", progress=1.0, phase="FFmpeg installed")
+            except InterruptedError:
+                ffmpeg_job.update(state="cancelled", phase="Cancelled")
+            except Exception as exc:  # network, checksum, disk: reported to the user
+                ffmpeg_job.update(state="failed", error=str(exc))
+
+        task = asyncio.create_task(run())
+        ffmpeg_tasks.add(task)
+        task.add_done_callback(ffmpeg_tasks.discard)
+        return dict(ffmpeg_job)
+
+    @app.post("/api/ffmpeg/cancel")
+    async def ffmpeg_stop() -> Any:
+        ffmpeg_cancel.set()
+        return {"ok": True}
 
     @app.get("/api/cache")
     async def cache_usage() -> Any:

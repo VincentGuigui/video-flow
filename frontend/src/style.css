@@ -2612,3 +2612,11 @@ button.timecode:hover {
 .model-sizes {
   font-variant-numeric: tabular-nums;
 }
+.ffmpeg-facts {
+  margin: 10px 0 14px;
+  padding-left: 20px;
+  line-height: 1.6;
+}
+.ffmpeg-facts code {
+  word-break: break-all;
+}
