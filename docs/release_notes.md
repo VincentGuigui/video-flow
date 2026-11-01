@@ -9,4 +9,4 @@ Major feature changes per version. The version is set in `backend/pyproject.toml
 - Retakes stacked on import by sentence similarity; compare takes side by side and pick one.
 - Editing: layered clip flow, linked video/audio, split, lift, ripple delete, trim modes, undo/redo, timeline range, transcript-driven trimming, auto-trim silence, workspace zones with select all and delete.
 - Finishing: transitions (dissolve, dips), fades, speed, zoom & pan, mute ranges, ducking under speech, titles and lower thirds.
-- Output: MP4 render with loudness normalisation; OTIO, OTIOZ, EDL, SRT, paper edit, transcript and Camtasia 2023.4+ exports.
+- Output: MP4 render with loudness normalisation; OTIO, OTIOZ, EDL, SRT, paper edit and Camtasia 2023.4+ exports.

@@ -9,7 +9,7 @@ Snapshot of what is built and what comes next. Update it with every feature. His
 - **Retakes:** retakes stacked on import by sentence similarity; compare takes side by side and pick one. See [retake grouping](features/retake-grouping.md), [compare takes](features/compare-takes.md).
 - **Editing:** layered clip flow and timeline, linked video/audio, split, lift, ripple delete, trim modes, focus, undo/redo, transforms and backgrounds, timeline range and range playback, transcript-driven trim and delete, auto-trim silence, detach and restore audio, workspace zones with select all and delete. See [unified timeline](features/unified-timeline.md), [range and trim](features/range-and-trim.md), [audio tracks](features/audio-tracks.md), [workspace zones](features/workspace-zones.md).
 - **Finishing:** cross dissolve and dips, edge fades, speed, zoom & pan, mute ranges, ducking under speech, titles and lower thirds. See [transitions](features/transitions.md), [clip effects](features/clip-effects.md).
-- **Output:** MP4 render with hardware encoders when available and loudness normalisation; OTIO, OTIOZ, EDL, SRT, paper edit, transcript and Camtasia 2023.4+ exports. See [render and export](architecture/render-export.md), [Camtasia export](features/camtasia-export.md).
+- **Output:** MP4 render with hardware encoders when available and loudness normalisation; OTIO, OTIOZ, EDL, SRT, paper edit and Camtasia 2023.4+ exports. See [render and export](architecture/render-export.md), [Camtasia export](features/camtasia-export.md).
 
 ## Next
 
