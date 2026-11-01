@@ -227,6 +227,12 @@ class Imports:
                         job.phase, job.progress = "Matching retakes", 0.9
                         match = await self._match(asset, analysis)
                     job.inverses = self._publish(asset, match)
+                elif reanalyse and analysis and analysis.words:
+                    # A new analysis may reveal the retake it belongs to: stack it there.
+                    job.phase, job.progress = "Matching retakes", 0.9
+                    match = await self._match(asset, analysis)
+                    if match:
+                        job.inverses = self._restack(asset.id, match)
                 job.asset_id, job.state, job.progress, job.phase = asset.id, "done", 1, "Ready"
         except asyncio.CancelledError:
             job.state, job.phase = "cancelled", "Cancelled"
@@ -264,6 +270,40 @@ class Imports:
                     candidates.append(await self._clip_text(other, previous, embed))
         found = best_match(new, candidates)
         return found[0] if found else None
+
+    def _restack(self, asset_id: str, match: str) -> list[dict[str, Any]]:
+        """Move an asset's clip (with its linked audio) onto a new lane over its retake.
+
+        Only when the asset has a single clip, or one linked pair, in the edit and it is
+        not already stacked over the match; otherwise the edit is left as it is.
+        """
+        project = self.bundle.project
+        document = editable_document(project)
+        mine = [c for c in document.clips if c.asset_id == asset_id]
+        units = {c.link_id or c.id for c in mine}
+        matched = next(
+            (c for c in document.clips if c.asset_id == match and c.kind == "video"),
+            next((c for c in document.clips if c.asset_id == match), None),
+        )
+        if len(units) != 1 or matched is None:
+            return []
+        if any(
+            c.start < matched.start + matched.duration and matched.start < c.start + c.duration
+            for c in mine
+        ):
+            return []  # already over (or beside) its retake
+        layer = max((c.layer for c in document.clips), default=0) + 1
+        moved = EditorDocument(
+            clips=[
+                c.model_copy(update={"start": matched.start, "layer": layer})
+                if c.asset_id == asset_id
+                else c
+                for c in document.clips
+            ],
+            transitions=document.transitions,
+        )
+        _, inverses = self.bundle.commit(project.revision, [SetEditor(document=moved)])
+        return [command.dump() for command in inverses]
 
     def _publish(self, asset: Asset, match: str | None) -> list[dict[str, Any]]:
         project = self.bundle.project

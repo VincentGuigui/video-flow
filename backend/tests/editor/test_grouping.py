@@ -124,3 +124,41 @@ def test_import_stacks_a_retake_over_its_take(tmp_path, monkeypatch):
     placed = {names[c.asset_id]: (c.start, c.layer) for c in document_for(bundle.project).clips}
     assert placed["take0.wav"][1] == 0 and placed["take1.wav"][1] == 0
     assert placed["take2.wav"] == (placed["take0.wav"][0], 1)
+
+
+def test_reanalysed_clip_moves_over_its_retake_once(tmp_path):
+    from tests.timeline.builders import ProjectBuilder, S
+    from videoflow.editor.imports import Imports
+    from videoflow.editor.models import EditorClip, EditorDocument
+    from videoflow.editor.resolve import document_for
+    from videoflow.project.commands import SetEditor
+    from videoflow.project.store import Bundle
+
+    project = ProjectBuilder().asset("a", 10 * S).asset("b", 10 * S).build()
+
+    def clip(id, asset, start, kind="video", link=None):
+        return EditorClip(
+            id=id,
+            kind=kind,
+            asset_id=asset,
+            name=id,
+            start=start,
+            source_in=0,
+            source_out=100,
+            link_id=link,
+        )
+
+    doc = EditorDocument(
+        clips=[clip("a", "a", 0), clip("b", "b", 100, link="p"), clip("ba", "b", 100, "audio", "p")]
+    )
+    project, _ = SetEditor(document=doc).apply(project)
+    bundle = Bundle.create(tmp_path / "R.video-flow", project)
+    imports = Imports(bundle)
+    inverses = imports._restack("b", "a")
+    assert inverses
+    moved = {c.id: (c.start, c.layer) for c in document_for(bundle.project).clips}
+    assert moved["b"] == moved["ba"] == (0, 1) and moved["a"] == (0, 0)
+    assert imports._restack("b", "a") == []  # already stacked
+    split = document_for(bundle.project).clips + [clip("b2", "b", 300)]
+    bundle.commit(bundle.project.revision, [SetEditor(document=EditorDocument(clips=split))])
+    assert imports._restack("b", "a") == []  # several clips of b: ambiguous, left alone
