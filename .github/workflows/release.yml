@@ -1,0 +1,133 @@
+# Builds the desktop app for Windows and Linux and publishes a GitHub release.
+# No tests run here. Triggered by pushing a tag v<version> (it must match backend/pyproject.toml)
+# or manually (Actions > Release > Run workflow), which tags the commit v<version>.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # DirectML runs on any DirectX 12 GPU and falls back to the CPU.
+          - os: windows-latest
+            platform: windows-x64
+            accelerator: directml
+            archive: zip
+          - os: ubuntu-22.04
+            platform: linux-x64
+            accelerator: cpu
+            archive: tar.gz
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: App version
+        id: version
+        run: |
+          version=$(grep -m1 '^version' backend/pyproject.toml | cut -d'"' -f2)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match the app version $version"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+
+      - name: Qt libraries (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libxkbcommon-x11-0 \
+            libfontconfig1 libdbus-1-3 libnss3 libxcomposite1 libxdamage1 libxrandr2 \
+            libxtst6 libasound2
+
+      - name: Build the interface
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install the backend
+        working-directory: backend
+        run: >
+          uv sync --no-dev --group packaging --extra desktop
+          --extra ${{ matrix.accelerator }} --extra whisper
+
+      - name: Package
+        run: uv run --project backend --no-sync python scripts/package_release.py --full
+
+      - name: Archive
+        id: archive
+        run: |
+          name="Video-Flow-${{ steps.version.outputs.version }}-${{ matrix.platform }}"
+          cd releases
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            7z a -tzip "../$name.zip" Video-Flow > /dev/null
+          else
+            tar czf "../$name.tar.gz" Video-Flow
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: Video-Flow-*.${{ matrix.archive }}
+          if-no-files-found: error
+
+  release:
+    name: Publish the release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Release notes of this version
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          awk -v v="$VERSION" '
+            $0 ~ "^## " v "( |$)" { keep = 1; next }
+            keep && /^## / { exit }
+            keep { print }
+          ' docs/release_notes.md > notes.md
+          {
+            echo
+            echo "FFmpeg 6.1 or newer is required: put it in tools/ffmpeg/ next to the executable, or on PATH."
+            echo "AI models are downloaded from the app (Settings > Manage AI models)."
+          } >> notes.md
+          cat notes.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: Video-Flow ${{ needs.build.outputs.version }}
+          body_path: notes.md
+          files: dist/*
