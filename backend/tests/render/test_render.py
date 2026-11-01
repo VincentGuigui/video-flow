@@ -311,3 +311,23 @@ async def test_sequential_clips_on_one_lane_both_render(edit, tmp_path):
     for frame, channel in ((10, 0), (26, 2), (35, 2), (49, 2)):
         picture = (await pixels(output.path, frame, tmp_path)).reshape(-1, 3).mean(axis=0)
         assert picture[channel] > 200, (frame, picture)
+
+
+def test_hdr_filters_are_required_only_for_hdr_sources():
+    import pytest
+
+    from videoflow.render.runner import check_filters
+
+    class Caps:
+        def has_filter(self, name):
+            return False
+
+    def graph(video, warnings):
+        from videoflow.core.time import Rational
+        from videoflow.render.graph import RenderGraph
+
+        return RenderGraph([], video, "", [], 2, 2, 1, 1, Rational.of(25), warnings)
+
+    check_filters(graph("[0:v:0]fps=25[vout]", ["Transition t shortened"]), Caps())
+    with pytest.raises(ValueError, match="zscale"):
+        check_filters(graph("[0:v:0]zscale=tin=smpte2084[vout]", []), Caps())

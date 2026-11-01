@@ -35,6 +35,12 @@ def _inputs(paths: list[Path]) -> list[str]:
     return [arg for path in paths for arg in ("-threads", "1", "-i", str(path))]
 
 
+def check_filters(graph: RenderGraph, caps: Any) -> None:
+    """Fail early when the graph tone-maps HDR sources and FFmpeg lacks the filters."""
+    if "zscale=" in graph.video and not (caps.has_filter("zscale") and caps.has_filter("tonemap")):
+        raise ValueError("This FFmpeg build lacks zscale/tonemap for HDR sources")
+
+
 def audio_graph(
     graph: RenderGraph, *, offset: int = 0, normalize: str | None = None, sample_rate: int = 48000
 ) -> str:
@@ -109,8 +115,7 @@ async def render_project(
         progress(0, "Checking FFmpeg capabilities")
         caps = await asyncio.to_thread(get_caps)
         report["ffmpeg"] = caps.version
-        if plan.warnings and not (caps.has_filter("zscale") and caps.has_filter("tonemap")):
-            raise ValueError("This FFmpeg build lacks zscale/tonemap for HDR sources")
+        check_filters(plan, caps)
         loudness = None
         if normalize and plan.audio_inputs:
             target_loudness = project.settings.loudness_target

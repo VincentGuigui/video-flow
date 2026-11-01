@@ -64,7 +64,7 @@ Both presets write H.264 MP4 at the project rate (`-fps_mode cfr`), project samp
 
 `render/runner.py` `render_project` runs one render on an immutable project snapshot.
 
-1. **Capabilities** (`media/caps.py`): FFmpeg is found in settings, then `tools/ffmpeg/`, then `PATH`. A graph with warnings requires `zscale` and `tonemap`.
+1. **Capabilities** (`media/caps.py`): FFmpeg is found in settings, then `tools/ffmpeg/`, then `PATH`. A graph that tone-maps HDR sources requires `zscale` and `tonemap`.
 2. **Filter scripts:** graphs are written to `cache/render/<id>/*.ffgraph` and passed with `-/filter_complex` when the build accepts it, else `-filter_complex_script` (Windows command lines are length-limited). Both use `-filter_complex_threads 1`.
 3. **Loudness** (`render/loudness.py`, when normalisation is on and there is audio): pass 1 renders the audio graph alone through `loudnorm=I=<target>:TP=<peak>:LRA=11:print_format=json` to a null output; pass 2 appends the measured values with `linear=true`. Targets come from the project settings (default −14 LUFS, −1 dBTP). Silent or below-gate audio skips normalisation with a warning.
 4. **Encoder** (`hw/video.py`): unless the CPU is forced, the first H.264 encoder that FFmpeg lists **and** that passes a one-frame test encode (probe cached per FFmpeg binary) is used, in the order below; otherwise libx264.
