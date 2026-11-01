@@ -2,6 +2,12 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.4.0 — 2026-11-01
+
+- GitHub releases for Windows and Linux, built by a workflow from a version tag.
+- Re-analysing a medium stacks its clip over the retake it matches.
+- SRT and paper edit leave out words said inside mute ranges; the paper edit shows the transcript of editor clips again.
+
 ## 0.3.0 — 2026-11-01
 
 - Manage AI models window (from Settings, at first start and when an import needs a model): exact download size before downloading (from the Hub metadata, cached), size on disk, download, update, cancel and remove per model.
