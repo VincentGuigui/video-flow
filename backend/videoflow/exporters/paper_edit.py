@@ -16,11 +16,20 @@ def paper_rows(
 ) -> list[list[str]]:
     video, audio = resolved.track("V1"), resolved.track("A1")
     audio_by_id = {c.item_id: c for c in audio.clips} if audio else {}
+    # Editor projects: a video clip's speech is its linked audio clip, on any audio track.
+    audio_by_link = {
+        str(link): c
+        for track in resolved.tracks
+        if track.kind == "audio"
+        for c in track.clips
+        if (link := (c.__pydantic_extra__ or {}).get("linkId"))
+    }
     labels = {b.id: b.label for b in project.beats}
     rows = []
     for i, clip in enumerate(video.clips if video else [], 1):
         asset = project.asset(clip.asset_id)
-        speech = audio_by_id.get(clip.item_id, clip)
+        link = (clip.__pydantic_extra__ or {}).get("linkId")
+        speech = audio_by_id.get(clip.item_id) or audio_by_link.get(str(link)) or clip
         words = clip_words(speech, resolved, source_words(project, speech.asset_id, transcripts))
         text = " ".join(w.text for w in words)
         if speech.audio and speech.audio.mode == "muted":

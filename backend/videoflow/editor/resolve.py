@@ -176,6 +176,7 @@ def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeli
                         kind="media" if clip.kind in ("video", "audio") else "gap",
                         **({"title": clip.title.dump()} if clip.title else {}),
                         **({"speed": clip.speed} if clip.speed != 1 else {}),
+                        **({"linkId": clip.link_id} if clip.link_id else {}),
                         transform=clip.transform.dump(),
                         layer=clip.layer,
                     )
