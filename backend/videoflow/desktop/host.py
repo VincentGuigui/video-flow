@@ -277,11 +277,29 @@ class NativeBridge(QObject):
 
 
 class DropFilter(QObject):
+    """Native file drops on the web view.
+
+    It watches the view and the widgets Qt WebEngine adds inside it (drops land on its
+    render widget), never the whole application: an application-wide Python event filter
+    crashes Qt WebEngine on Linux.
+    """
+
     def __init__(self, view: QWebEngineView, bridge: NativeBridge) -> None:
         super().__init__(view)
         self.view, self.bridge = view, bridge
+        self._watch(view)
+
+    def _watch(self, widget: QWidget) -> None:
+        widget.installEventFilter(self)
+        for child in widget.findChildren(QWidget):
+            child.installEventFilter(self)
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if event.type() == QEvent.Type.ChildAdded:
+            child = event.child()  # type: ignore[attr-defined]
+            if isinstance(child, QWidget):
+                self._watch(child)
+            return False
         if event.type() not in (QEvent.Type.DragEnter, QEvent.Type.DragMove, QEvent.Type.Drop):
             return False
         if not isinstance(watched, QWidget) or not (
@@ -371,7 +389,6 @@ new QWebChannel(qt.webChannelTransport, function(channel) {
         script.setSourceCode(bootstrap)
         self.page.scripts().insert(script)
         self.drop_filter = DropFilter(self.view, self.bridge)
-        QApplication.instance().installEventFilter(self.drop_filter)  # type: ignore[union-attr]
         self.setCentralWidget(self.view)
         self.view.setUrl(QUrl(backend.origin + "/?token=" + backend.token))
 
