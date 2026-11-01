@@ -2,6 +2,10 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.10.0 — 2026-11-01
+
+- Freeze frame (F, or Freeze in the flow toolbar): inserts a 3 s still of the frame at the cursor, splitting the clip and its audio around it; exported as Camtasia image clips, OTIO freeze effects and EDL M2 freezes.
+
 ## 0.9.0 — 2026-11-01
 
 - Still images (PNG, JPEG, WebP, BMP, TIFF) in the media library; each becomes a 3 s image clip that trims freely, takes transitions, fades and zoom, renders and exports (Camtasia image clips).

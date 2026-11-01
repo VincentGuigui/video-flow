@@ -76,11 +76,17 @@ def compile_timeline(
                 if asset is not None
                 else otio.schema.MissingReference()
             )
+            held: int | None = (clip.model_extra or {}).get("stillFrame")
+            # A still clip of a video holds one frame: a freeze frame from it.
+            frozen = held is not None and asset is not None and not asset.probe.still
+            start = held if frozen and held is not None else clip.source_in_frame
             result = otio.schema.Clip(
                 name=Path(asset.path.replace("\\", "/")).name if asset else clip.asset_id,
                 media_reference=reference,
-                source_range=time_range(clip.source_in_frame, clip.duration),
+                source_range=time_range(start, clip.duration),
             )
+            if frozen:
+                result.effects.append(otio.schema.FreezeFrame())
         result.metadata["videoflow"] = clip.dump()
         return result
 

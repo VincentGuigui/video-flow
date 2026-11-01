@@ -8,7 +8,7 @@ Snapshot of what is built and what comes next. Update it with every feature. His
 - **Properties panel:** resizable, half or tall height, pinned or floating (folds into a strip when the pointer leaves). See [properties panel](features/properties-panel.md).
 - **FFmpeg setup:** FFmpeg window at start and in Settings; download of a pinned, checksum-verified build into `tools/ffmpeg/` only on the user's consent, also in the install scripts. See [FFmpeg setup](features/ffmpeg-setup.md).
 - **Projects:** `<name>.video-flow` folders in the working folder with relative media paths (the whole folder can be moved), recent list, home page, save as, rename; application cache outside projects with size, open and clear in Settings. See [projects](features/projects.md).
-- **Still images:** PNG, JPEG, WebP, BMP and TIFF in the media library; 3 s image clips that trim freely, dissolve, render and export (Camtasia `IMFile`). See [still images](features/still-images.md).
+- **Still images and freeze frames:** PNG, JPEG, WebP, BMP and TIFF in the media library; Freeze (F) inserts a 3 s still of the frame at the cursor, splitting the clip; still clips trim freely, dissolve, render and export (Camtasia `IMFile`, OTIO `FreezeFrame`, EDL M2). See [still images](features/still-images.md).
 - **Project media:** context menu with Info (location, analysis, transcript) and re-analysis. See [project media](features/media-library.md).
 - **Import and analysis:** probe, playback proxies, thumbnails, waveforms; VAD, transcription (Parakeet TDT or Whisper), summary, keywords and topic sections; reusable analysis sidecars; models downloaded only on request; NPU → GPU → CPU device choice. See [interactive editor](features/interactive-editor.md), [transcript panel](features/transcript-panel.md).
 - **Retakes:** retakes stacked on import by sentence similarity; compare takes side by side and pick one. See [retake grouping](features/retake-grouping.md), [compare takes](features/compare-takes.md).
@@ -18,7 +18,6 @@ Snapshot of what is built and what comes next. Update it with every feature. His
 
 ## Next
 
-- Freeze frame: extract a still from a video clip and insert it in the clip.
 - Keyframed transforms (position, scale, rotation, crop, opacity), replacing zoom & pan.
 - Confirm the Camtasia export in Camtasia itself (opening, fades, linked audio, titles).
 - Measure retake grouping and transcription accuracy on real rushes, and tune thresholds.

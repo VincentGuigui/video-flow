@@ -755,3 +755,73 @@ export function setSpeed(doc: Document, id: string, speed: number): Document {
     ),
   });
 }
+
+export const FREEZE_SECONDS = 3;
+// Freeze the frame under the cursor of a moving video clip (docs/features/still-images.md):
+// a still clip of `length` frames holding that frame is inserted at the cursor, and every
+// clip from there on moves later by its length. Inside the clip, the clip (and its linked
+// audio) is split around it. On the first frame, the freeze goes before the clip and takes
+// its incoming transition; on the last frame, after it, taking its outgoing transition.
+export function freezeFrame(
+  doc: Document,
+  id: string,
+  frame: number,
+  length: number,
+): { doc: Document; id: string } | null {
+  const c = doc.clips.find((c) => c.id === id);
+  if (!c || c.kind !== "video" || isStill(c) || !c.enabled) return null;
+  const end = c.start + duration(c);
+  if (frame < c.start || frame >= end || length < 1) return null;
+  const held = Math.min(
+    c.sourceOut - 1,
+    c.sourceIn + toSource(c, frame - c.start),
+  );
+  const first = frame === c.start,
+    last = frame === end - 1;
+  const at = last ? end : frame;
+  const base = first || last ? clone(doc) : split(doc, id, frame);
+  const freeze: Clip = {
+    ...clone(c),
+    id: uid(),
+    name: `${c.name} · freeze`,
+    start: at,
+    sourceIn: 0,
+    sourceOut: length,
+    stillFrame: held,
+    linkId: null,
+    speed: 1,
+    fadeIn: 0,
+    fadeOut: 0,
+    heldRange: null,
+    zooms: [],
+    volumeRanges: [],
+  };
+  base.clips = [
+    ...base.clips.map((p) => (p.start >= at ? shifted(p, length) : p)),
+    freeze,
+  ];
+  if (first)
+    base.transitions = base.transitions?.map((t) =>
+      t.rightId === c.id ? { ...t, rightId: freeze.id } : t,
+    );
+  else if (last)
+    base.transitions = base.transitions?.map((t) =>
+      t.leftId === c.id ? { ...t, leftId: freeze.id } : t,
+    );
+  return { doc: base, id: freeze.id };
+}
+
+// Freeze frame for the selected clip (or the video linked to a selected audio clip).
+export function freezeAtCursor(
+  doc: Document,
+  selected: string | null,
+  frame: number,
+  rate: number,
+): { doc: Document; id: string } | null {
+  if (!selected) return null;
+  const packed = pack(doc),
+    video = partners(packed, selected).find((c) => c.kind === "video");
+  return video
+    ? freezeFrame(packed, video.id, frame, Math.round(FREEZE_SECONDS * rate))
+    : null;
+}

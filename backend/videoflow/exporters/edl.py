@@ -49,8 +49,10 @@ def export_edl(resolved: ResolvedTimeline, project: Project) -> EdlResult:
         before = incoming.left_frames if incoming else 0
         record_in = clip.timeline_start - before
         record_out = clip.timeline_end - (next_transition.left_frames if next_transition else 0)
-        source_in = clip.source_in_frame - before
-        source_out = source_in + record_out - record_in
+        held = (clip.model_extra or {}).get("stillFrame")
+        source_in = held if held is not None else clip.source_in_frame - before
+        # A still clip uses one source frame for its whole record range (a freeze frame).
+        source_out = source_in + (1 if held is not None else record_out - record_in)
 
         def event(
             reel: str, code: str, si: int, so: int, ri: int, ro: int, number: int = index
@@ -75,6 +77,12 @@ def export_edl(resolved: ResolvedTimeline, project: Project) -> EdlResult:
         lines.append(
             event(reel_ids[clip.asset_id], code, source_in, source_out, record_in, record_out)
         )
+        if held is not None:
+            # A still clip (image or freeze frame) plays its source at speed 0.
+            lines.append(
+                f"M2   {reel_ids[clip.asset_id]:8}       000.0"
+                f"                {format_timecode(source_in, resolved.rate)}"
+            )
         name = _line(assets[clip.asset_id].path) if clip.asset_id in assets else clip.asset_id
         if incoming:
             previous_id = clips[index - 2].asset_id
@@ -82,6 +90,8 @@ def export_edl(resolved: ResolvedTimeline, project: Project) -> EdlResult:
             lines.extend([f"* FROM CLIP NAME: {previous}", f"* FROM CLIP: {previous}"])
         direction = "TO" if incoming else "FROM"
         lines.extend([f"* {direction} CLIP NAME: {name}", f"* {direction} CLIP: {name}"])
+        if held is not None:
+            lines.append("* * FREEZE FRAME")
         lines.append(f"* VIDEOFLOW ITEM: {clip.item_id}")
         lines.append("")
     for marker in resolved.markers:

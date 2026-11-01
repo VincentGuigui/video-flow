@@ -19,12 +19,14 @@ import {
   Blend,
   Plus,
   Image as ImageIcon,
+  Snowflake,
 } from "lucide-react";
 import {
   clone,
   detach,
   duration,
   fps,
+  freezeAtCursor,
   isStill,
   layout,
   move,
@@ -162,6 +164,10 @@ export function Flow() {
     [base],
   );
   const actualIds = new Set(resolved.clips.map((c) => c.id));
+  const freeze = useMemo(
+    () => freezeAtCursor(document, selected, frame, rate),
+    [document, selected, frame, rate],
+  );
   return (
     <section
       className={`flow-panel ${zone === "flow" ? "zone-active" : ""}`}
@@ -183,6 +189,18 @@ export function Flow() {
           >
             <Scissors size={14} />
             Split
+          </button>
+          <button
+            disabled={!freeze || busy}
+            onClick={() => {
+              if (!freeze) return;
+              apply(freeze.doc);
+              set({ selected: freeze.id });
+            }}
+            title="Freeze frame (F): insert a 3 s still of the frame at the cursor"
+          >
+            <Snowflake size={14} />
+            Freeze
           </button>
           <button
             disabled={!selectedClip || busy}

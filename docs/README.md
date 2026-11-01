@@ -28,7 +28,7 @@ Start with the [project README](../README.md) for what Video-Flow does and how t
 | [Clip effects](features/clip-effects.md) | Edge fades, speed, zoom & pan, mute ranges and ducking, titles and lower thirds |
 | [Project media](features/media-library.md) | Media context menu: Info (location, analysis, transcript) and Analysis (analyse again) |
 | [Projects](features/projects.md) | Projects as `<name>.video-flow` folders in the working folder, relative media, recent list, home page |
-| [Still images](features/still-images.md) | Pictures in the media library, still clips without source limit, preview, render and exports |
+| [Still images and freeze frames](features/still-images.md) | Pictures in the media library, freeze frames, still clips without source limit, preview, render and exports |
 | [Properties panel](features/properties-panel.md) | Resizable clip and project properties: half or tall height, pinned or floating with folding |
 | [FFmpeg setup](features/ffmpeg-setup.md) | Where FFmpeg is found, pinned builds, consented download from the app and the install scripts |
 | [Workspace zones](features/workspace-zones.md) | Zone focus, Ctrl+A and Delete per zone, media removal, thumbnails, cache folder |

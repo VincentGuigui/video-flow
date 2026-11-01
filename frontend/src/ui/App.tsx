@@ -35,6 +35,7 @@ import {
   linkClips,
   duration,
   fps,
+  freezeAtCursor,
   isStill,
   keyboardStep,
   layout,
@@ -313,6 +314,14 @@ export function App() {
       if (s.selected && !s.busy && e.key.toLowerCase() === "s" && !ctrl) {
         e.preventDefault();
         void s.save(split(pack(s.document), s.selected, s.frame));
+      }
+      if (s.selected && !s.busy && e.key.toLowerCase() === "f" && !ctrl) {
+        const frozen = freezeAtCursor(s.document, s.selected, s.frame, rate);
+        if (frozen) {
+          e.preventDefault();
+          void s.save(frozen.doc);
+          s.set({ selected: frozen.id });
+        }
       }
       if (e.key === "?") setHelp(true);
     }
@@ -721,6 +730,7 @@ export function App() {
               ["Beginning / end", "Ctrl + Shift + ← / →"],
               ["Exit clip focus", "Esc"],
               ["Split at cursor", "S"],
+              ["Freeze frame at cursor", "F"],
               ["Lift · preserve time", "Delete"],
               ["Ripple delete", "Backspace"],
               ["Select all in the clicked zone", "Ctrl + A"],

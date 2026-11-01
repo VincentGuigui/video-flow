@@ -201,3 +201,56 @@ def test_every_export_format_accepts_still_clips(with_image, tmp_path):
     assert clip.media_reference.available_range is None
     assert clip.source_range.duration.value == 75
     assert clip.metadata["videoflow"]["stillFrame"] == 0
+
+
+def test_freeze_frames_export_as_freeze_effects(edit, tmp_path):
+    import opentimelineio as otio
+
+    from videoflow.exporters.service import export_project
+
+    red = edit.project.assets[0]
+    doc = EditorDocument(
+        clips=[
+            EditorClip(
+                id="red", kind="video", asset_id=red.id, name="Red", start=0,
+                source_in=0, source_out=25, transform=Transform(width=160, height=90),
+            ),
+            _still(red.id, 25, 50, still_frame=24).model_copy(update={"id": "freeze"}),
+        ]
+    )  # fmt: skip
+    project, _ = SetEditor(document=doc).apply(edit.project)
+    export_project(project, tmp_path / "out", ["otio", "edl", "camtasia"])
+    timeline = otio.adapters.read_from_file(str(tmp_path / "out" / "edit.otio"))
+    freeze = [c for c in timeline.find_clips() if c.effects][0]
+    assert isinstance(freeze.effects[0], otio.schema.FreezeFrame)
+    assert freeze.source_range.start_time.value == 24
+    edl = (tmp_path / "out" / "edit.edl").read_text()
+    assert "000.0" in edl and edl.count("M2") == 1
+    tscproj = json.loads((tmp_path / "out" / "edit.tscproj").read_text())
+    medias = tscproj["timeline"]["sceneTrack"]["scenes"][0]["csml"]["tracks"][0]["medias"]
+    held = next(m for m in medias if m["_type"] == "IMFile")
+    assert held["mediaStart"] == 24 * 705_600_000 // 25 and held["mediaDuration"] == 1
+
+
+def test_freeze_frame_edl_reads_back_as_a_freeze(edit, tmp_path):
+    import opentimelineio as otio
+
+    from videoflow.exporters.service import export_project
+
+    red = edit.project.assets[0]
+    doc = EditorDocument(
+        clips=[
+            EditorClip(
+                id="red", kind="video", asset_id=red.id, name="Red", start=0,
+                source_in=0, source_out=25, transform=Transform(width=160, height=90),
+            ),
+            _still(red.id, 25, 50, still_frame=24).model_copy(update={"id": "freeze"}),
+        ]
+    )  # fmt: skip
+    project, _ = SetEditor(document=doc).apply(edit.project)
+    export_project(project, tmp_path / "out", ["edl"])
+    text = (tmp_path / "out" / "edit.edl").read_text()
+    timeline = otio.adapters.read_from_string(text, "cmx_3600", rate=25)
+    clips = list(timeline.find_clips())
+    assert [c.duration().value for c in clips] == [25, 50]
+    assert any(isinstance(e, otio.schema.FreezeFrame) for e in clips[1].effects)

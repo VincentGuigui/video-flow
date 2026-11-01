@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   defaultTransform,
   duration,
+  freezeFrame,
   setSpeed,
   split,
   trim,
@@ -72,5 +73,88 @@ describe("still clips", () => {
     };
     const [active] = activeTransitions(d, () => 1);
     expect([active.before, active.after]).toEqual([10, 10]);
+  });
+});
+
+describe("freeze frame", () => {
+  const linked = (extra: Partial<Clip> = {}) =>
+    doc(
+      clip("v", 0, { linkId: "p", sourceIn: 10, sourceOut: 100, ...extra }),
+      clip("a", 0, {
+        kind: "audio",
+        linkId: "p",
+        sourceIn: 10,
+        sourceOut: 100,
+        ...extra,
+      }),
+      clip("n", 90),
+    );
+  const spans = (d: Document) =>
+    d.clips
+      .toSorted((a, b) => a.start - b.start || a.kind.localeCompare(b.kind))
+      .map((c) => [c.kind, c.start, duration(c), c.stillFrame ?? null]);
+
+  it("splits the clip and its audio around a still of the cursor frame", () => {
+    const result = freezeFrame(linked(), "v", 30, 75)!;
+    expect(spans(result.doc)).toEqual([
+      ["audio", 0, 30, null],
+      ["video", 0, 30, null],
+      ["video", 30, 75, 40],
+      ["audio", 105, 60, null],
+      ["video", 105, 60, null],
+      ["video", 165, 90, null],
+    ]);
+    const freeze = result.doc.clips.find((c) => c.id === result.id)!;
+    expect(freeze).toMatchObject({ linkId: null, sourceIn: 0, sourceOut: 75 });
+    // The right part continues from the frozen frame.
+    const right = result.doc.clips.find(
+      (c) => c.start === 105 && c.kind === "video",
+    )!;
+    expect(right.sourceIn).toBe(40);
+  });
+
+  it("goes before the clip on its first frame and after it on its last", () => {
+    const withTransitions = (d: Document): Document => ({
+      ...d,
+      transitions: [
+        {
+          id: "out",
+          leftId: "v",
+          rightId: "n",
+          type: "dissolve",
+          duration: 10,
+        },
+      ],
+    });
+    const before = freezeFrame(linked(), "v", 0, 75)!;
+    expect(spans(before.doc).slice(0, 3)).toEqual([
+      ["video", 0, 75, 10],
+      ["audio", 75, 90, null],
+      ["video", 75, 90, null],
+    ]);
+    const after = freezeFrame(withTransitions(linked()), "v", 89, 75)!;
+    expect(spans(after.doc)).toEqual([
+      ["audio", 0, 90, null],
+      ["video", 0, 90, null],
+      ["video", 90, 75, 99],
+      ["video", 165, 90, null],
+    ]);
+    expect(after.doc.transitions).toEqual([
+      {
+        id: "out",
+        leftId: after.id,
+        rightId: "n",
+        type: "dissolve",
+        duration: 10,
+      },
+    ]);
+  });
+
+  it("refuses still clips and frames outside the clip", () => {
+    expect(freezeFrame(linked(), "v", 90, 75)).toBeNull();
+    expect(
+      freezeFrame(doc(clip("s", 0, { stillFrame: 3 })), "s", 5, 75),
+    ).toBeNull();
+    expect(freezeFrame(linked(), "a", 5, 75)).toBeNull();
   });
 });
