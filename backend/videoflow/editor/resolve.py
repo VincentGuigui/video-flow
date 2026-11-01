@@ -171,7 +171,8 @@ def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeli
                             if clip.kind == "audio"
                             else 0,
                         ),
-                        # Text clips export as gaps carrying their title (spec 21).
+                        # Text clips export as gaps carrying their title
+                        # (docs/features/clip-effects.md).
                         kind="media" if clip.kind in ("video", "audio") else "gap",
                         **({"title": clip.title.dump()} if clip.title else {}),
                         **({"speed": clip.speed} if clip.speed != 1 else {}),

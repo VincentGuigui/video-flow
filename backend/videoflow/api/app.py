@@ -575,7 +575,8 @@ def create_app(
 
     @app.get("/api/title")
     async def title_picture(spec: str) -> Response:
-        """The title picture the render overlays, at the project size (spec 21)."""
+        """The title picture the render overlays, at the project size
+        (docs/features/clip-effects.md)."""
         try:
             title = Title.model_validate_json(spec)
         except ValueError as exc:

@@ -231,7 +231,8 @@ class Imports:
         return ClipText(asset.id, texts, vectors)
 
     async def _match(self, asset: Asset, analysis: AnalysisFile) -> str | None:
-        """Asset id of the clip this source is a retake of (spec 18), if any."""
+        """Asset id of the clip this source is a retake of (docs/features/retake-grouping.md), if
+        any."""
         project = self.bundle.project
         placed = {c.asset_id for c in editable_document(project).clips}
         embed = await asyncio.to_thread(model_state, GROUPING_MODEL) == "up-to-date"

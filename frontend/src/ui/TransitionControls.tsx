@@ -244,7 +244,7 @@ export function SpeedControls({ clip }: { clip: Clip }) {
 
 const ZOOM_SCALES = [1.5, 2, 3, 4];
 
-// Zoom & pan on the selected video clip (spec 21).
+// Zoom & pan on the selected video clip (docs/features/clip-effects.md).
 export function ZoomControls({ clip }: { clip: Clip }) {
   const { project, document, save, busy } = useEditor();
   if (!project || clip.kind !== "video") return null;
@@ -333,7 +333,7 @@ export function ZoomControls({ clip }: { clip: Clip }) {
   );
 }
 
-// Mute ranges and ducking on the audio of the selected clip (spec 21).
+// Mute ranges and ducking on the audio of the selected clip (docs/features/clip-effects.md).
 export function AudioControls({ clip }: { clip: Clip }) {
   const { project, document, save, busy } = useEditor();
   const others = document.clips.filter(

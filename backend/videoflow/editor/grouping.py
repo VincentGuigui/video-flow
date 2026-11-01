@@ -3,7 +3,8 @@
 Clips are compared sentence by sentence. Two sentences match when the blend of their
 embedding cosine (MiniLM-L12) and word overlap reaches SENTENCE_MATCH; without vectors
 (model not downloaded) word overlap alone must reach LEXICAL_MATCH. Thresholds come from
-the benchmark in tests/fixtures/retake_pairs.json (spec 18). A clip is a retake of another
+the benchmark in tests/fixtures/retake_pairs.json (docs/features/retake-grouping.md). A clip is a
+retake of another
 when at least MIN_COVERAGE of what either says (by words) is matched in the other.
 """
 

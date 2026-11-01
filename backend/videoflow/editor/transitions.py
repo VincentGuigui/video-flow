@@ -153,7 +153,8 @@ def plan_transitions(
 
 
 def _edge_fades(plan: TransitionPlan, clip: EditorClip) -> None:
-    """Clip edge fades (spec 21), merged with transition fades; capped at the clip length."""
+    """Clip edge fades (docs/features/clip-effects.md), merged with transition fades; capped at the
+    clip length."""
     fade_in, fade_out = min(clip.fade_in, clip.duration), min(clip.fade_out, clip.duration)
     if not (fade_in or fade_out):
         return

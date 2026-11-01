@@ -2337,7 +2337,7 @@
     },
     "Title": {
       "additionalProperties": true,
-      "description": "Text of a text clip (spec 21), laid out by editor.titles.",
+      "description": "Text of a text clip (docs/features/clip-effects.md), laid out by editor.titles.",
       "properties": {
         "box": {
           "default": false,
@@ -2781,7 +2781,7 @@
     },
     "VolumeRange": {
       "additionalProperties": true,
-      "description": "Lowered or muted audio over a source range (spec 21); ramps sit outside the range.",
+      "description": "Lowered or muted audio over a source range (docs/features/clip-effects.md); ramps sit\noutside the range.",
       "properties": {
         "end": {
           "exclusiveMinimum": 0,
@@ -2825,7 +2825,7 @@
     },
     "Zoom": {
       "additionalProperties": true,
-      "description": "Animated zoom toward a point of the clip's picture (spec 21), in source frames.\n\nThe zoom eases in from 1 at `start` to `scale`, holds, and eases back to 1 by `end`.\n`x`/`y` locate the focus point in the picture (0..1, top-left origin); it stays in place.",
+      "description": "Animated zoom toward a point of the clip's picture (docs/features/clip-effects.md), in\nsource frames.\n\nThe zoom eases in from 1 at `start` to `scale`, holds, and eases back to 1 by `end`.\n`x`/`y` locate the focus point in the picture (0..1, top-left origin); it stays in place.",
       "properties": {
         "easeIn": {
           "default": 9,

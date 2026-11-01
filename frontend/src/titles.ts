@@ -1,4 +1,4 @@
-// Text clips (spec 21). The backend draws them (backend/videoflow/editor/titles.py); the
+// Text clips (docs/features/clip-effects.md). The backend draws them (backend/videoflow/editor/titles.py); the
 // preview shows the same picture from /api/title.
 import { defaultTransform, move, uid, type Clip, type Document } from "./model";
 

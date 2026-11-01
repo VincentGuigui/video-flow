@@ -30,8 +30,8 @@ export interface Clip {
   speed?: number; // 1 = normal; source frames per timeline frame
   zooms?: Zoom[];
   volumeRanges?: VolumeRange[];
-  title?: Title; // text clips only (spec 21)
-  fadeIn?: number; // frames, edge fade at the clip's start (spec 21)
+  title?: Title; // text clips only (docs/features/clip-effects.md)
+  fadeIn?: number; // frames, edge fade at the clip's start (docs/features/clip-effects.md)
   fadeOut?: number;
   background?: { mode: "transparent" | "color" | "blur"; color: string };
   resizeReference?: { width: number; height: number; transform: Transform };
@@ -64,7 +64,7 @@ export interface Project {
   assets: Asset[];
 }
 export const uid = () => crypto.randomUUID();
-// Speed (spec 21): source frames per timeline frame; timeline length is span / speed.
+// Speed (docs/features/clip-effects.md): source frames per timeline frame; timeline length is span / speed.
 export const speedOf = (c: Clip) => c.speed ?? 1;
 export const span = (c: Clip) => c.sourceOut - c.sourceIn;
 export const duration = (c: Clip) =>

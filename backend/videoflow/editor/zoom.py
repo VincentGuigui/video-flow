@@ -1,4 +1,5 @@
-"""Zoom & pan curves (spec 21): one definition for preview parity, render and export."""
+"""Zoom & pan curves (docs/features/clip-effects.md): one definition for preview parity, render and
+export."""
 
 from collections.abc import Iterable
 

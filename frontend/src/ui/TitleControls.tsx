@@ -19,7 +19,7 @@ const SIZES: Record<Title["style"], [string, number][]> = {
 };
 const OPACITIES = [0.5, 0.75, 0.85, 1];
 
-// Text, style and colours of the selected text clip (spec 21).
+// Text, style and colours of the selected text clip (docs/features/clip-effects.md).
 export function TitleControls({ clip }: { clip: Clip }) {
   const { save, busy } = useEditor();
   const title = clip.title;

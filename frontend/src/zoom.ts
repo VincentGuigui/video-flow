@@ -49,7 +49,7 @@ export function zoomAt(
 }
 
 // A zoom over the part of a clip inside a timeline range, with the default easing
-// (in 0.3 s, out 1 s, from the user's Camtasia habits; spec 21).
+// (in 0.3 s, out 1 s, from the user's Camtasia habits; docs/features/clip-effects.md).
 export function zoomForRange(
   clip: Clip,
   range: { start: number; end: number },

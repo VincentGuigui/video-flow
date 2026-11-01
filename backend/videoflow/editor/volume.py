@@ -1,4 +1,5 @@
-"""Volume ranges (spec 21): mutes and ducking as a gain envelope over a clip."""
+"""Volume ranges (docs/features/clip-effects.md): mutes and ducking as a gain envelope over a
+clip."""
 
 from videoflow.editor.models import EditorClip, VolumeRange
 

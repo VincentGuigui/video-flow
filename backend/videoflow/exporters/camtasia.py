@@ -1,4 +1,4 @@
-"""Camtasia project (.tscproj) writer, template-driven (spec 19).
+"""Camtasia project (.tscproj) writer, template-driven (docs/features/camtasia-export.md).
 
 The .tscproj JSON format is undocumented and versioned. The writer takes every structure
 it can from a template project saved by the user's Camtasia (UnifiedMedia, VMFile, AMFile,
@@ -414,7 +414,8 @@ def export_camtasia(
 
     def timing(media: dict[str, Any], clip: EditorClip) -> None:
         duration, media_duration = ticks(clip.duration), ticks(clip.span)
-        # Speed (spec 21): Camtasia's scalar is timeline length over media length.
+        # Speed (docs/features/clip-effects.md): Camtasia's scalar is timeline length over media
+        # length.
         scalar = Fraction(duration, media_duration)
         media.update(
             start=ticks(clip.start),
@@ -574,7 +575,8 @@ def export_camtasia(
         tracks[lanes.index(("video", by_id[t.left_id].layer))]["transitions"].append(transition)
     if active:
         warnings.append("Camtasia transitions do not carry the audio crossfades of the edit.")
-    # Edge fades (spec 21) become one-sided Fades unless a transition already uses that edge.
+    # Edge fades (docs/features/clip-effects.md) become one-sided Fades unless a transition already
+    # uses that edge.
     fade = proto.transitions["Fade"]
     for index, (kind, layer) in enumerate(lanes):
         track = tracks[index]
@@ -647,7 +649,8 @@ def _bin_entry(proto: Prototypes, asset: Asset, identifier: int) -> dict[str, An
 
 
 def _callout_def(base: dict[str, Any], title: Title, settings: ProjectSettings) -> dict[str, Any]:
-    """A text callout's definition (spec 21): lines, fonts, alignment and box."""
+    """A text callout's definition (docs/features/clip-effects.md): lines, fonts, alignment and
+    box."""
     layout = layout_title(title, settings.width, settings.height)
     left, top, right, bottom = layout.bounds
     lines = title_lines(title)
@@ -723,7 +726,7 @@ def _rgb(color: str) -> tuple[float, float, float]:
 
 
 def _volume_keyframes(clip: EditorClip, ticks: Any) -> list[dict[str, Any]]:
-    """Mute and ducking ranges (spec 21) as volume keyframes in media time."""
+    """Mute and ducking ranges (docs/features/clip-effects.md) as volume keyframes in media time."""
     keyframes = []
     for r in sorted(clip.volume_ranges, key=lambda r: r.start):
         if r.end + r.ramp <= clip.source_in or r.start - r.ramp >= clip.source_out:
@@ -739,7 +742,7 @@ def _volume_keyframes(clip: EditorClip, ticks: Any) -> list[dict[str, Any]]:
 def _zoom_keyframes(
     clip: EditorClip, base: dict[str, float], ticks: Any
 ) -> dict[str, list[dict[str, Any]]]:
-    """Zooms (spec 21) as Camtasia keyframes, in media time.
+    """Zooms (docs/features/clip-effects.md) as Camtasia keyframes, in media time.
 
     Camtasia scales a clip about its centre; translation moves so the focus point stays in
     place. A keyframe ramps from the previous value at `time` to `value` at `endTime`.

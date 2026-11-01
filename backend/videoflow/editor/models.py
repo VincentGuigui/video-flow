@@ -65,7 +65,8 @@ class HeldRange(CamelModel):
 
 
 class Zoom(CamelModel):
-    """Animated zoom toward a point of the clip's picture (spec 21), in source frames.
+    """Animated zoom toward a point of the clip's picture (docs/features/clip-effects.md), in
+    source frames.
 
     The zoom eases in from 1 at `start` to `scale`, holds, and eases back to 1 by `end`.
     `x`/`y` locate the focus point in the picture (0..1, top-left origin); it stays in place.
@@ -87,7 +88,8 @@ class Zoom(CamelModel):
 
 
 class VolumeRange(CamelModel):
-    """Lowered or muted audio over a source range (spec 21); ramps sit outside the range."""
+    """Lowered or muted audio over a source range (docs/features/clip-effects.md); ramps sit
+    outside the range."""
 
     start: int = Field(ge=0)
     end: int = Field(gt=0)
@@ -108,7 +110,7 @@ class VolumeRange(CamelModel):
 
 
 class Title(CamelModel):
-    """Text of a text clip (spec 21), laid out by editor.titles."""
+    """Text of a text clip (docs/features/clip-effects.md), laid out by editor.titles."""
 
     text: str = Field(min_length=1, max_length=1000)
     """Lines separated by newlines."""
@@ -147,7 +149,7 @@ class EditorClip(CamelModel):
     """Frames fading in at the clip's start (picture from what lies below, audio from silence)."""
     fade_out: int = Field(default=0, ge=0)
     speed: float = Field(default=1.0, ge=0.1, le=10)
-    """Playback speed: source frames per timeline frame (spec 21)."""
+    """Playback speed: source frames per timeline frame (docs/features/clip-effects.md)."""
     zooms: list[Zoom] = Field(default_factory=list, max_length=200)
     volume_ranges: list[VolumeRange] = Field(default_factory=list, max_length=2000)
     title: Title | None = None

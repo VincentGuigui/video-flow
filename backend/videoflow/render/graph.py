@@ -54,7 +54,8 @@ def _window(start: int, end: int, rate: Rational) -> str:
 
 
 def _zoompan(clip: EditorClip, w: int, h: int, fps: str) -> str:
-    """Animated zoom toward the focus point, inside the clip's own frame (spec 21)."""
+    """Animated zoom toward the focus point, inside the clip's own frame
+    (docs/features/clip-effects.md)."""
     expressions = zoompan_expressions(clip)
     if expressions is None:
         return ""
@@ -63,7 +64,7 @@ def _zoompan(clip: EditorClip, w: int, h: int, fps: str) -> str:
 
 
 def _volume(clip: EditorClip, rate: Rational) -> str:
-    """Mute and ducking ranges as a per-frame gain envelope (spec 21)."""
+    """Mute and ducking ranges as a per-frame gain envelope (docs/features/clip-effects.md)."""
     expression = volume_expression(clip, rate.num / rate.den)
     return f"volume='{expression}':eval=frame," if expression else ""
 
@@ -162,7 +163,8 @@ def compile_graph(
         if clip.kind == "gap":
             continue
         if clip.kind == "text" and clip.title:
-            # A transparent picture of the title, repeated for the clip's frames (spec 21).
+            # A transparent picture of the title, repeated for the clip's frames
+            # (docs/features/clip-effects.md).
             index = len(inputs)
             key = f"{clip.title.model_dump_json()}:{out_w}x{out_h}".encode()
             image = titles_dir / f"{hashlib.sha256(key).hexdigest()[:24]}.png"
