@@ -73,7 +73,12 @@ import { currentRange, currentWindow, togglePlay } from "../playback";
 import { autoTrim, deleteRange, trimToRange } from "../range";
 import { ImportDialog } from "./Imports";
 import { MediaInfoDialog, MediaMenu } from "./MediaInfo";
-import { native, type NativeFile, type NativeSelection } from "../desktop";
+import {
+  native,
+  reportReady,
+  type NativeFile,
+  type NativeSelection,
+} from "../desktop";
 import { PropertiesDock } from "./PropertiesDock";
 import { addKeyframe, removeKeyframe } from "../keyframes";
 import { loadLayout, storeLayout } from "../panel";
@@ -146,7 +151,7 @@ export function App() {
       : "Video-Flow";
   }, [project?.name]);
   useEffect(() => {
-    void load();
+    void load().then(reportReady);
     // FFmpeg first: without it nothing can be imported or rendered.
     void api<FfmpegState>("/ffmpeg")
       .then((data) => setFfmpegPrompt(!data.available))

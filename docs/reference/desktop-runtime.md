@@ -10,6 +10,14 @@ The selected Qt WebEngine build may lack H.264/AAC codecs. The frontend checks c
 
 Analysis checks the compatible source-adjacent JSON first, then fingerprint-keyed bundle cache. Successful analysis is cached before attempting the sidecar write. A read-only directory or unrelated existing JSON produces a warning identifying the cache; it does not require retranscription. Missing sources are shown as offline; native relinking verifies the original fingerprint and retains authored edits.
 
+## Startup
+
+The log line `Video-Flow startup (seconds since the process started): …` gives the time of each step of the last launch (see [desktop shell](../architecture/desktop-shell.md#startup)). Measured on Linux (warm disk cache, software rendering): window shown at 0.5 s, project shown at 1.2–1.35 s. What shortens it:
+
+- The window opens with a loading screen before the backend is ready, while the backend imports and builds the API in its thread. Both need Python's global lock, so the total time hardly changes; the window shows about 0.4 s sooner.
+- FFmpeg's capabilities are probed once per build ([FFmpeg setup](../features/ffmpeg-setup.md#capability-probe)), not at every launch.
+- The packaged app ships compiled Python bytecode. A run from source compiles it at the first launch after an install or update (about 3.6 s on Linux), then reuses `__pycache__`.
+
 ## Qualification
 
 Windows x64 / Python 3.13 / PySide6 6.12: development and standalone Qt WebEngine checks exercise local-file drop outside browser roots, scoped import without original copying, actual video decoding/playback, Space, focused linked splitting, undo, reload persistence and owned-backend shutdown. The standalone check also uses a Unicode/spaces source path. The tested wheel reports no H.264 support; WebM fallback is required. Run `scripts/desktop_smoke.py --media PATH --output .cache/desktop-qa` with the backend Python to reproduce, or `Video-Flow.exe desktop-check MEDIA_PATH OUTPUT_DIRECTORY` for the packaged check. Each records results and a screenshot. The development sample completed in approximately seven seconds, including import/proxy generation; this is a small synthetic-media check, not a multi-gigabyte benchmark or a claim of frame-perfect gapless playback or real-rush analysis accuracy.

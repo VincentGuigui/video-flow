@@ -2,6 +2,12 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.12.0 — 2026-11-01
+
+- Faster start: the window opens at once with a loading screen while the local service starts; FFmpeg's capabilities are probed once per build instead of at every launch.
+- The log records how long each step of the start took.
+- Fix: the desktop app no longer crashes at start on Linux (file drops are watched on the editor only).
+
 ## 0.11.0 — 2026-11-01
 
 - Keyframed transforms: animate a video clip's position, size, rotation, crop and opacity from the Animation tab (K adds a keyframe), with smooth or linear interpolation; keyframes are diamonds on the timeline (move, delete). Rendered, and exported to Camtasia.

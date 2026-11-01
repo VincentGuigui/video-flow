@@ -32,6 +32,7 @@ def desktop(
     import multiprocessing
     import os
 
+    from videoflow.desktop import startup  # first: the startup timeline starts here
     from videoflow.project.models import new_project
     from videoflow.project.store import Bundle
 
@@ -41,6 +42,7 @@ def desktop(
     except ImportError as exc:
         typer.echo("Desktop runtime missing. Install with: uv sync --extra desktop", err=True)
         raise typer.Exit(1) from exc
+    startup.mark("qt")
     if project is None:
         from videoflow.project.library import LEGACY_SUFFIX, ProjectLibrary, is_project
         from videoflow.runtime import recent_projects_file, user_data_dir

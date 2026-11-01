@@ -30,11 +30,11 @@ The installer sets up uv, Python 3.13, FFmpeg (it asks before downloading a pinn
 scripts/run.sh                 # native desktop window
 scripts/run.sh --help          # any other arguments go to the videoflow CLI
 ```
-(`scripts\3-run.bat` or `scripts\run.ps1` on Windows; double-clicking `3-run.bat` opens the app.)
+(`scripts\3-run.bat` or `scripts\run.ps1` on Windows; double-clicking `3-run.bat` opens the app.) The window opens at once with a loading screen while the local service starts; each launch logs how long its steps took (`logs/desktop.log` for the packaged app, the terminal otherwise).
 
 Projects live in your working folder, next to your media: `<name>.video-flow` with media referenced by relative paths, so the whole folder can be moved or copied. Use `videoflow desktop --project PATH.video-flow` to open/create a particular project. Import uses native dialogs and OS file drops: originals stay in place, and derived proxies, thumbnails and waveforms live in the project bundle. Read-only source folders use bundle-cached analysis. Offline sources can be relinked through a native picker without losing edits. `videoflow serve --project PATH.videoflow` is an explicit browser diagnostic option; normal desktop import never uploads or copies original media.
 
-Keyboard: Space plays the timeline range (start/end markers on the ruler; with a marker selected, 2 s around it); arrows one frame; Shift+arrows one second; Ctrl+arrows ten seconds; Home/End or Ctrl+Shift+arrows timeline bounds; S split; Delete lift with an empty clip; Backspace ripple delete; Ctrl+A select all in the clicked zone; Escape leave clip focus; Ctrl+Z undo, Ctrl+Shift+Z redo. Ctrl+wheel zooms around the pointer. Double-click a clip to focus it with two seconds of context; top trim handles ripple, bottom handles preserve time with empty clips. Shift stretches scale/crop; Alt edits symmetrically.
+Keyboard: Space plays the timeline range (start/end markers on the ruler; with a marker selected, 2 s around it); arrows one frame; Shift+arrows one second; Ctrl+arrows ten seconds; Home/End or Ctrl+Shift+arrows timeline bounds; S split; F freeze frame; K keyframe at the cursor; Delete lift with an empty clip; Backspace ripple delete; Ctrl+A select all in the clicked zone; Escape leave clip focus; Ctrl+Z undo, Ctrl+Shift+Z redo. Ctrl+wheel zooms around the pointer. Double-click a clip to focus it with two seconds of context; top trim handles ripple, bottom handles preserve time with empty clips. Shift stretches scale/crop; Alt edits symmetrically.
 
 See [desktop runtime and platform checks](docs/reference/desktop-runtime.md) and the authoritative [desktop spec](docs/architecture/desktop-shell.md).
 

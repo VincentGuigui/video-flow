@@ -15,7 +15,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QEvent, QFile, QIODevice, QObject, Qt, QUrl, Signal, Slot
+from PySide6.QtCore import QEvent, QFile, QIODevice, QObject, Qt, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineCore import (
@@ -26,9 +26,16 @@ from PySide6.QtWebEngineCore import (
     QWebEngineUrlRequestInterceptor,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QLabel,
+    QMainWindow,
+    QStackedWidget,
+    QWidget,
+)
 
-from videoflow.api.app import create_app
+from videoflow.desktop import startup
 from videoflow.media.ingest import MEDIA_EXTENSIONS
 from videoflow.project.store import Bundle
 from videoflow.runtime import assets_dir
@@ -36,42 +43,65 @@ from videoflow.runtime import assets_dir
 LOG = logging.getLogger(__name__)
 
 
+STARTUP_TIMEOUT = 30
+"""Seconds the window waits for the local backend before reporting a failure."""
+
+
 class Backend:
-    """An owned server thread; its lifespan closes imports and their child processes."""
+    """An owned server thread; its lifespan closes imports and their child processes.
+
+    The thread imports and builds the API itself, so the window can open and Qt WebEngine
+    can start while it does (docs/reference/desktop-runtime.md).
+    """
 
     def __init__(
         self, bundle: Bundle, port: int, roots: list[Path] | None, project_open: bool = True
     ) -> None:
-        import uvicorn
-
+        self.bundle, self.port, self.roots, self.project_open = bundle, port, roots, project_open
         self.token, self.secret = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
         self.origin = f"http://127.0.0.1:{port}"
+        self.server: Any = None
+        self.stopping = False
+        self.loop: asyncio.AbstractEventLoop | None = None
+        self.error: BaseException | None = None
+        self.thread = threading.Thread(target=self._run, name="video-flow-backend", daemon=True)
+
+    def _build(self) -> Any:
+        import uvicorn
+
+        from videoflow.api.app import create_app
+
         app = create_app(
-            bundle,
+            self.bundle,
             token=self.token,
-            port=port,
-            media_roots=roots,
+            port=self.port,
+            media_roots=self.roots,
             desktop_secret=self.secret,
-            project_open=project_open,
+            project_open=self.project_open,
         )
-        self.server = uvicorn.Server(
+        return uvicorn.Server(
             uvicorn.Config(
                 app,
                 host="127.0.0.1",
-                port=port,
+                port=self.port,
                 log_level="warning",
                 timeout_graceful_shutdown=3,
                 timeout_keep_alive=1,
             )
         )
-        self.loop: asyncio.AbstractEventLoop | None = None
-        self.error: BaseException | None = None
-        self.thread = threading.Thread(target=self._run, name="video-flow-backend", daemon=True)
+
+    @property
+    def ready(self) -> bool:
+        return self.server is not None and bool(self.server.started)
 
     def _run(self) -> None:
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
         try:
+            self.server = self._build()
+            startup.mark("backend code")
+            if self.stopping:
+                return
             self.loop.run_until_complete(self.server.serve())
         except BaseException as exc:
             self.error = exc
@@ -83,15 +113,19 @@ class Backend:
             self.loop.close()
 
     def start(self) -> None:
+        """Start the backend thread; `ready` tells when it serves."""
         self.thread.start()
-        deadline = time.monotonic() + 15
-        while not self.server.started:
+
+    def wait(self, timeout: float = STARTUP_TIMEOUT) -> None:
+        """Block until the backend serves (scripts and checks; the window does not block)."""
+        deadline = time.monotonic() + timeout
+        while not self.ready:
             if self.error is not None or not self.thread.is_alive():
                 raise RuntimeError(f"Local backend could not start: {self.error}")
             if time.monotonic() > deadline:
                 self.close()
                 raise RuntimeError("Timed out starting the local backend")
-            time.sleep(0.03)
+            time.sleep(0.01)
 
     def selection(self, paths: list[Path], asset_id: str | None = None) -> dict[str, Any]:
         body = json.dumps({"paths": [str(p) for p in paths], "assetId": asset_id}).encode()
@@ -137,10 +171,12 @@ class Backend:
             response.read()
 
     def close(self) -> None:
-        self.server.should_exit = True
+        self.stopping = True
+        if self.server is not None:
+            self.server.should_exit = True
         if self.thread.is_alive():
             self.thread.join(10)
-        if self.thread.is_alive():
+        if self.thread.is_alive() and self.server is not None:
             self.server.force_exit = True
             if self.loop:
 
@@ -204,6 +240,13 @@ class NativeBridge(QObject):
 
     def trusted(self) -> bool:
         return trusted_url(self.view.url(), self.backend.origin)
+
+    @Slot()
+    def ready(self) -> None:
+        """The editor shows its first data: the end of the startup timeline."""
+        if self.trusted():
+            startup.mark("editor")
+            startup.report()
 
     @Slot(float)
     def setZoom(self, factor: float) -> None:
@@ -367,7 +410,7 @@ class EditorWindow(QMainWindow):
 window.__videoflowDesktop = true;
 new QWebChannel(qt.webChannelTransport, function(channel) {
   const host = channel.objects.desktop;
-  window.videoFlowDesktop = {pickFiles: () => host.pickFiles(),
+  window.videoFlowDesktop = {pickFiles: () => host.pickFiles(), ready: () => host.ready(),
     setZoom: factor => host.setZoom(factor),
     relink: id => host.relink(id), saveRenderedVideo: id => host.saveRenderedVideo(id),
     pickFolder: purpose => host.pickFolder(purpose)};
@@ -389,10 +432,50 @@ new QWebChannel(qt.webChannelTransport, function(channel) {
         script.setSourceCode(bootstrap)
         self.page.scripts().insert(script)
         self.drop_filter = DropFilter(self.view, self.bridge)
-        self.setCentralWidget(self.view)
-        self.view.setUrl(QUrl(backend.origin + "/?token=" + backend.token))
+        # A native loading screen shows while the backend starts and the page loads; the
+        # web view replaces it once the page has loaded (no blank white page).
+        self.loading = QLabel("Opening Video-Flow…")
+        self.loading.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.loading.setWordWrap(True)
+        self.loading.setStyleSheet(
+            "QLabel { background: #f7f8f3; color: #4f6b55; font-size: 15px; padding: 40px; }"
+        )
+        self.stack = QStackedWidget(self)
+        self.stack.addWidget(self.loading)
+        self.stack.addWidget(self.view)
+        self.setCentralWidget(self.stack)
+        self.view.loadFinished.connect(self._loaded)
+        self.waited = time.monotonic()
+        self.poll = QTimer(self)
+        self.poll.setInterval(10)
+        self.poll.timeout.connect(self._await_backend)
+        self.poll.start()
+
+    def _await_backend(self) -> None:
+        backend = self.backend
+        if backend.ready:
+            self.poll.stop()
+            startup.mark("backend")
+            self.view.setUrl(QUrl(backend.origin + "/?token=" + backend.token))
+        elif backend.error is not None or (
+            backend.thread.ident is not None and not backend.thread.is_alive()
+        ):
+            self.poll.stop()
+            LOG.error("Local backend could not start: %s", backend.error)
+            self.loading.setText(f"Video-Flow could not start its local service:\n{backend.error}")
+        elif time.monotonic() - self.waited > STARTUP_TIMEOUT:
+            self.poll.stop()
+            LOG.error("Timed out starting the local backend")
+            self.loading.setText("Video-Flow could not start its local service (timed out).")
+
+    def _loaded(self, ok: bool) -> None:
+        if self.stack.currentWidget() is self.view:
+            return
+        startup.mark("page")
+        self.stack.setCurrentWidget(self.view)
 
     def closeEvent(self, event: Any) -> None:
+        self.poll.stop()
         self.view.stop()
         self.channel.deregisterObject(self.bridge)
         self.backend.close()
@@ -433,16 +516,18 @@ def run_desktop(
             candidate.bind(("127.0.0.1", 0))
             port = candidate.getsockname()[1]
     group_taskbar_entry()
+    # The backend thread imports and builds the API while Qt and its window start.
+    backend = Backend(bundle, port, roots, project_open)
+    backend.start()
     app = QApplication.instance() or QApplication(sys.argv[:1])
     app.setApplicationName("Video-Flow")
     app.setOrganizationName("Video-Flow")
     QApplication.setWindowIcon(app_icon())
-    backend = Backend(bundle, port, roots, project_open)
     app.aboutToQuit.connect(backend.close)
     try:
-        backend.start()
         window = EditorWindow(backend, bundle.project.name)
         window.show()
+        startup.mark("window")
         return int(app.exec())
     finally:
         backend.close()
