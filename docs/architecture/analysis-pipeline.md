@@ -60,7 +60,7 @@ All ML runs in one long-lived `transcriber` worker process (`jobs.workers.Worker
 
 **ASR chunking** (`engines/asr/chunks.py`, both adapters): VAD ranges are padded by 0.3 s, merged when less than 0.6 s apart, and cut into chunks of at most 30 s at the quietest 20 ms frame within 3 s of the limit. Chunks under 50 ms are skipped. Word times are mapped back to source microseconds. ASR receives the project language (default `fr`).
 
-**Qwen**: the summary prompt asks for JSON (`summary`, up to 12 `keywords`); transcripts over 2,800 tokens are reduced to their first and last 1,400 (`summaryScope` records this). An unparseable summary fails the import. Topic titles use the first 1,200 tokens of each section and keep at most five words; a failed title falls back to the keyword title.
+**Qwen**: the summary prompt asks for JSON (`summary`, up to 12 `keywords`); transcripts over 2,800 tokens are reduced to their first and last 1,400 (`summaryScope` records this). An unusable answer keeps the deterministic summary and keywords, with a warning on the import job; a missing Qwen model still fails the import. Topic titles use the first 1,200 tokens of each section and keep at most five words; a failed title falls back to the keyword title.
 
 ## 4. Sidecar and analysis cache
 

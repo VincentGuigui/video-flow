@@ -133,3 +133,15 @@ def test_models_unused_by_the_editor_are_hidden_and_not_downloadable():
     } <= listed
     with pytest.raises(ValueError, match="not used by the editor"):
         downloads.submit("dinov2-small")
+
+
+def test_unusable_qwen_answer_keeps_the_deterministic_summary(monkeypatch):
+    from videoflow.editor.analysis import Transcriber
+
+    class Broken:
+        def describe(self, text):
+            raise ValueError("Qwen did not return a JSON summary")
+
+    transcriber = Transcriber()
+    transcriber.summary = Broken()  # type: ignore[assignment]
+    assert transcriber.summarize("bonjour") is None

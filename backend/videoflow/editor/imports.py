@@ -135,6 +135,7 @@ class Imports:
                     self.proxies[asset.id] = proxy.path
                     asset.model_extra["previewPath"] = str(proxy.path)  # type: ignore[index]
                 analysis: AnalysisFile | None = None
+                qwen_warning = ""
                 if analyse:
                     job.phase, job.progress = "Checking analysis JSON", 0.45
                     analysis = load_analysis(path, asset.content_hash, self.bundle)
@@ -183,12 +184,19 @@ class Imports:
                                 analysis = describe(transcript, asset.content_hash)
                                 if self.preferences.summary_engine == "qwen" and transcript.words:
                                     job.phase, job.progress = "Summarizing with local Qwen", 0.8
-                                    analysis.summary, analysis.keywords = await self.workers.call(
+                                    described = await self.workers.call(
                                         "transcriber",
                                         "summarize",
                                         " ".join(w.text for w in transcript.words),
                                     )
-                                    analysis.summary_engine = "qwen2.5-0.5b-instruct"
+                                    if described is None:
+                                        qwen_warning = (
+                                            "Qwen returned no usable summary; "
+                                            "the deterministic summary is used."
+                                        )
+                                    else:
+                                        analysis.summary, analysis.keywords = described
+                                        analysis.summary_engine = "qwen2.5-0.5b-instruct"
                                     job.phase, job.progress = "Titling topics with local Qwen", 0.85
                                     analysis.topics = await self.workers.call(
                                         "transcriber", "topics", transcript.words
@@ -202,6 +210,8 @@ class Imports:
                         else:
                             analysis = AnalysisFile(source_hash=asset.content_hash)
                         location, job.warning = store_analysis(path, analysis, self.bundle)
+                        if qwen_warning:
+                            job.warning = " ".join(filter(None, [qwen_warning, job.warning]))
                         job.analysis_path = str(location)
                 job.progress, job.phase = 0.9, "Adding to flow"
                 if not duplicate:

@@ -10,7 +10,7 @@ An analysed import produces, in addition to the timecoded words:
 - **Topics**: consecutive sections of the clip, each with a start and end time (integer microseconds, source time), a title of at most five words, and its transcript sentences.
   - Sentences split on end punctuation, pauses of 0.7 s or more, or 30 words.
   - A topic boundary needs a clear drop in vocabulary overlap between the three sentences before and after it, or a long pause. Every topic lasts at least 15 s; there are at most 12 per clip. Clips under 30 s, or about one subject, have a single topic.
-  - Titles are the five words most specific to the section, in spoken order. With Qwen selected, Qwen writes each title, falling back to the keyword title if it fails.
+  - Titles are the five words most specific to the section, in spoken order. With Qwen selected, Qwen writes each title, falling back to the keyword title if it fails; an unusable Qwen summary falls back to the deterministic summary with a warning.
 
 The sidecar JSON ([interactive editor](interactive-editor.md)) gains `topics` and `topicsEngine`; its version stays 1. Older sidecars without topics get them on load, deterministically, without rewriting the file.
 

@@ -138,8 +138,13 @@ class Transcriber:
             self.summary = QwenSummary()
         return self.summary
 
-    def summarize(self, text: str) -> tuple[str, list[str]]:
-        return self._qwen().describe(text)
+    def summarize(self, text: str) -> tuple[str, list[str]] | None:
+        """Qwen summary and keywords, or None when its answer is unusable."""
+        model = self._qwen()  # a missing model still fails the import
+        try:
+            return model.describe(text)
+        except ValueError:
+            return None
 
     def embed(self, texts: list[str]) -> Any:
         """Sentence vectors for retake grouping (editor.grouping.MODEL)."""
