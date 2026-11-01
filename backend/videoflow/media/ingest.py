@@ -1,4 +1,4 @@
-"""Ingest: scan a folder, probe, hash, skip duplicates (ING-04), build Assets, prepare caches."""
+"""Ingest: scan a folder, probe, hash, skip duplicates (ING-04), build Assets."""
 
 from __future__ import annotations
 
@@ -12,13 +12,8 @@ from pathlib import Path
 from videoflow.core import ids
 from videoflow.core.time import Rational
 from videoflow.media import ffmpeg
-from videoflow.media.caps import FFmpegCaps, get_caps
 from videoflow.media.hashing import content_hash
-from videoflow.media.peaks import PeaksResult, compute_peaks
-from videoflow.media.proxy import ProxyResult, build_proxy
-from videoflow.media.thumbs import ThumbsResult, build_thumbs
 from videoflow.project.models import Asset, AssetProbe, AudioStreamInfo, VideoStreamInfo
-from videoflow.project.store import Bundle
 
 MEDIA_EXTENSIONS = frozenset({
     ".mp4", ".mov", ".m4v", ".mkv", ".webm", ".avi", ".mts", ".m2ts", ".mxf", ".mpg", ".mpeg",
@@ -181,59 +176,3 @@ def _rel(p: Path, base: Path | str | None) -> str | None:
 async def ingest_folder(folder: Path | str, **kwargs: object) -> IngestResult:
     """`ingest_files` over every media file below `folder`."""
     return await ingest_files(scan_media(folder), **kwargs)  # type: ignore[arg-type]
-
-
-@dataclass(frozen=True)
-class PreparedAsset:
-    asset_id: str
-    proxy: ProxyResult | None
-    thumbs: ThumbsResult | None
-    peaks: PeaksResult | None
-
-    @property
-    def fully_cached(self) -> bool:
-        return all(r is None or r.cached for r in (self.proxy, self.thumbs, self.peaks))
-
-
-def peaks_path(bundle: Bundle, asset: Asset) -> Path:
-    return bundle.features_dir / f"{asset.content_hash[:16]}.peaks.bin"
-
-
-async def prepare_asset(
-    bundle: Bundle,
-    asset: Asset,
-    *,
-    hw: str = "auto",
-    caps: FFmpegCaps | None = None,
-    on_stage: Callable[[str], object] | None = None,
-    cancel: asyncio.Event | None = None,
-) -> PreparedAsset:
-    """Proxy, thumbnails and peaks of `asset` into the bundle caches (S1). Idempotent."""
-    caps = caps or get_caps()
-    pr = await ffmpeg.probe(asset.path, caps.ffprobe)
-
-    def stage(name: str) -> None:
-        if on_stage is not None:
-            on_stage(name)
-
-    proxy = thumbs = peaks = None
-    if pr.video is not None:
-        stage("proxy")
-        proxy = await build_proxy(
-            asset.path, bundle.proxies_dir, asset.content_hash,
-            probe=pr, hw=hw, caps=caps, cancel=cancel,
-        )  # fmt: skip
-        assert proxy is not None
-        stage("thumbs")
-        thumbs = await build_thumbs(
-            proxy.path, bundle.thumbs_dir, asset.content_hash,
-            display_size=pr.video.display_size,
-            duration_us=asset.probe.duration_us or pr.duration_us or 0,
-            caps=caps, cancel=cancel,
-        )  # fmt: skip
-    if pr.audio:
-        stage("peaks")
-        peaks = await compute_peaks(
-            asset.path, peaks_path(bundle, asset), cancel=cancel, ffmpeg=caps.ffmpeg
-        )
-    return PreparedAsset(asset.id, proxy, thumbs, peaks)

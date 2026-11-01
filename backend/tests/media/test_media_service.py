@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import json
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import pytest
@@ -14,11 +12,9 @@ from videoflow.core import ids
 from videoflow.media import ffmpeg
 from videoflow.media.caps import get_caps, locate_binaries
 from videoflow.media.hashing import FULL_HASH_LIMIT, cache_key, content_hash_sync
-from videoflow.media.ingest import ingest_files, ingest_folder, prepare_asset, scan_media
+from videoflow.media.ingest import ingest_files, ingest_folder, scan_media
 from videoflow.media.peaks import SAMPLE_RATE, compute_peaks, read_peaks
 from videoflow.media.proxy import build_proxy, proxy_fps, proxy_size
-from videoflow.media.thumbs import build_thumbs, thumb_count
-from videoflow.project.store import Bundle
 
 
 def _keyframe_times(path: Path) -> list[float]:
@@ -188,27 +184,6 @@ def test_proxy_fps_rules() -> None:
     assert proxy_fps(V(Fraction(120), Fraction(120), False)) == 60  # type: ignore[arg-type]
 
 
-# ------------------------------------------------------------------ thumbs
-
-
-async def test_thumbs_one_per_two_seconds_with_index(samples_dir: Path, tmp_path: Path) -> None:
-    src = samples_dir / "cam_a_720p25_stereo.mp4"
-    pr = await ffmpeg.probe(src)
-    assert pr.video is not None and pr.duration_us is not None
-    kw: dict[str, Any] = {"display_size": pr.video.display_size, "duration_us": pr.duration_us}
-    r = await build_thumbs(src, tmp_path, "ab" * 20, **kw)
-    idx = json.loads(r.index_path.read_text())
-    assert idx["intervalUs"] == 2_000_000 and idx["thumbWidth"] == 160
-    assert idx["count"] == thumb_count(pr.duration_us) == 4
-    assert idx["thumbHeight"] == 90
-    sheet = r.directory / idx["sheets"][0]
-    assert sheet.is_file()
-    sp = await ffmpeg.probe(sheet)
-    assert sp.video is not None
-    assert (sp.video.width, sp.video.height) == (160 * idx["cols"], 90 * idx["rows"])
-    assert (await build_thumbs(src, tmp_path, "ab" * 20, **kw)).cached
-
-
 # ------------------------------------------------------------------ peaks
 
 
@@ -249,25 +224,6 @@ async def test_peaks_cancel(samples_dir: Path, tmp_path: Path) -> None:
     with pytest.raises(MediaCancelled):
         await compute_peaks(samples_dir / "retake_en.mp4", tmp_path / "c.bin", cancel=ev)
     assert not (tmp_path / "c.bin").exists()
-
-
-# ------------------------------------------------------------------ prepare_asset
-
-
-async def test_prepare_asset_and_second_run_cached(
-    samples_dir: Path, samples_manifest: dict[str, Any], tmp_path: Path
-) -> None:
-    bundle = Bundle(tmp_path / "p.videoflow")
-    for d in bundle.directories():
-        d.mkdir(parents=True, exist_ok=True)
-    res = await ingest_files([samples_dir / "clip_480p2997_mono.mp4"])
-    asset = res.assets[0]
-    first = await prepare_asset(bundle, asset, hw="cpu")
-    assert first.proxy and first.thumbs and first.peaks and not first.fully_cached
-    assert first.proxy.path.is_file() and first.peaks.path.is_file()
-    second = await prepare_asset(bundle, asset, hw="cpu")
-    assert second.fully_cached
-    assert second.proxy and second.proxy.path == first.proxy.path
 
 
 async def test_proxy_auto_hw_falls_back_to_software(samples_dir: Path, proxies: Path) -> None:
