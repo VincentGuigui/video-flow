@@ -16,7 +16,9 @@ a = Analysis(
         (str(root / "backend" / "videoflow" / "assets" / "fonts"), "videoflow/assets/fonts"),
         (str(root / "backend" / "videoflow" / "assets" / "icons"), "videoflow/assets/icons"),
         (str(root / "docs" / "reference" / "desktop-runtime.md"), "notices"),
-    ] + collect_data_files("opentimelineio") + copy_metadata("opentimelineio"),
+    ] + collect_data_files("opentimelineio") + copy_metadata("opentimelineio")
+      # onnx_asr reads its own version with importlib.metadata on import.
+      + copy_metadata("onnx-asr"),
     hiddenimports=["videoflow.editor.analysis", "videoflow.engines.asr.parakeet_onnx",
                    "videoflow.engines.vad.silero_onnx", "videoflow.engines.downloads",
                    "videoflow.engines.summary", "transformers.models.qwen2.modeling_qwen2",
