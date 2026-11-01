@@ -12,6 +12,10 @@ Compatibility rules (08 §3, corrections to 05 §8):
   file back. A file whose ``minReader`` is above :data:`SCHEMA_VERSION` is opened
   read-only (:func:`can_write`).
 * A file with a ``schemaVersion`` newer than this code is loaded as is (no downgrade).
+* Every structural change (renamed, moved or removed field, changed meaning or units,
+  new required data) bumps ``SCHEMA_VERSION`` and adds a migration here, with a test on
+  a file of the previous version. ``app.version`` records the app that last saved the
+  file; an older file that opens is saved at once as a current-version file.
 """
 
 import copy

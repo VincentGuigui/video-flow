@@ -10,13 +10,18 @@
     },
     "AppStamp": {
       "additionalProperties": true,
-      "description": "Who wrote the file and the minimum schema version needed to write it back.",
+      "description": "The application that wrote the file, for migration paths.\n\n`schemaVersion` (on the project) is the file format and drives the migrations;\n`version` is the application version that last saved it. A file from an older\nversion that opens (migrated if needed) is saved at once as the current version.",
       "properties": {
         "minReader": {
           "default": 1,
           "minimum": 1,
           "title": "Minreader",
           "type": "integer"
+        },
+        "version": {
+          "default": "0.1.0",
+          "title": "Version",
+          "type": "string"
         },
         "writer": {
           "title": "Writer",

@@ -160,10 +160,19 @@ class ProjectSettings(CamelModel):
 
 
 class AppStamp(CamelModel):
-    """Who wrote the file and the minimum schema version needed to write it back."""
+    """The application that wrote the file, for migration paths.
+
+    `schemaVersion` (on the project) is the file format and drives the migrations;
+    `version` is the application version that last saved it. A file from an older
+    version that opens (migrated if needed) is saved at once as the current version.
+    """
 
     writer: str = Field(default_factory=lambda: f"videoflow {__version__}")
+    """Last writer, `videoflow <version>`; refreshed on every save."""
+    version: str = __version__
+    """Application version that last saved the file (refreshed on every save)."""
     min_reader: int = Field(default=SCHEMA_VERSION, ge=1)
+    """Lowest schema version an app must support to write the file back."""
 
 
 # --------------------------------------------------------------------------- assets

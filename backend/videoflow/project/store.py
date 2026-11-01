@@ -30,6 +30,7 @@ from typing import Any
 
 from pydantic import Field, ValidationError
 
+from videoflow import __version__
 from videoflow.core.base import CamelModel
 from videoflow.project.commands import Command, CommandError, apply_batch
 from videoflow.project.migrations import MIGRATIONS, Migration, can_write, migrate, schema_version
@@ -117,6 +118,9 @@ def _fsync_dir(folder: Path) -> None:
 
 
 def dumps_project(project: Project) -> bytes:
+    """`project.json` bytes, stamped with the application version that writes them."""
+    project.app.writer = f"videoflow {__version__}"
+    project.app.version = __version__
     text = json.dumps(project.dump(), indent=2, ensure_ascii=False) + "\n"
     return text.encode("utf-8")
 
@@ -253,7 +257,11 @@ class Bundle:
             self._resolve_media(project)
             self._project = project
             self.label_cache()
-            if (applied or project.revision != data.get("revision")) and not self.read_only:
+            older_app = project.app.version != __version__
+            if (
+                applied or older_app or project.revision != data.get("revision")
+            ) and not self.read_only:
+                # Opened fine (migrated if needed): from now on it is a current-version file.
                 save_atomic(self.project_file, dumps_project(project))
             return project
 

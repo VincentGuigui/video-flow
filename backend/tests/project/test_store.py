@@ -244,3 +244,19 @@ def test_media_follow_a_copied_working_folder(tmp_path: Path) -> None:
     shutil.rmtree(work)
     asset = Bundle(moved / "Trip.video-flow").load().assets[0]
     assert Path(asset.path) == (moved / "rushes" / "a.mp4").resolve()
+
+
+def test_files_of_older_versions_are_saved_as_the_current_version(tmp_path: Path) -> None:
+    from videoflow import __version__
+    from videoflow.project.models import new_project
+
+    bundle = Bundle.create(tmp_path / "A.video-flow", new_project("A"))
+    data = json.loads(bundle.project_file.read_text())
+    assert data["schemaVersion"] >= 1
+    assert data["app"]["version"] == __version__
+    assert data["app"]["writer"] == f"videoflow {__version__}"
+    data["app"] = {"writer": "videoflow 0.0.9", "version": "0.0.9", "minReader": 1}
+    bundle.project_file.write_text(json.dumps(data))
+    Bundle(bundle.path).load()  # opens without problem: rewritten at once
+    saved = json.loads(bundle.project_file.read_text())["app"]
+    assert saved["version"] == __version__ and saved["writer"] == f"videoflow {__version__}"

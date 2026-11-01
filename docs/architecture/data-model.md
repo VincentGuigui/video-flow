@@ -37,7 +37,7 @@ The cache is outside the project, so copying a working folder copies only the pr
 ```json
 {
   "schemaVersion": 1,
-  "app": { "writer": "videoflow 0.x", "minReader": 1 },
+  "app": { "writer": "videoflow 0.1.0", "version": "0.1.0", "minReader": 1 },
   "id": "prj_01JB6Z4Q2X8M7T3V9KD0R5WFHN",
   "name": "Unboxing X200",
   "revision": 42,
@@ -120,6 +120,10 @@ The other commands remain in the schema and are exercised only by backend tests;
 ## Versioning and migrations
 
 `SCHEMA_VERSION` is 1. `project/migrations.py` chains pure `vN → vN+1` functions over the raw camelCase dict (`MIGRATIONS` is empty today). Additive changes need no bump, since unknown fields and enum values are preserved. `app.minReader` is the lowest schema version allowed to write the file: when it exceeds the app's version, the project opens read-only. A newer `schemaVersion` is loaded as is, never downgraded. The `EditorDocument` carries its own `version` (1).
+
+`app.version` (and `app.writer`, `videoflow <version>`) is the application version that last saved the file; every save stamps the current version. A file written by an older version that opens without problem (migrated silently if its `schemaVersion` is older, or after the user resolved any question) is saved at once, so it becomes a current-version file; the original of a migrated file is kept as `project.v<N>.bak.json`.
+
+Every structural change to `project.json` (renamed, moved or removed field, changed meaning or units, new required data) needs a migration path: bump `SCHEMA_VERSION`, add the `vN → vN+1` function to `MIGRATIONS`, and test it on a file of the previous version. Purely additive optional fields with defaults need no migration.
 
 `project/schema.py` exports JSON Schemas of `Project` and of the command list; goldens `backend/tests/fixtures/project_v1.schema.json` and `commands_v1.schema.json` fail a test when models change without `uv run python -m videoflow.project.schema --write`. The editor document appears in the commands golden (through `SetEditor`), not in the project golden, because it is an extra field.
 
