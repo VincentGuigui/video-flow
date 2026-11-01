@@ -91,7 +91,7 @@ FFmpeg hardware paths (separate from the Python extras, probed at run time): dec
 
 | Tool | Version | Licence | Purpose | Provisioning |
 |---|---|---|---|---|
-| FFmpeg / ffprobe | >= 6.1 | LGPL/GPL depending on build | Probe, proxies, render | System package, or pinned static build into `tools/ffmpeg/` (`scripts/install.*`). Windows x64 uses the full 7.1.1 build so `flite` is available for synthetic samples. Override with `VIDEOFLOW_FFMPEG_URL` and `VIDEOFLOW_FFMPEG_SHA256` |
+| FFmpeg / ffprobe | >= 6.1 (pinned 7.1.1 Windows x64, 7.0.2 Linux x64) | GPL-3.0 for the pinned builds; separate program, not linked or bundled | Probe, proxies, render | System package, or pinned static build (URL and SHA-256) downloaded into `tools/ffmpeg/` with its licence files, on the user's consent, by `scripts/install.*` or the app's FFmpeg window; see [FFmpeg setup](../features/ffmpeg-setup.md). Windows x64 uses the full build so `flite` is available for synthetic samples. Override with `VIDEOFLOW_FFMPEG_URL` and `VIDEOFLOW_FFMPEG_SHA256` (install scripts) |
 | uv | >= 0.5 | MIT / Apache-2.0 | Python and environment manager | Installed by `scripts/install.*` |
 | Python | 3.13 | PSF | Backend | `uv python install 3.13` |
 | Node.js | 22 | MIT | Frontend build only | Manual (checked by the installer) |

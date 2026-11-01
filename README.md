@@ -11,7 +11,7 @@ Targets Windows 11 x64 and Linux x86_64; Windows ARM64 requires qualification. N
 - Backend: Python 3.13, FastAPI, managed with [uv](https://docs.astral.sh/uv/) in `backend/` (package `videoflow`).
 - Desktop: PySide6 + Qt WebEngine; normal launch opens a native application window.
 - Frontend: React + Vite, built with Node >=22.12 and npm. Node is a build-time dependency only.
-- Media: FFmpeg >= 6.1 (system or static build in `tools/ffmpeg/`).
+- Media: FFmpeg >= 6.1 (system, or a pinned static build in `tools/ffmpeg/` downloaded on request by the installer or the app; see [FFmpeg setup](docs/features/ffmpeg-setup.md)).
 
 ## Install
 
@@ -22,7 +22,7 @@ scripts/install.sh            # Linux
 scripts\1-install.bat         # Windows (or install.ps1 from PowerShell)
 ```
 
-The installer sets up uv, Python 3.13, FFmpeg, checks Node/pnpm, detects the hardware and runs `uv sync` with the desktop extra and matching inference extra (`openvino`, `cuda`, `directml`, `qnn` or `cpu`). Build the interface once with `npm install` then `npm run build` in `frontend/`. Flags: `--cpu-only`, `--extra X` (repeatable, e.g. `--extra whisper`), `--no-ffmpeg`, `--no-frontend-check` (PowerShell: `-CpuOnly`, `-Extra X`, `-NoFfmpeg`, `-NoFrontendCheck`). The accelerator extras are mutually exclusive; see [docs/reference/dependencies.md](docs/reference/dependencies.md).
+The installer sets up uv, Python 3.13, FFmpeg (it asks before downloading a pinned, checksum-verified GPL build when none is installed), checks Node/pnpm, detects the hardware and runs `uv sync` with the desktop extra and matching inference extra (`openvino`, `cuda`, `directml`, `qnn` or `cpu`). Build the interface once with `npm install` then `npm run build` in `frontend/`. Flags: `--cpu-only`, `--extra X` (repeatable, e.g. `--extra whisper`), `--yes` (accept the FFmpeg download), `--no-ffmpeg`, `--no-frontend-check` (PowerShell: `-CpuOnly`, `-Extra X`, `-Yes`, `-NoFfmpeg`, `-NoFrontendCheck`). Without FFmpeg, the app offers to download it at start. The accelerator extras are mutually exclusive; see [docs/reference/dependencies.md](docs/reference/dependencies.md).
 
 ## Run
 

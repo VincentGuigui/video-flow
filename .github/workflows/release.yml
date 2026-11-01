@@ -119,7 +119,7 @@ jobs:
           ' docs/release_notes.md > notes.md
           {
             echo
-            echo "FFmpeg 6.1 or newer is required: put it in tools/ffmpeg/ next to the executable, or on PATH."
+            echo "FFmpeg 6.1 or newer is required: at first start the app offers to download it into tools/ffmpeg/ next to the executable; a build there or on PATH is used as well."
             echo "AI models are downloaded from the app (Settings > Manage AI models)."
           } >> notes.md
           cat notes.md

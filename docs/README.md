@@ -28,6 +28,7 @@ Start with the [project README](../README.md) for what Video-Flow does and how t
 | [Clip effects](features/clip-effects.md) | Edge fades, speed, zoom & pan, mute ranges and ducking, titles and lower thirds |
 | [Project media](features/media-library.md) | Media context menu: Info (location, analysis, transcript) and Analysis (analyse again) |
 | [Projects](features/projects.md) | Projects as `<name>.video-flow` folders in the working folder, relative media, recent list, home page |
+| [FFmpeg setup](features/ffmpeg-setup.md) | Where FFmpeg is found, pinned builds, consented download from the app and the install scripts |
 | [Workspace zones](features/workspace-zones.md) | Zone focus, Ctrl+A and Delete per zone, media removal, thumbnails, cache folder |
 
 ## Decisions

@@ -5,6 +5,7 @@ Snapshot of what is built and what comes next. Update it with every feature. His
 ## Built
 
 - **Desktop app:** PySide6 / Qt WebEngine window hosting the React editor; native file and folder dialogs and drops; originals referenced in place, relink when offline. See [desktop shell](architecture/desktop-shell.md).
+- **FFmpeg setup:** FFmpeg window at start and in Settings; download of a pinned, checksum-verified build into `tools/ffmpeg/` only on the user's consent, also in the install scripts. See [FFmpeg setup](features/ffmpeg-setup.md).
 - **Projects:** `<name>.video-flow` folders in the working folder with relative media paths (the whole folder can be moved), recent list, home page, save as, rename; application cache outside projects with size, open and clear in Settings. See [projects](features/projects.md).
 - **Project media:** context menu with Info (location, analysis, transcript) and re-analysis. See [project media](features/media-library.md).
 - **Import and analysis:** probe, playback proxies, thumbnails, waveforms; VAD, transcription (Parakeet TDT or Whisper), summary, keywords and topic sections; reusable analysis sidecars; models downloaded only on request; NPU → GPU → CPU device choice. See [interactive editor](features/interactive-editor.md), [transcript panel](features/transcript-panel.md).
