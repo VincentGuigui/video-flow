@@ -116,6 +116,12 @@ export function App() {
   const selectedClip = document.clips.find((c) => c.id === selected),
     focused = resolved.clips.find((c) => c.id === focus);
   useEffect(() => {
+    // The desktop window title follows the page title (desktop/host.py).
+    window.document.title = project
+      ? `${project.name} — Video-Flow`
+      : "Video-Flow";
+  }, [project?.name]);
+  useEffect(() => {
     void load();
     void api<SettingsData>("/settings")
       .then((data) => {

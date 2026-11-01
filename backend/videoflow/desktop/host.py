@@ -263,6 +263,10 @@ class DropFilter(QObject):
 
 
 class EditorWindow(QMainWindow):
+    def _title(self, title: str) -> None:
+        if title:
+            self.setWindowTitle(title)
+
     def __init__(self, backend: Backend, title: str) -> None:
         super().__init__()
         self.backend = backend
@@ -274,6 +278,8 @@ class EditorWindow(QMainWindow):
         self.view.setAcceptDrops(True)
         self.page = LocalPage(backend.origin, self.view)
         self.view.setPage(self.page)
+        # The page title names the open project (Save as, home page, project switches).
+        self.view.titleChanged.connect(self._title)
         settings = self.page.settings()
         settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, False)
         settings.setAttribute(
