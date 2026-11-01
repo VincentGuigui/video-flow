@@ -68,7 +68,7 @@ function Detect-Extra {
         Log 'detected Intel NPU'; return 'openvino'
     }
     if (& $hit 'Ryzen AI|AMD IPU|NPU Compute Accelerator') {
-        Warn 'AMD Ryzen AI NPU detected: the VitisAI EP ships with the Ryzen AI SDK (not on PyPI). See docs\dependencies.md. Falling back to a GPU/CPU extra.'
+        Warn 'AMD Ryzen AI NPU detected: the VitisAI EP ships with the Ryzen AI SDK (not on PyPI). See docs\reference\dependencies.md. Falling back to a GPU/CPU extra.'
     }
     if ((Have 'nvidia-smi') -or (& $hit 'NVIDIA')) {
         if (-not $IsArm) { Log 'detected NVIDIA GPU'; return 'cuda' }
