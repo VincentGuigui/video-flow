@@ -649,8 +649,13 @@ main {
   height: 40px;
   display: flex;
   border-bottom: 1px solid #e6e9df;
-  padding: 0 13px;
-  gap: 20px;
+  padding: 0 10px;
+  gap: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.inspector-tabs > button {
+  flex: none;
 }
 .inspector-tabs button {
   font-size: var(--legend-font-size);
@@ -2441,6 +2446,7 @@ button.timecode:hover {
   height: 23px;
   border-radius: 3px;
   pointer-events: auto;
+  cursor: pointer;
   background: linear-gradient(
     90deg,
     rgba(60, 90, 65, 0.05),
@@ -2703,4 +2709,204 @@ button.timecode:hover {
 }
 .ffmpeg-facts code {
   word-break: break-all;
+}
+
+/* Effects tab: transition cards on the cuts, then one card per clip effect. */
+.effects-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.effects-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 8px;
+}
+.effects-empty {
+  font-size: 12px;
+  margin: 0;
+}
+.effect-card {
+  border: 1px solid #e3e8da;
+  border-radius: 7px;
+  background: #fff;
+  padding: 7px 9px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.effect-card.folded {
+  padding-bottom: 7px;
+}
+.effect-card.focused {
+  border-color: #6f9a5c;
+  box-shadow: 0 0 0 2px rgba(111, 154, 92, 0.22);
+}
+.effect-card header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.effect-title {
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  text-align: left;
+}
+.effect-title svg {
+  flex: none;
+  color: #97a18e;
+  transition: transform 0.15s;
+}
+.effect-card.folded .effect-title svg {
+  transform: rotate(-90deg);
+}
+.effect-title strong,
+.effect-title-static {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.effect-title small {
+  margin-left: auto;
+  color: #6f7c66;
+  font-variant-numeric: tabular-nums;
+}
+.effect-body {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.transition-types {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+}
+.transition-card {
+  container-type: inline-size;
+}
+@container (min-width: 300px) {
+  .transition-types {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.transition-type {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 3px;
+  border: 1px solid #e3e8da;
+  border-radius: 6px;
+  color: #59664f;
+}
+.transition-type small {
+  font-size: 10px;
+  white-space: nowrap;
+  line-height: 1.2;
+  text-align: center;
+}
+.transition-type.active {
+  border-color: #4f7856;
+  background: #eef4e6;
+  color: #2f5237;
+}
+.transition-swatch {
+  width: 100%;
+  max-width: 54px;
+  height: 18px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #7c9cb8 50%, #c9a46b 50%);
+}
+.transition-swatch.dissolve {
+  background: linear-gradient(90deg, #7c9cb8 20%, #c9a46b 80%);
+}
+.transition-swatch.dip_black {
+  background: linear-gradient(90deg, #7c9cb8 10%, #000 50%, #c9a46b 90%);
+}
+.transition-swatch.dip_white {
+  background: linear-gradient(90deg, #7c9cb8 10%, #fff 50%, #c9a46b 90%);
+  box-shadow: inset 0 0 0 1px #e3e8da;
+}
+.apply-all {
+  align-self: flex-start;
+}
+.add-effect {
+  display: contents;
+}
+/* Below the heading, inside the panel flow, so the scrolling panel never clips it. */
+.add-effect-menu {
+  flex-basis: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(20, 40, 28, 0.18);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+.add-effect-menu button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  text-align: left;
+}
+.add-effect-menu button:hover {
+  background: #eef4e6;
+}
+.add-effect-menu strong {
+  font-size: 12px;
+}
+.add-effect-menu small {
+  color: #7d8975;
+  font-size: 11px;
+}
+.effects-link {
+  align-self: flex-start;
+}
+/* Cut markers in the clip flow: click to edit the transition of that cut. */
+.cut-marker {
+  position: absolute;
+  z-index: 9;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fbfcf7;
+  border: 1px solid #c9d4bd;
+  color: #7d8975;
+  box-shadow: 0 1px 3px rgba(20, 40, 28, 0.15);
+  opacity: 0.75;
+}
+.cut-marker:hover,
+.cut-marker.focused {
+  opacity: 1;
+  border-color: #4f7856;
+  color: #2f5237;
+}
+.cut-marker.dissolve,
+.cut-marker.dip_black,
+.cut-marker.dip_white {
+  opacity: 1;
+  background: #eef4e6;
+  border-color: #6f9a5c;
+  color: #2f5237;
+}
+.cut-marker.dip_black {
+  background: #2d3a30;
+  color: #fff;
 }

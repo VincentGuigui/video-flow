@@ -325,3 +325,22 @@ export function setFade(
     ),
   };
 }
+
+// Every cut between adjacent video clips on one lane, in timeline order.
+export function cuts(doc: Document) {
+  const clips = layout(doc).clips;
+  return clips
+    .filter((l) => l.kind === "video")
+    .flatMap((l) => {
+      const r = clips.find((c) => c.id !== l.id && adjacent(l, c));
+      return r
+        ? [{ leftId: l.id, rightId: r.id, at: r.start, layer: l.layer }]
+        : [];
+    })
+    .toSorted((a, b) => a.at - b.at || a.layer - b.layer);
+}
+
+// Key naming one cut, used to focus its transition card.
+export function cutKey(leftId: string, rightId: string) {
+  return `${leftId}>${rightId}`;
+}

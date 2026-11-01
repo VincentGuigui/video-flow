@@ -22,6 +22,7 @@ import {
   Scissors,
   Download,
   Type,
+  Sparkles,
 } from "lucide-react";
 import {
   canRestoreAudio,
@@ -60,13 +61,7 @@ import { Transcript } from "./Transcript";
 import { Compare } from "./Compare";
 import { removeClips, withoutAssets, zoneItems } from "../zones";
 import { TitleControls } from "./TitleControls";
-import {
-  FadeControls,
-  SpeedControls,
-  AudioControls,
-  TransitionControls,
-  ZoomControls,
-} from "./TransitionControls";
+import { EffectsTab } from "./EffectsTab";
 import { stackedTakes } from "../compare";
 import { useAnalysis } from "./useAnalysis";
 import { currentRange, currentWindow, togglePlay } from "../playback";
@@ -855,9 +850,11 @@ function Inspector({
   return (
     <div className="inspector">
       <div className="inspector-tabs">
-        {(clip && clip.kind !== "text"
-          ? (["Clip", "Transcript", "Project"] as const)
-          : (["Clip", "Project"] as const)
+        {(clip && clip.kind === "gap"
+          ? (["Clip", "Project"] as const)
+          : clip && clip.kind === "text"
+            ? (["Clip", "Effects", "Project"] as const)
+            : (["Clip", "Effects", "Transcript", "Project"] as const)
         ).map((t) => (
           <button
             key={t}
@@ -888,6 +885,8 @@ function Inspector({
         </div>
       ) : tab === "Transcript" && clip && clip.kind !== "text" ? (
         <Transcript clip={clip} />
+      ) : tab === "Effects" && clip && clip.kind !== "gap" ? (
+        <EffectsTab clip={clip} />
       ) : clip ? (
         <div className="inspector-content">
           <div className={`inspector-kind ${clip.kind}`}>
@@ -1099,11 +1098,17 @@ function Inspector({
               </button>
             </div>
           )}
-          <TransitionControls clip={clip} />
-          <FadeControls clip={clip} />
-          <SpeedControls clip={clip} />
-          <ZoomControls clip={clip} />
-          <AudioControls clip={clip} />
+          {clip.kind !== "gap" && (
+            <button
+              className="button effects-link"
+              onClick={() =>
+                useEditor.getState().set({ inspectorTab: "Effects" })
+              }
+            >
+              <Sparkles size={14} />
+              Transitions & effects
+            </button>
+          )}
           <div className="inspector-tip">
             <Scissors size={17} />
             <p>

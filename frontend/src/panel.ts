@@ -11,7 +11,7 @@ export interface PanelLayout {
 export const PANEL_MIN = 200;
 export const PANEL_MAX = 640;
 export const DEFAULT_PANEL: PanelLayout = {
-  width: 240,
+  width: 280,
   height: "half",
   pinned: true,
 };

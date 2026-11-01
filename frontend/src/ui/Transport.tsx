@@ -32,6 +32,7 @@ import {
   activeTransitions,
   sourceFramesFor,
   TRANSITION_LABELS,
+  cutKey,
 } from "../transitions";
 
 export function Transport() {
@@ -246,6 +247,19 @@ export function Transport() {
               key={a.transition.id}
               className={`overview-transition ${a.transition.type}`}
               data-testid="timeline-transition"
+              role="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                useEditor.getState().set({
+                  selected: a.transition.rightId,
+                  inspectorTab: "Effects",
+                  effectFocus: cutKey(
+                    a.transition.leftId,
+                    a.transition.rightId,
+                  ),
+                });
+              }}
               title={`${TRANSITION_LABELS[a.transition.type]} · ${(activeDuration(a) / rate).toFixed(2)} s`}
               style={{
                 left: origin + (a.cut - a.before) * scale,

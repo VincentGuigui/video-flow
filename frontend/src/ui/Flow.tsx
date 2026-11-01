@@ -16,6 +16,8 @@ import {
   MousePointer2,
   Type,
   PanelBottom,
+  Blend,
+  Plus,
 } from "lucide-react";
 import {
   clone,
@@ -38,6 +40,7 @@ import {
 import { useTimeline, useTimelineWheel } from "../timeline";
 import { addTitle, type Title } from "../titles";
 import { useEditor } from "../store";
+import { cutKey, cuts, transitionAt, TRANSITION_LABELS } from "../transitions";
 import { Waveform } from "./Waveform";
 
 export function Flow() {
@@ -418,6 +421,43 @@ export function Flow() {
               </div>
             );
           })}
+          {!dragging &&
+            cuts(doc).map((cut) => {
+              const right = base.clips.find((c) => c.id === cut.rightId);
+              if (!right) return null;
+              const t = transitionAt(doc, cut.leftId, cut.rightId),
+                key = cutKey(cut.leftId, cut.rightId);
+              return (
+                <button
+                  key={key}
+                  className={`cut-marker ${t ? t.type : "cut"} ${state.effectFocus === key && state.inspectorTab === "Effects" ? "focused" : ""}`}
+                  data-testid="cut-marker"
+                  aria-label={
+                    t ? TRANSITION_LABELS[t.type] : "Cut: add a transition"
+                  }
+                  title={
+                    t
+                      ? `${TRANSITION_LABELS[t.type]} · ${(t.duration / rate).toFixed(2)} s`
+                      : "Cut · click to choose a transition"
+                  }
+                  style={{
+                    left: 56 + right.start * px - 11,
+                    top: 48 + (layers - 1 - right.layer) * 112 + 14,
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    set({
+                      selected: cut.rightId,
+                      inspectorTab: "Effects",
+                      effectFocus: key,
+                    });
+                  }}
+                >
+                  {t ? <Blend size={11} /> : <Plus size={11} />}
+                </button>
+              );
+            })}
           {!doc.clips.length && (
             <div className="flow-empty">
               <div className="empty-node">

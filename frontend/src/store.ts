@@ -48,7 +48,9 @@ interface State {
   offline: string[];
   // No project open (home page): the server keeps an unseen placeholder.
   closed: boolean;
-  inspectorTab: "Clip" | "Transcript" | "Project";
+  inspectorTab: "Clip" | "Effects" | "Transcript" | "Project";
+  // Cut (`left>right`) whose transition card the Effects tab highlights.
+  effectFocus: string | null;
   load: () => Promise<void>;
   save: (
     doc: Document,
@@ -88,6 +90,7 @@ export const useEditor = create<State>((set, get) => ({
   offline: [],
   closed: false,
   inspectorTab: "Clip",
+  effectFocus: null,
   // Picking one clip ends a multiple selection.
   set: (values) =>
     set(

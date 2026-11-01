@@ -15,11 +15,12 @@ This revision implements TR-01, TR-02, TR-04, TR-06 (shortening only) and TR-07 
 | Cross dissolve | The left clip continues `after` frames past the cut and the right clip starts `before` frames early (`before` = ⌊T/2⌋, `after` = T − `before`), fading in over the left. | Crossfade over the overlap. | Uses source media beyond the cut. |
 | Dip to black / white | The whole picture fades to the colour over `before` frames and back over `after` frames. | Left audio fades out over `before`, right fades in over `after`. | None. |
 
-When the source has too few frames beyond the cut, or a clip is shorter than its half, the transition is **shortened** (TR-06) and a warning is shown in clip properties and in the render log. Changing alignment is not offered.
+When the source has too few frames beyond the cut, or a clip is shorter than its half, the transition is **shortened** (TR-06) and a warning is shown in the transition card (Effects tab) and in the render log. Changing alignment is not offered.
 
 ## UI
 
-- Clip properties of a video clip show **Transitions**: one row per cut with an adjacent clip (*In · from …*, *Out · to …*), a type selector (Cut, Cross dissolve, Dip to black, Dip to white) and the duration in seconds. New transitions use the project default duration (0.5 s). **Apply … to all cuts** applies the shown type and duration to every cut between adjacent video clips (TR-07).
+- Every cut between adjacent video clips on one lane shows a round marker in the clip flow: **+** for a plain cut, a filled marker for a transition. Clicking it, or a transition band in the assembly timeline, selects the clip after the cut and opens the **Effects** tab of the properties panel with that cut's card highlighted.
+- The Effects tab of a video clip starts with **Transitions**: one card per cut with an adjacent clip (*In · from …*, *Out · to …*). Each card has four picture tiles (Cut, Dissolve, Dip black, Dip white; full names in their tooltips) and, for a transition, the duration in seconds. New transitions use the project default duration (0.5 s). **Apply … to all cuts** applies the shown type and duration to every cut between adjacent video clips (TR-07).
 - The assembly timeline marks each active transition over its frames.
 - The preview approximates dissolves with opacity, dips with a colour layer, and audio fades with volume (PRV-02).
 
