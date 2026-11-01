@@ -5,14 +5,14 @@
 - A project is a `<name>.video-flow` folder **inside the user's working folder**, the folder that holds the original videos and media. It contains `project.json` (the edit), `history.jsonl`, `analysis/`, `features/`, `exports/` and `renders/`.
 - Media are referenced **relative to the working folder** (`relPath`, with the absolute path kept as a fallback): copying or moving the whole working folder (media and project) to another place, disk or computer keeps the project working. Media outside the working folder are referenced with `../` paths, or only absolutely when they are on another Windows drive.
 - Rebuildable caches (proxies, thumbnails, waveforms, title pictures, render work files) are not in the project: they live in the application cache (`cache/<project id>/` beside the executable), shown and cleared in Settings (see [workspace zones](workspace-zones.md)).
-- The application keeps only a list of recent projects (`recent-projects.json` beside the executable, at most 20, most recent first). Projects created by earlier versions in the per-user `Video-Flow` library (`*.videoflow`) are added to that list the first time, and open as before.
+- The application keeps only a list of recent projects per user (`recent-projects.json` in `%LOCALAPPDATA%\Video-Flow` on Windows, `~/.local/share/video-flow` on Linux; at most 20, most recent first). Projects created by earlier versions in the per-user `Video-Flow` library (`*.videoflow`) are added to that list the first time, and open as before.
 
 ## Home page
 
 The logo closes the open project (its workers, renders and media are released and the editor is cleared) and shows the home page; there is no way back without opening or creating a project.
 
 - **New project**: a name and a working folder (chosen with the native folder dialog in the desktop app, typed in a browser) create `<working folder>/<name>.video-flow` and open it. Names are kept file-system safe (`< > : " / \ | ? *` removed); an existing folder of that name is refused.
-- **Open project…**: opens a `.video-flow` folder chosen natively (or typed in a browser) and puts it first in the recent list.
+- **Open project…**: opens a project folder chosen natively (or typed in a browser) and puts it first in the recent list. Only valid project folders are accepted: named `*.video-flow` (or `*.videoflow` from earlier versions) and containing `project.json`; anything else is refused with an explanation.
 - **Recent projects**: each line shows the name and the working folder, with **Open**, **Rename** (renames the project and its folder to `<new name>.video-flow` in the same working folder) and **Remove from list** (forgets it here; its folder and media are kept).
 
 ## Launch, Save and Save as

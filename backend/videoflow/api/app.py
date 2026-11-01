@@ -44,7 +44,7 @@ from videoflow.media.proxy import build_proxy
 from videoflow.preferences import Preferences, load_preferences, save_preferences
 from videoflow.project import cache
 from videoflow.project.commands import Command, RelinkAsset
-from videoflow.project.library import ProjectLibrary, open_bundle
+from videoflow.project.library import ProjectLibrary, is_project, open_bundle
 from videoflow.project.store import Bundle, ProjectStoreError, StaleRevisionError
 from videoflow.render.jobs import Renders
 from videoflow.runtime import cache_root, open_folder, recent_projects_file, reveal_file
@@ -332,8 +332,11 @@ def create_app(
                     raise ValueError("Use a folder under a --media-root")
                 if not folder.is_dir():
                     raise ValueError(f"Folder not found: {folder}")
-                if purpose == "project" and not (folder / "project.json").is_file():
-                    raise ValueError(f"{folder} is not a Video-Flow project folder")
+                if purpose == "project" and not is_project(folder):
+                    raise ValueError(
+                        f"{folder.name} is not a Video-Flow project: choose a <name>.video-flow"
+                        " folder that contains project.json"
+                    )
                 return folder
 
             return await asyncio.to_thread(check, payload.path)

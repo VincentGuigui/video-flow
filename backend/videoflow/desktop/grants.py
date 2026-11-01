@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from videoflow.media.ingest import MEDIA_EXTENSIONS
+from videoflow.project.library import is_project
 
 
 @dataclass(frozen=True)
@@ -39,8 +40,11 @@ class SelectionGrants:
         canonical = path.resolve(strict=True)
         if purpose not in ("workdir", "project") or not canonical.is_dir():
             raise ValueError(f"Not a folder: {path.name}")
-        if purpose == "project" and not (canonical / "project.json").is_file():
-            raise ValueError(f"{canonical.name} is not a Video-Flow project folder")
+        if purpose == "project" and not is_project(canonical):
+            raise ValueError(
+                f"{canonical.name} is not a Video-Flow project: choose a <name>.video-flow"
+                " folder that contains project.json"
+            )
         handle = secrets.token_urlsafe(32)
         self._grants[handle] = Grant(canonical, None, time.monotonic() + 3600, purpose)
         return {"handle": handle, "name": canonical.name, "path": str(canonical)}

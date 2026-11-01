@@ -37,12 +37,16 @@ def folder_name(name: str) -> str:
 
 
 def is_project(path: Path) -> bool:
-    return (path / "project.json").is_file()
+    """A project folder: named `*.video-flow` (or `*.videoflow` before 0.2) with project.json."""
+    return path.suffix.casefold() in (SUFFIX, LEGACY_SUFFIX) and (path / "project.json").is_file()
 
 
 def open_bundle(path: Path) -> Bundle:
     if not is_project(path):
-        raise ValueError(f"{path} is not a Video-Flow project")
+        raise ValueError(
+            f"{path.name} is not a Video-Flow project: choose a <name>.video-flow folder"
+            " that contains project.json"
+        )
     bundle = Bundle(path.resolve())
     bundle.load()
     return bundle

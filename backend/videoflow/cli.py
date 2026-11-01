@@ -43,7 +43,7 @@ def desktop(
         raise typer.Exit(1) from exc
     if project is None:
         from videoflow.project.library import LEGACY_SUFFIX, ProjectLibrary, is_project
-        from videoflow.runtime import application_dir, recent_projects_file
+        from videoflow.runtime import recent_projects_file, user_data_dir
 
         library = ProjectLibrary(recent_projects_file())
         if not library.entries():
@@ -56,7 +56,7 @@ def desktop(
         if latest is not None:
             raise typer.Exit(run_desktop(latest))
         # No project yet: start on the home page; an internal placeholder backs the API.
-        placeholder = application_dir() / "placeholder.video-flow"
+        placeholder = user_data_dir() / "placeholder.video-flow"
         bundle = (
             Bundle(placeholder)
             if (placeholder / "project.json").exists()

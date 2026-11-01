@@ -46,6 +46,3 @@ Thumbs.db
 /package-lock.json
 # Application cache in development (runtime.cache_root)
 /cache/
-# Desktop app state in development (application_dir)
-/placeholder.video-flow/
-/recent-projects.json

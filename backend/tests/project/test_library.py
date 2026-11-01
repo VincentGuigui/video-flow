@@ -72,3 +72,20 @@ def test_recent_list_order_removal_and_latest(tmp_path):
     assert first.path.is_dir()  # removing from the list never deletes files
     os.rename(second.path, tmp_path / "moved.video-flow")
     assert lib.entries() == [] and lib.latest() is None
+
+
+def test_only_named_project_folders_open(tmp_path):
+    import json
+
+    from videoflow.project.library import is_project, open_bundle
+
+    lib = library(tmp_path)
+    good = lib.create(tmp_path, "Good")
+    assert is_project(good.path)
+    plain = tmp_path / "plain"
+    plain.mkdir()
+    (plain / "project.json").write_text(json.dumps({}))
+    assert not is_project(plain)  # project.json alone is not enough
+    assert not is_project(tmp_path / "empty.video-flow")
+    with pytest.raises(ValueError, match="choose a <name>.video-flow folder"):
+        open_bundle(plain)

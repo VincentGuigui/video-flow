@@ -18,10 +18,19 @@ def assets_dir() -> Path:
     return application_dir() / "assets"
 
 
+def user_data_dir() -> Path:
+    """Per-user state: %LOCALAPPDATA%\\Video-Flow on Windows, ~/.local/share/video-flow on Linux."""
+    if sys.platform == "win32":
+        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+        return base / "Video-Flow"
+    base = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
+    return base / "video-flow"
+
+
 def recent_projects_file() -> Path:
-    """The list of recently used projects (VIDEOFLOW_RECENT_PROJECTS overrides)."""
+    """This user's recently used projects (VIDEOFLOW_RECENT_PROJECTS overrides)."""
     override = os.environ.get("VIDEOFLOW_RECENT_PROJECTS")
-    return Path(override) if override else application_dir() / "recent-projects.json"
+    return Path(override) if override else user_data_dir() / "recent-projects.json"
 
 
 def cache_root() -> Path:
