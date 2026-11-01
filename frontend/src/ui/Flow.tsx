@@ -41,6 +41,7 @@ import { useEditor } from "../store";
 import { Waveform } from "./Waveform";
 
 export function Flow() {
+  const zone = useEditor((s) => s.zone);
   const state = useEditor(),
     { project, document, selected, focus, frame, set, save, busy } = state;
   const scroll = useRef<HTMLDivElement>(null),
@@ -157,7 +158,10 @@ export function Flow() {
   );
   const actualIds = new Set(resolved.clips.map((c) => c.id));
   return (
-    <section className="flow-panel">
+    <section
+      className={`flow-panel ${zone === "flow" ? "zone-active" : ""}`}
+      onPointerDownCapture={() => useEditor.getState().set({ zone: "flow" })}
+    >
       <div className="flow-toolbar">
         <div className="flow-heading">
           <strong>Clip flow</strong>
@@ -287,6 +291,7 @@ export function Flow() {
             const w = Math.max(18, duration(c) * px - 5),
               isSelected =
                 c.id === selected ||
+                state.selectedClips.includes(c.id) ||
                 (!!selectedClip?.linkId && selectedClip.linkId === c.linkId);
             const opacity = c.enabled && actualIds.has(c.id) ? 1 : 0.42;
             return (

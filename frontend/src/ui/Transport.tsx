@@ -37,6 +37,8 @@ import {
 export function Transport() {
   const { project, document, frame, playing, focus, rangeHandle, set } =
     useEditor();
+  const zone = useEditor((s) => s.zone),
+    selectedClips = useEditor((s) => s.selectedClips);
   const range = currentRange();
   const root = useRef<HTMLDivElement>(null);
   const { scale, scroll, width, set: setTimeline } = useTimeline();
@@ -143,7 +145,12 @@ export function Transport() {
   )
     ticks.push(t);
   return (
-    <section className="transport-panel">
+    <section
+      className={`transport-panel ${zone === "timeline" ? "zone-active" : ""}`}
+      onPointerDownCapture={() =>
+        useEditor.getState().set({ zone: "timeline" })
+      }
+    >
       <div className="transport-heading">
         <span>
           {focus ? "Clip timeline" : "Assembly timeline"}
@@ -224,7 +231,7 @@ export function Transport() {
                 <div
                   key={c.id}
                   title={c.name}
-                  className={`overview-clip ${c.kind}`}
+                  className={`overview-clip ${c.kind} ${selectedClips.includes(c.id) ? "selected" : ""}`}
                   style={{
                     left: origin + c.start * scale,
                     width: Math.max(1, duration(c) * scale - 2),

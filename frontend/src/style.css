@@ -2474,3 +2474,18 @@ button.timecode:hover {
 .settings-cache .button {
   flex: none;
 }
+/* The zone that receives Ctrl+A and Delete (last clicked). */
+.zone-active {
+  box-shadow: inset 0 0 0 2px #418c7559;
+}
+.library-asset.selected .asset-thumbnail {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+.library-asset.selected strong {
+  color: var(--teal);
+}
+.overview-clip.selected {
+  outline: 2px solid #438267;
+  outline-offset: -1px;
+}

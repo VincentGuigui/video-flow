@@ -163,6 +163,7 @@ export function Preview() {
     set,
     busy,
   } = useEditor();
+  const zone = useEditor((s) => s.zone);
   const host = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 800, height: 400 });
   const [mode, setMode] = useState<"scale" | "crop">("scale");
@@ -387,7 +388,10 @@ export function Preview() {
     window.addEventListener("pointerup", end, { once: true });
   }
   return (
-    <section className="preview-panel">
+    <section
+      className={`preview-panel ${zone === "editor" ? "zone-active" : ""}`}
+      onPointerDownCapture={() => useEditor.getState().set({ zone: "editor" })}
+    >
       <div className="panel-title">
         <span>Preview & editor</span>
         <span className="muted">

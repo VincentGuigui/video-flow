@@ -55,6 +55,7 @@ import { Flow } from "./Flow";
 import { Transport } from "./Transport";
 import { Transcript } from "./Transcript";
 import { Compare } from "./Compare";
+import { removeClips, withoutAssets, zoneItems } from "../zones";
 import { TitleControls } from "./TitleControls";
 import {
   FadeControls,
@@ -236,7 +237,14 @@ export function App() {
       if (e.key === "Escape") {
         e.preventDefault();
         if (s.rangeHandle) s.set({ rangeHandle: null });
-        else s.set({ selected: null, focus: null });
+        else s.set({ selected: null, focus: null, selectedAssets: [] });
+      }
+      if (ctrl && e.key.toLowerCase() === "a" && s.zone) {
+        e.preventDefault();
+        const ids = zoneItems(s.zone, s.document, p, s.frame);
+        if (s.zone === "media") s.set({ selectedAssets: ids });
+        else s.set({ selected: null, selectedClips: ids });
+        return;
       }
       if (ctrl && e.key.toLowerCase() === "z") {
         e.preventDefault();
@@ -246,16 +254,29 @@ export function App() {
         e.preventDefault();
         void s.redo();
       }
-      if (
-        s.selected &&
-        !s.busy &&
-        (e.key === "Delete" || e.key === "Backspace")
-      ) {
-        e.preventDefault();
-        void s.save(
-          remove(pack(s.document), s.selected, e.key === "Backspace"),
-        );
-        s.set({ selected: null, focus: null, playing: false });
+      const clipIds = s.selectedClips.length
+        ? s.selectedClips
+        : s.selected
+          ? [s.selected]
+          : [];
+      if (!s.busy && (e.key === "Delete" || e.key === "Backspace")) {
+        if (s.zone === "media" && s.selectedAssets.length) {
+          // Removing media also removes its clips; one undo step restores both.
+          e.preventDefault();
+          void s.save(
+            withoutAssets(s.document, s.selectedAssets),
+            undefined,
+            s.selectedAssets.map((assetId) => ({
+              type: "RemoveAsset",
+              assetId,
+            })),
+          );
+          s.set({ selectedAssets: [], selected: null, focus: null });
+        } else if (clipIds.length) {
+          e.preventDefault();
+          void s.save(removeClips(s.document, clipIds, e.key === "Backspace"));
+          s.set({ selected: null, focus: null, playing: false });
+        }
       }
       if (s.selected && !s.busy && e.key.toLowerCase() === "s" && !ctrl) {
         e.preventDefault();
@@ -385,15 +406,28 @@ export function App() {
       </header>
       {home && <Home onClose={() => setHome(false)} />}
       <div className="workspace" style={home ? { display: "none" } : undefined}>
-        <aside className="media-library">
+        <aside
+          className={`media-library ${state.zone === "media" ? "zone-active" : ""}`}
+          onPointerDownCapture={() => set({ zone: "media" })}
+        >
           <div className="library-heading">
             <span>PROJECT MEDIA</span>
           </div>
           <div className="library-list">
             {project?.assets.map((asset) => (
               <div
-                className="library-asset"
+                className={`library-asset ${state.selectedAssets.includes(asset.id) ? "selected" : ""}`}
                 key={asset.id}
+                onClick={(e) =>
+                  set({
+                    selectedAssets:
+                      e.ctrlKey || e.metaKey
+                        ? state.selectedAssets.includes(asset.id)
+                          ? state.selectedAssets.filter((a) => a !== asset.id)
+                          : [...state.selectedAssets, asset.id]
+                        : [asset.id],
+                  })
+                }
                 draggable
                 onDragStart={(e) => {
                   e.dataTransfer.setData(
@@ -576,6 +610,8 @@ export function App() {
               ["Split at cursor", "S"],
               ["Lift · preserve time", "Delete"],
               ["Ripple delete", "Backspace"],
+              ["Select all in the clicked zone", "Ctrl + A"],
+              ["Remove selected media and its clips", "Delete (media)"],
               ["Undo / redo", "Ctrl + Z / Ctrl + Shift + Z"],
               ["Zoom around pointer", "Ctrl + wheel"],
               ["Stretch / symmetric handles", "Shift / Alt"],
@@ -668,6 +704,7 @@ export function App() {
 }
 
 function Inspector({ clip }: { clip: Clip | undefined }) {
+  const selectedClips = useEditor((s) => s.selectedClips);
   const { project, document, save, busy } = useEditor();
   const [tab, setTab] = useState("Clip");
   const analysis = useAnalysis(clip?.assetId ?? null);
@@ -958,12 +995,25 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
           <div>
             <Film size={24} />
           </div>
-          <h3>Make it yours.</h3>
-          <p>
-            Select a clip in the flow
-            <br />
-            to see its details.
-          </p>
+          {selectedClips.length > 0 ? (
+            <>
+              <h3>{selectedClips.length} clips selected</h3>
+              <p>
+                Delete lifts them, Backspace
+                <br />
+                ripple-deletes them.
+              </p>
+            </>
+          ) : (
+            <>
+              <h3>Make it yours.</h3>
+              <p>
+                Select a clip in the flow
+                <br />
+                to see its details.
+              </p>
+            </>
+          )}
           <span>Double-click to focus & trim</span>
         </div>
       )}

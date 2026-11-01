@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { clone, type Document, type Project, type Settings } from "./model";
 import type { Handle, Range } from "./range";
+import type { Zone } from "./zones";
 type Command = Record<string, unknown>;
 export async function api<T>(
   path: string,
@@ -26,6 +27,11 @@ interface State {
   project: Project | null;
   document: Document;
   selected: string | null;
+  // Clips selected together (Ctrl+A); empty when only `selected` is.
+  selectedClips: string[];
+  selectedAssets: string[];
+  // The workspace zone last clicked: Ctrl+A and Delete act on its items.
+  zone: Zone | null;
   focus: string | null;
   frame: number;
   // null follows the default range (focused clip ± 2 s, else the whole edit).
@@ -41,7 +47,11 @@ interface State {
   roots: string[];
   offline: string[];
   load: () => Promise<void>;
-  save: (doc: Document, settings?: Settings) => Promise<void>;
+  save: (
+    doc: Document,
+    settings?: Settings,
+    extra?: Command[],
+  ) => Promise<void>;
   undo: () => Promise<void>;
   redo: () => Promise<void>;
   set: (values: Partial<State>) => void;
@@ -57,6 +67,9 @@ export const useEditor = create<State>((set, get) => ({
   project: null,
   document: { version: 1, clips: [] },
   selected: null,
+  selectedClips: [],
+  selectedAssets: [],
+  zone: null,
   focus: null,
   frame: 0,
   range: null,
@@ -69,7 +82,13 @@ export const useEditor = create<State>((set, get) => ({
   future: [],
   roots: [],
   offline: [],
-  set: (values) => set(values),
+  // Picking one clip ends a multiple selection.
+  set: (values) =>
+    set(
+      "selected" in values && !("selectedClips" in values)
+        ? { ...values, selectedClips: [] }
+        : values,
+    ),
   load: async () => {
     try {
       const r = await api<Result>("/project");
@@ -81,6 +100,8 @@ export const useEditor = create<State>((set, get) => ({
         ...(get().project?.id !== r.project.id
           ? {
               selected: null,
+              selectedClips: [],
+              selectedAssets: [],
               focus: null,
               frame: 0,
               range: null,
@@ -99,7 +120,7 @@ export const useEditor = create<State>((set, get) => ({
       set({ error: String(e) });
     }
   },
-  save: async (document, settings) => {
+  save: async (document, settings, extra = []) => {
     const state = get();
     if (state.busy || !state.project) return;
     document = applyPending(document);
@@ -108,6 +129,7 @@ export const useEditor = create<State>((set, get) => ({
     const original = state.document;
     const commands: Command[] = [{ type: "SetEditor", document }];
     if (settings) commands.push({ type: "SetSettings", settings });
+    commands.push(...extra);
     set({
       document,
       project: settings ? { ...state.project, settings } : state.project,
@@ -155,6 +177,7 @@ export const useEditor = create<State>((set, get) => ({
         history: state.history.slice(0, -1),
         future: [...state.future, r.inverses],
         selected: null,
+        selectedClips: [],
         focus: null,
       });
     } catch (e) {
