@@ -1,30 +1,43 @@
 # AGENTS.md
 
-Guidance for coding agents working on Video-Flow: a local-first desktop video assembly tool for rushes and retakes. It targets Windows and Linux. AI work runs on the NPU, then the GPU, then the CPU.
+## Project
+
+Video-Flow is a local-first desktop app for assembling footage shot with many retakes. It imports rushes, transcribes and analyses them locally, stacks retakes of the same sentences so they can be compared, then lets the user cut, layer and finish the edit (transitions, fades, speed, zoom, ducking, titles). It renders an MP4 with FFmpeg or exports to OpenTimelineIO, EDL, SRT, paper edit or Camtasia (2023.4+).
+
+Targets Windows and Linux (x64). AI runs on the NPU, then the GPU, then the CPU. Originals are never copied or modified.
+
+## Key elements
+
+- **Stack:** Python 3.13 backend (`backend/`, package `videoflow`, uv, FastAPI) hosted in a PySide6 / Qt WebEngine window; React + Vite + Zustand frontend (`frontend/`, npm). FFmpeg >= 6.1 for media and rendering.
+- **Edit model:** the editor document (`backend/videoflow/editor/models.py`, mirrored in `frontend/src/model.ts`) holds clips in integer project-rate frames: video, audio, empty (`gap`) and text clips on numbered lanes, linked video/audio pairs, transitions. Backend and frontend logic mirror each other (transitions, zoom, volume, titles): change both together.
+- **Edits are commands:** the frontend saves the whole document with `SetEditor` through `PATCH /api/project`; every save is one undo step.
+- **Render:** `backend/videoflow/render/graph.py` compiles the document into FFmpeg filter graphs; titles are drawn by Pillow (`editor/titles.py`) with the bundled Inter font.
+- **Project bundle:** `*.videoflow` folder with `project.json`, analysis, features, `cache/` (proxies, thumbnails, waveforms, title pictures), exports and renders.
+- **`tools/` is a fixed name:** the installer puts the static FFmpeg in `tools/ffmpeg/`, and `media/caps.py` and the run scripts look there before `PATH`. It is git-ignored.
+- **Sample media are generated, not versioned:** `scripts/gen_samples.py` (code in `backend/videoflow/samples.py`) builds them with FFmpeg and TTS into a per-user cache (`VIDEOFLOW_SAMPLES_CACHE` overrides). Tests make their own synthetic media.
+- **Models:** pinned in `backend/videoflow/engines/manifest.toml`, stored in the application `models/` folder, downloaded only on request from Settings.
 
 ## Layout
 
 | Path | Content |
 |------|---------|
-| `backend/` | Python 3.13 package `videoflow` (uv): FastAPI API, editor model, media, analysis, render, exporters, PySide6 desktop shell |
-| `frontend/` | React + Vite editor UI (npm). `src/model.ts` holds the interactive edit model |
-| `scripts/` | Install, run and dev scripts (`*.sh` Linux, `*.ps1` Windows), sample generator, desktop smoke test |
-| `docs/` | All documentation (see below) |
+| `backend/` | API, editor model, media, analysis engines, render, exporters, desktop shell, tests |
+| `frontend/` | Editor UI; `src/*.ts` pure logic with vitest tests, `src/ui/` React components |
+| `scripts/` | Install, run and dev scripts (`*.sh` Linux, `*.ps1` Windows), desktop build spec |
+| `docs/` | Documentation |
 
 ## Documentation
 
-- `README.md`: essentials, install, run, usage.
-- `docs/spec/`: the specification, numbered files indexed in `docs/spec/README.md`. 01–07 are the original spec. 08 onwards are dated revisions, and later revisions supersede earlier ones where they conflict.
-- `docs/dependencies.md`: every runtime and dev dependency with version, licence and accelerator matrix. Update it whenever a dependency changes.
-- `docs/desktop-runtime.md`, `docs/workspace-layout.md`, `docs/validation-*.md`: runtime notes and validation records.
+- `README.md`: essentials, install, run, usage. Keep it current.
+- `docs/spec/`: numbered specification indexed in `docs/spec/README.md`. 01–07 are the original spec; 08 onwards are dated revisions that supersede earlier ones.
+- `docs/dependencies.md`: every dependency with version, licence and purpose. Update it with any dependency change.
 
 ## Rules
 
-- **Commits:** atomic, one functional change per commit, concise functional message. No `Co-Authored-By` or other AI co-author trailer.
-- **Specs:** document every feature in the spec. Either update the relevant `docs/spec` file or add a new numbered revision and list it in `docs/spec/README.md`. When a feature is removed or replaced, delete or amend its description everywhere in `docs/` so no spec describes behaviour that no longer exists.
+- **Commits:** atomic, one feature or fix per commit, with a concise message prefixed by its type: `FEATURE:`, `FIX:`, `DOC:`, `DEV:` (tooling, tests, build, refactoring). Never add a `Co-Authored-By` or any other trailer mentioning AI co-authoring.
+- **Specs:** document every feature in `docs/spec` (update a file or add a numbered revision listed in the index). When a feature is removed or replaced, amend every description of it in `docs/`.
 - No refactoring, rollback, framework or major-version change without asking first.
-- Keep `README.md` current with the essentials.
-- Code must work on Windows and Linux: pathlib, no `shell=True`, and provide both `.sh` and `.ps1` scripts.
+- Windows and Linux: pathlib, no `shell=True`, both `.sh` and `.ps1` scripts.
 - English everywhere (code, comments, docs, commit messages).
 
 ## Checks
@@ -34,4 +47,4 @@ cd backend && uv run pytest && uv run ruff check . && uv run ruff format --check
 cd frontend && npm test && npm run typecheck && npx prettier --check src
 ```
 
-`uv run pytest -m smoke` runs the model-downloading tier. Tests use synthetic media and must not need network in the unit tier.
+Regenerate schema goldens after model changes: `uv run python -m videoflow.project.schema --write`. `uv run pytest -m smoke` runs the model-downloading tier; the unit tier uses synthetic media and no network.
