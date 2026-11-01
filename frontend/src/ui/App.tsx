@@ -23,6 +23,7 @@ import {
   Download,
   Type,
   Sparkles,
+  Image as ImageIcon,
 } from "lucide-react";
 import {
   canRestoreAudio,
@@ -34,6 +35,7 @@ import {
   linkClips,
   duration,
   fps,
+  isStill,
   keyboardStep,
   layout,
   pack,
@@ -517,10 +519,12 @@ export function App() {
                     <Music2 size={24} />
                   )}
                   <span>
-                    {timecode(
-                      Math.round((asset.probe.durationUs * rate) / 1e6),
-                      rate,
-                    ).slice(3)}
+                    {asset.probe.still
+                      ? "Image"
+                      : timecode(
+                          Math.round((asset.probe.durationUs * rate) / 1e6),
+                          rate,
+                        ).slice(3)}
                   </span>
                 </div>
                 <strong title={asset.path}>
@@ -632,7 +636,7 @@ export function App() {
           <div>
             <Upload size={40} />
             <h2>Drop it into the flow.</h2>
-            <p>Video, audio, and existing analysis JSON</p>
+            <p>Video, audio, images and existing analysis JSON</p>
           </div>
         </div>
       )}
@@ -852,7 +856,7 @@ function Inspector({
       <div className="inspector-tabs">
         {(clip && clip.kind === "gap"
           ? (["Clip", "Project"] as const)
-          : clip && clip.kind === "text"
+          : clip && (clip.kind === "text" || isStill(clip))
             ? (["Clip", "Effects", "Project"] as const)
             : (["Clip", "Effects", "Transcript", "Project"] as const)
         ).map((t) => (
@@ -883,7 +887,10 @@ function Inspector({
             </p>
           </div>
         </div>
-      ) : tab === "Transcript" && clip && clip.kind !== "text" ? (
+      ) : tab === "Transcript" &&
+        clip &&
+        clip.kind !== "text" &&
+        !isStill(clip) ? (
         <Transcript clip={clip} />
       ) : tab === "Effects" && clip && clip.kind !== "gap" ? (
         <EffectsTab clip={clip} />
@@ -894,6 +901,8 @@ function Inspector({
               <Music2 size={16} />
             ) : clip.kind === "text" ? (
               <Type size={16} />
+            ) : isStill(clip) ? (
+              <ImageIcon size={16} />
             ) : (
               <Film size={16} />
             )}{" "}
@@ -903,11 +912,26 @@ function Inspector({
                 ? "Audio clip"
                 : clip.kind === "text"
                   ? "Text clip"
-                  : "Video clip"}
+                  : asset?.probe.still
+                    ? "Image clip"
+                    : isStill(clip)
+                      ? "Freeze frame"
+                      : "Video clip"}
           </div>
           <h3 title={clip.name}>{clip.name}</h3>
           <TitleControls clip={clip} />
-          {clip.kind !== "text" && (
+          {isStill(clip) && (
+            <div className="inspector-section">
+              <div className="stat-row">
+                <span>Duration</span>
+                <strong>{timecode(duration(clip), rate)}</strong>
+              </div>
+              <p className="muted still-hint">
+                A still picture: drag either edge to make it as long as needed.
+              </p>
+            </div>
+          )}
+          {clip.kind !== "text" && !isStill(clip) && (
             <details className="inspector-section source-range" key={clip.id}>
               <summary className="overline">Source range</summary>
               <div className="stat-row">
@@ -986,43 +1010,46 @@ function Inspector({
               </div>
             </div>
           )}
-          {!clip.linkId && clip.kind !== "gap" && clip.kind !== "text" && (
-            <div className="inspector-section">
-              <label className="link-selector">
-                Link {clip.kind === "video" ? "audio" : "video"}
-                <select
-                  aria-label="Link clip"
-                  value=""
-                  disabled={busy || !candidates.length}
-                  onChange={(e) => {
-                    if (!e.target.value) return;
-                    try {
-                      void save(
-                        linkClips(
-                          pack(useEditor.getState().document),
-                          clip.id,
-                          e.target.value,
-                        ),
-                      );
-                    } catch (error) {
-                      useEditor.getState().set({ error: String(error) });
-                    }
-                  }}
-                >
-                  <option value="">
-                    {candidates.length
-                      ? "Choose a clip…"
-                      : "Align starts and durations to link"}
-                  </option>
-                  {candidates.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
+          {!clip.linkId &&
+            clip.kind !== "gap" &&
+            clip.kind !== "text" &&
+            !isStill(clip) && (
+              <div className="inspector-section">
+                <label className="link-selector">
+                  Link {clip.kind === "video" ? "audio" : "video"}
+                  <select
+                    aria-label="Link clip"
+                    value=""
+                    disabled={busy || !candidates.length}
+                    onChange={(e) => {
+                      if (!e.target.value) return;
+                      try {
+                        void save(
+                          linkClips(
+                            pack(useEditor.getState().document),
+                            clip.id,
+                            e.target.value,
+                          ),
+                        );
+                      } catch (error) {
+                        useEditor.getState().set({ error: String(error) });
+                      }
+                    }}
+                  >
+                    <option value="">
+                      {candidates.length
+                        ? "Choose a clip…"
+                        : "Align starts and durations to link"}
                     </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          )}
+                    {candidates.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
           {clip.linkId && (
             <button
               className="button detach-action"

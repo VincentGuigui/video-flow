@@ -229,3 +229,38 @@ async def build_proxy(
         last_err = res.stderr_tail
         tmp.unlink(missing_ok=True)
     raise MediaError(f"proxy encode failed for {src}", last_err)
+
+
+STILL_PREVIEW_MAX = 1920
+"""Longest side of the preview picture of a still image (docs/features/still-images.md)."""
+
+
+async def build_still_preview(
+    src: Path | str, out_dir: Path | str, content_hash: str, *, caps: FFmpegCaps | None = None
+) -> Path:
+    """Build (or reuse) a PNG of a still image fitting STILL_PREVIEW_MAX, alpha kept.
+
+    The preview shows it in place of a video proxy; formats browsers cannot show (TIFF)
+    and very large photos are converted once.
+    """
+    caps = caps or get_caps()
+    out_dir = Path(out_dir)
+    out = out_dir / f"{cache_key(content_hash, 'still', PROXY_VERSION, STILL_PREVIEW_MAX)}.png"
+    if out.is_file():
+        return out
+    out_dir.mkdir(parents=True, exist_ok=True)
+    tmp = out.with_name(out.stem + ".part.png")
+    side = STILL_PREVIEW_MAX
+    res = await ffmpeg.run(
+        [
+            "-y", "-i", str(src), "-frames:v", "1",
+            "-vf", f"scale='min({side},iw)':'min({side},ih)':force_original_aspect_ratio=decrease",
+            "-update", "1", str(tmp),
+        ],
+        ffmpeg=caps.ffmpeg,
+    )  # fmt: skip
+    if not res.ok or not tmp.is_file():
+        tmp.unlink(missing_ok=True)
+        raise MediaError(f"still preview failed for {src}", res.stderr_tail)
+    os.replace(tmp, out)
+    return out

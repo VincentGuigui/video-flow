@@ -2,6 +2,10 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.9.0 — 2026-11-01
+
+- Still images (PNG, JPEG, WebP, BMP, TIFF) in the media library; each becomes a 3 s image clip that trims freely, takes transitions, fades and zoom, renders and exports (Camtasia image clips).
+
 ## 0.8.0 — 2026-11-01
 
 - Effects tab in clip properties: transition cards with picture tiles, and one card per clip effect with Add effect and remove.

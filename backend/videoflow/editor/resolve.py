@@ -83,7 +83,14 @@ def validate_assets(document: EditorDocument, project: Project) -> None:
         asset = project.asset(clip.asset_id or "")
         if asset is None:
             raise ValueError(f"Unknown asset {clip.asset_id}")
-        if clip.source_out > frames(asset.probe.duration_us, project.settings.frame_rate):
+        available = frames(asset.probe.duration_us, project.settings.frame_rate)
+        if asset.probe.still and not clip.still:
+            raise ValueError(f"{clip.name} is a still image: its clip must be still")
+        if clip.still_frame is not None:
+            # A still clip has no source limit; only its frame must exist.
+            if not asset.probe.still and clip.still_frame >= available:
+                raise ValueError(f"Clip {clip.name} holds a frame beyond its source")
+        elif clip.source_out > available:
             raise ValueError(f"Clip {clip.name} exceeds its source duration")
         if clip.kind == "video" and asset.probe.video is None:
             raise ValueError(f"{clip.name} has no video")
@@ -165,10 +172,13 @@ def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeli
                         source_in_frame=clip.source_in,
                         source_in_us=frame_to_us(clip.source_in, rate),
                         source_out_us=frame_to_us(clip.source_out, rate),
-                        available_before=clip.timeline_frames(clip.source_in),
-                        available_after=clip.timeline_frames(
-                            max(0, source_duration - clip.source_out)
-                        ),
+                        # A still clip repeats one picture: its handles are unbounded.
+                        available_before=None
+                        if clip.still
+                        else clip.timeline_frames(clip.source_in),
+                        available_after=None
+                        if clip.still
+                        else clip.timeline_frames(max(0, source_duration - clip.source_out)),
                         audio=ResolvedAudio(
                             mode="muted" if clip.kind != "audio" else "linked",
                             asset_id=clip.asset_id,
@@ -185,6 +195,9 @@ def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeli
                         kind="media" if clip.kind in ("video", "audio") else "gap",
                         **({"title": clip.title.dump()} if clip.title else {}),
                         **({"speed": clip.speed} if clip.speed != 1 else {}),
+                        **(
+                            {"stillFrame": clip.still_frame} if clip.still_frame is not None else {}
+                        ),
                         **({"linkId": clip.link_id} if clip.link_id else {}),
                         **(
                             {"muted": muted}

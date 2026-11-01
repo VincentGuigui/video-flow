@@ -121,6 +121,11 @@
           "title": "Durationus",
           "type": "integer"
         },
+        "still": {
+          "default": false,
+          "title": "Still",
+          "type": "boolean"
+        },
         "video": {
           "anyOf": [
             {

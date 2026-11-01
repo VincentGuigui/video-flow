@@ -18,12 +18,14 @@ import {
   PanelBottom,
   Blend,
   Plus,
+  Image as ImageIcon,
 } from "lucide-react";
 import {
   clone,
   detach,
   duration,
   fps,
+  isStill,
   layout,
   move,
   pack,
@@ -329,6 +331,8 @@ export function Flow() {
                 <div className="clip-topline">
                   {kind === "audio" ? (
                     <Music2 size={12} />
+                  ) : kind === "video" && isStill(c) ? (
+                    <ImageIcon size={13} />
                   ) : kind === "video" ? (
                     <Film size={13} />
                   ) : kind === "text" ? (
@@ -470,7 +474,7 @@ export function Flow() {
               <div>
                 <h2>Your story, connected.</h2>
                 <p>
-                  Drop video or audio here. Build a sequence,
+                  Drop video, audio or images here. Build a sequence,
                   <br />
                   compare takes, and find your flow.
                 </p>

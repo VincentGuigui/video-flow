@@ -2,7 +2,14 @@
 // says which clips it applies to, whether it is in use, a one-line summary, and how to
 // add (default values) or remove it. New effects are added to EFFECTS; the interface
 // lists them in "Add effect" without further changes.
-import { partners, setSpeed, speedOf, type Clip, type Document } from "./model";
+import {
+  isStill,
+  partners,
+  setSpeed,
+  speedOf,
+  type Clip,
+  type Document,
+} from "./model";
 import { setFade } from "./transitions";
 import { withVolumeRanges } from "./volume";
 
@@ -62,7 +69,8 @@ export const EFFECTS: EffectDef[] = [
     id: "speed",
     label: "Speed",
     description: "Play faster or slower; sound keeps its pitch",
-    applies: (_, clip) => clip.kind === "video" || clip.kind === "audio",
+    applies: (_, clip) =>
+      (clip.kind === "video" && !isStill(clip)) || clip.kind === "audio",
     active: (_, clip) => Math.abs(speedOf(clip) - 1) > 0.001,
     summary: (_, clip) => `${Math.round(speedOf(clip) * 100)} %`,
     add: () => null,

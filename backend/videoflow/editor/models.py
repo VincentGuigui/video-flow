@@ -154,6 +154,10 @@ class EditorClip(CamelModel):
     volume_ranges: list[VolumeRange] = Field(default_factory=list, max_length=2000)
     title: Title | None = None
     """Text drawn by a text clip; text clips have no asset and play on video lanes."""
+    still_frame: int | None = Field(default=None, ge=0)
+    """Source frame a still clip shows for its whole length (0 for a still image); None for
+    moving clips. A still clip has no source limit: its range only measures its length
+    (docs/features/still-images.md)."""
 
     @model_validator(mode="after")
     def valid(self) -> "EditorClip":
@@ -167,7 +171,13 @@ class EditorClip(CamelModel):
             raise ValueError("Text clips, and only they, have a title")
         if self.kind == "text" and self.speed != 1:
             raise ValueError("Text clips play at normal speed")
+        if self.still_frame is not None and (self.kind != "video" or self.speed != 1):
+            raise ValueError("Only video clips can be still, at normal speed")
         return self
+
+    @property
+    def still(self) -> bool:
+        return self.still_frame is not None
 
     @property
     def span(self) -> int:

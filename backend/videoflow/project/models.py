@@ -202,6 +202,8 @@ class AssetProbe(CamelModel):
     audio_streams: list[AudioStreamInfo] = Field(default_factory=list)
     creation_time: str | None = None
     creation_time_reliable: bool = False
+    still: bool = False
+    """A still image: one picture, no duration (docs/features/still-images.md)."""
 
     @property
     def has_audio(self) -> bool:

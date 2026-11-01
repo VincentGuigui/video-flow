@@ -57,6 +57,7 @@ just test | smoke | lint | serve | build | package   # or scripts/dev.sh … (sc
 - **Clip effects:** cards in the Effects tab, added with Add effect and removed with their ×: fade in/out (picture and sound); speed 25–400 % or fit to the range, audio keeping its pitch; zoom & pan toward a clicked point; mute a range; duck music (an audio clip not linked to a video) by 15 dB under transcribed speech.
 - **Titles:** Title and Lower third in the clip flow toolbar add a text clip at the cursor, above the picture; edit text, style, size, colours and box in clip properties.
 - **Media menu:** right-click (only the app's menus open, never the browser menu) a medium in Project media for Info (size, duration, location shown in the file manager, analysis and transcript) or Analysis… (transcribe again and replace its analysis).
+- **Still images:** import PNG, JPEG, WebP, BMP or TIFF pictures; each becomes a 3 s image clip that you can extend or shorten freely, with transitions, fades and zoom like a video clip.
 - **Properties panel:** drag its left edge to resize it; switch it between half height (beside the preview) and tall (beside preview, timeline and flow); unpin it to float over the editor and fold into a strip when the pointer leaves.
 - **Zones:** Ctrl+A selects everything in the zone last clicked (project media, timeline, clip flow or editor); Delete removes it. Removing media also removes its clips; undo restores both.
 

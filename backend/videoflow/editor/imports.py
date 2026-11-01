@@ -28,11 +28,14 @@ from videoflow.engines.downloads import missing_models, model_state
 from videoflow.jobs.workers import EngineSpec, WorkerPool
 from videoflow.media import ffmpeg
 from videoflow.media.ingest import ingest_files
-from videoflow.media.proxy import build_proxy
+from videoflow.media.proxy import build_proxy, build_still_preview
 from videoflow.preferences import Preferences, load_preferences
 from videoflow.project.commands import AddAsset, SetEditor
 from videoflow.project.models import Asset
 from videoflow.project.store import Bundle, save_atomic
+
+STILL_SECONDS = 3
+"""Length of a new still-image clip."""
 
 
 class ImportJob(CamelModel):
@@ -131,15 +134,23 @@ class Imports:
                 def progress(p: ffmpeg.Progress) -> None:
                     job.progress = 0.1 + 0.3 * (p.fraction or 0)
 
-                proxy = await build_proxy(
-                    path, self.bundle.proxies_dir, asset.content_hash, on_progress=progress
-                )
-                if proxy:
-                    self.proxies[asset.id] = proxy.path
-                    asset.model_extra["previewPath"] = str(proxy.path)  # type: ignore[index]
+                if asset.probe.still:
+                    preview = await build_still_preview(
+                        path, self.bundle.proxies_dir, asset.content_hash
+                    )
+                    self.proxies[asset.id] = preview
+                    asset.model_extra["previewPath"] = str(preview)  # type: ignore[index]
+                else:
+                    proxy = await build_proxy(
+                        path, self.bundle.proxies_dir, asset.content_hash, on_progress=progress
+                    )
+                    if proxy:
+                        self.proxies[asset.id] = proxy.path
+                        asset.model_extra["previewPath"] = str(proxy.path)  # type: ignore[index]
                 analysis: AnalysisFile | None = None
                 qwen_warning = ""
-                if analyse:
+                # A still image has nothing to transcribe.
+                if analyse and not asset.probe.still:
                     job.phase, job.progress = "Checking analysis JSON", 0.45
                     analysis = (
                         None if reanalyse else load_analysis(path, asset.content_hash, self.bundle)
@@ -317,7 +328,14 @@ class Imports:
         if matched is not None:
             start = matched.start
             layer = max((c.layer for c in document.clips), default=0) + 1
-        count = frames(asset.probe.duration_us, project.settings.frame_rate)
+        rate = project.settings.frame_rate
+        still = asset.probe.still
+        # A still image starts as a 3 s clip (docs/features/still-images.md).
+        count = (
+            round(STILL_SECONDS * rate.num / rate.den)
+            if still
+            else frames(asset.probe.duration_us, rate)
+        )
         if count < 1:
             raise ValueError("Media is shorter than one project frame")
         link = new_id("lnk") if asset.probe.video and asset.probe.has_audio else None
@@ -335,6 +353,7 @@ class Imports:
                 layer=layer,
                 link_id=link,
                 transform=transform,
+                still_frame=0 if still else None,
             )
             for kind in ("video", "audio")
             if (video if kind == "video" else asset.probe.has_audio)

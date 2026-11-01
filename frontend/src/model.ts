@@ -35,6 +35,9 @@ export interface Clip {
   fadeOut?: number;
   background?: { mode: "transparent" | "color" | "blur"; color: string };
   resizeReference?: { width: number; height: number; transform: Transform };
+  // Source frame a still clip shows for its whole length (0 for a still image);
+  // null for moving clips (docs/features/still-images.md).
+  stillFrame?: number | null;
 }
 export interface Document {
   version: 1;
@@ -48,6 +51,7 @@ export interface Asset {
     durationUs: number;
     video: null | { width: number; height: number; rotation?: number };
     audioStreams: unknown[];
+    still?: boolean; // a still image: one picture, no duration
   };
 }
 export interface Settings {
@@ -66,6 +70,10 @@ export interface Project {
 export const uid = () => crypto.randomUUID();
 // Speed (docs/features/clip-effects.md): source frames per timeline frame; timeline length is span / speed.
 export const speedOf = (c: Clip) => c.speed ?? 1;
+// A still clip repeats one picture: it has no source limit on either edge.
+export const isStill = (c: Clip) => c.stillFrame != null;
+// Clips whose range only measures their length: text and still clips.
+export const sourceless = (c: Clip) => c.kind === "text" || isStill(c);
 export const span = (c: Clip) => c.sourceOut - c.sourceIn;
 export const duration = (c: Clip) =>
   speedOf(c) === 1 ? span(c) : Math.max(1, Math.round(span(c) / speedOf(c)));
@@ -447,14 +455,17 @@ export function trim(
       ? Math.max(
           -Math.min(
             ...selected.map((p) =>
-              p.kind === "text" ? Infinity : toTimeline(p, p.sourceIn),
+              sourceless(p) ? Infinity : toTimeline(p, p.sourceIn),
             ),
           ),
           Math.min(d - 1, delta),
         )
       : Math.max(
           1 - d,
-          Math.min(toTimeline(c, maxFrames - c.sourceOut), delta),
+          Math.min(
+            sourceless(c) ? Infinity : toTimeline(c, maxFrames - c.sourceOut),
+            delta,
+          ),
         );
   if (!delta) return doc;
   const next = clone(doc);
@@ -554,9 +565,9 @@ export function trim(
       }
     }
   }
-  // A text clip has no source: its range always starts at 0.
+  // Text and still clips have no source: their range always starts at 0.
   next.clips = next.clips.map((p) =>
-    p.kind === "text" && p.sourceIn
+    sourceless(p) && p.sourceIn
       ? { ...p, sourceIn: 0, sourceOut: p.sourceOut - p.sourceIn }
       : p,
   );
@@ -722,7 +733,13 @@ export function setSpeed(doc: Document, id: string, speed: number): Document {
   const selected = partners(doc, id),
     c = selected[0];
   speed = Math.min(10, Math.max(0.1, Math.round(speed * 1000) / 1000));
-  if (!c || c.kind === "gap" || c.kind === "text" || speed === speedOf(c))
+  if (
+    !c ||
+    c.kind === "gap" ||
+    c.kind === "text" ||
+    isStill(c) ||
+    speed === speedOf(c)
+  )
     return doc;
   const ids = new Set(selected.map((p) => p.id)),
     end = c.start + duration(c),

@@ -161,6 +161,11 @@
           "title": "Durationus",
           "type": "integer"
         },
+        "still": {
+          "default": false,
+          "title": "Still",
+          "type": "boolean"
+        },
         "video": {
           "anyOf": [
             {
@@ -865,6 +870,19 @@
           "minimum": 0,
           "title": "Start",
           "type": "integer"
+        },
+        "stillFrame": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stillframe"
         },
         "title": {
           "anyOf": [

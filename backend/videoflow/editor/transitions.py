@@ -73,12 +73,15 @@ def active_transitions(
         seen.add((t.left_id, t.right_id))
         half = t.duration // 2
         if t.type == "dissolve":
-            before = min(half, right.timeline_frames(right.source_in), left.duration)
-            after = min(
-                t.duration - half,
-                left.timeline_frames(source_frames(left) - left.source_out),
-                right.duration,
+            # A still clip repeats one picture: it has handles of any length.
+            head = half if right.still else right.timeline_frames(right.source_in)
+            tail = (
+                t.duration - half
+                if left.still
+                else left.timeline_frames(source_frames(left) - left.source_out)
             )
+            before = min(half, head, left.duration)
+            after = min(t.duration - half, tail, right.duration)
         else:
             before = min(half, left.duration)
             after = min(t.duration - half, right.duration)

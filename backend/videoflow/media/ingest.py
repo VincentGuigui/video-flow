@@ -15,11 +15,13 @@ from videoflow.media import ffmpeg
 from videoflow.media.hashing import content_hash
 from videoflow.project.models import Asset, AssetProbe, AudioStreamInfo, VideoStreamInfo
 
+IMAGE_EXTENSIONS = frozenset({".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff"})
+"""Still images, imported as one picture (docs/features/still-images.md)."""
 MEDIA_EXTENSIONS = frozenset({
     ".mp4", ".mov", ".m4v", ".mkv", ".webm", ".avi", ".mts", ".m2ts", ".mxf", ".mpg", ".mpeg",
     ".wmv", ".3gp",
     ".wav", ".mp3", ".m4a", ".aac", ".flac", ".ogg", ".opus", ".aif", ".aiff",
-})  # fmt: skip
+}) | IMAGE_EXTENSIONS  # fmt: skip
 PROBE_CONCURRENCY = 4
 MIN_RELIABLE_YEAR = 2000
 
@@ -62,7 +64,12 @@ def _hdr(transfer: str | None) -> str:
     return {"arib-std-b67": "hlg", "smpte2084": "pq"}.get(transfer or "", "none")
 
 
-def asset_probe(pr: ffmpeg.ProbeResult) -> AssetProbe:
+def is_image(path: Path | str) -> bool:
+    return Path(path).suffix.casefold() in IMAGE_EXTENSIONS
+
+
+def asset_probe(pr: ffmpeg.ProbeResult, *, still: bool = False) -> AssetProbe:
+    """Probe facts of a source; a still image has one picture and no duration."""
     video = None
     if pr.video is not None:
         v = pr.video
@@ -91,9 +98,10 @@ def asset_probe(pr: ffmpeg.ProbeResult) -> AssetProbe:
     durations = [d for d in (pr.duration_us, pr.video.duration_us if pr.video else None) if d]
     created = pr.creation_time
     return AssetProbe(
-        duration_us=max(durations, default=0),
+        duration_us=0 if still else max(durations, default=0),
         video=video,
-        audio_streams=audio,
+        audio_streams=[] if still else audio,
+        still=still,
         creation_time=created.astimezone(UTC).isoformat() if created else None,
         creation_time_reliable=created is not None and created.year >= MIN_RELIABLE_YEAR,
     )
@@ -125,6 +133,8 @@ async def ingest_files(
                 pr = await ffmpeg.probe(p, ffprobe)
                 if pr.video is None and not pr.audio:
                     return Failure(p, "no audio or video stream")
+                if is_image(p) and pr.video is None:
+                    return Failure(p, "not a readable image")
                 return await content_hash(p), pr
             except (ffmpeg.ProbeError, OSError) as exc:
                 return Failure(p, str(exc))
@@ -148,7 +158,7 @@ async def ingest_files(
                         path=str(p),
                         rel_path=_rel(p, base_dir),
                         content_hash=digest,
-                        probe=asset_probe(pr),
+                        probe=asset_probe(pr, still=is_image(p)),
                     )
                     by_hash[digest] = (None, p)
                     result.assets.append(asset)

@@ -213,12 +213,24 @@ def compile_graph(
                 )
                 warnings.append(f"{clip.name}: {hdr.upper()} tone-mapped to SDR BT.709")
             # Trim once so foreground and backdrop share exactly the same source frames.
-            prepare = (
-                f"[{index}:v:0]fps={fps}:round=near,"
-                f"trim=start_frame={clip.source_in}:end_frame={clip.source_out},"
-                f"{_retime(clip.speed, fps)}tpad=stop_mode=clone:stop={clip.duration},"
-                f"trim=end_frame={clip.duration},{tone}setsar=1,format=rgba"
-            )
+            if clip.still_frame is not None:
+                # A still clip repeats one picture: the image, or one frame of a video
+                # (docs/features/still-images.md).
+                held = clip.still_frame
+                pick = "" if asset.probe.still else f"fps={fps}:round=near,"
+                prepare = (
+                    f"[{index}:v:0]{pick}trim=start_frame={held}:end_frame={held + 1},"
+                    f"setpts=PTS-STARTPTS,loop=loop={clip.duration - 1}:size=1:start=0,"
+                    f"trim=end_frame={clip.duration},"
+                    f"settb=AVTB,setpts=N*{rate.den}/{rate.num}/TB,{tone}setsar=1,format=rgba"
+                )
+            else:
+                prepare = (
+                    f"[{index}:v:0]fps={fps}:round=near,"
+                    f"trim=start_frame={clip.source_in}:end_frame={clip.source_out},"
+                    f"{_retime(clip.speed, fps)}tpad=stop_mode=clone:stop={clip.duration},"
+                    f"trim=end_frame={clip.duration},{tone}setsar=1,format=rgba"
+                )
             fade_in = plan.video_fade_in.get(clip.id, 0)
             fade_out = plan.video_fade_out.get(clip.id, 0)
             # Dissolves and edge fades blend the picture (and its backdrop) with what lies below.

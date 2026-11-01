@@ -502,3 +502,34 @@ def test_ffmpeg_status_and_consented_install(client, tmp_path, monkeypatch):
 
     monkeypatch.setattr(ffmpeg_install, "current_build", lambda: None)
     assert client.post("/api/ffmpeg/install").status_code == 422
+
+
+def test_image_import_adds_a_three_second_still_clip_with_a_png_preview(
+    client, app_bundle, tmp_path
+):
+    import subprocess
+
+    from videoflow.media.caps import NO_WINDOW, locate_binaries
+
+    _, bundle = app_bundle
+    image = tmp_path / "originals" / "card.jpg"
+    image.parent.mkdir(exist_ok=True)
+    subprocess.run(
+        [str(locate_binaries().ffmpeg), "-v", "error", "-y", "-f", "lavfi", "-i"]
+        + ["color=orange:s=640x360:d=1", "-frames:v", "1", str(image)],
+        check=True,
+        capture_output=True,
+        creationflags=NO_WINDOW,
+    )
+    response = client.post(
+        "/api/native-import", json={"handle": grant(client, image), "analyse": True}
+    )
+    job = await_job(client, response.json()["id"])
+    assert job["state"] == "done", job
+    asset = bundle.project.assets[0]
+    assert asset.probe.still
+    clips = client.get("/api/project").json()["editor"]["clips"]
+    assert [(c["kind"], c["sourceOut"], c["stillFrame"]) for c in clips] == [("video", 90, 0)]
+    media = client.get(f"/api/media/{asset.id}")
+    assert media.status_code == 200 and media.content[:8] == b"\x89PNG\r\n\x1a\n"
+    assert client.get(f"/api/thumbnail/{asset.id}").status_code == 200

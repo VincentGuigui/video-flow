@@ -1,6 +1,7 @@
 // Mirror of backend/videoflow/editor/transitions.py: keep both in step.
 import {
   duration,
+  isStill,
   layout,
   partners,
   toSource,
@@ -74,14 +75,17 @@ export function activeTransitions(
     const half = Math.floor(t.duration / 2);
     let before: number, after: number;
     if (t.type === "dissolve") {
+      // A still clip repeats one picture: it has handles of any length.
       before = Math.min(
         half,
-        toTimeline(right!, right!.sourceIn),
+        isStill(right!) ? half : toTimeline(right!, right!.sourceIn),
         duration(left!),
       );
       after = Math.min(
         t.duration - half,
-        toTimeline(left!, sourceFrames(left!) - left!.sourceOut),
+        isStill(left!)
+          ? t.duration - half
+          : toTimeline(left!, sourceFrames(left!) - left!.sourceOut),
         duration(right!),
       );
     } else {

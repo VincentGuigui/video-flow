@@ -38,10 +38,11 @@ from videoflow.editor.titles import title_png
 from videoflow.engines.downloads import ModelDownloads, fetch_download_sizes
 from videoflow.exporters.service import export_project
 from videoflow.media import ffmpeg, ffmpeg_install
+from videoflow.media.errors import MediaError
 from videoflow.media.hashing import content_hash
 from videoflow.media.ingest import MEDIA_EXTENSIONS
 from videoflow.media.peaks import compute_peaks, read_peaks
-from videoflow.media.proxy import build_proxy
+from videoflow.media.proxy import build_proxy, build_still_preview
 from videoflow.preferences import Preferences, load_preferences, save_preferences
 from videoflow.project import cache
 from videoflow.project.commands import Command, RelinkAsset
@@ -703,13 +704,24 @@ def create_app(
             {"sidecar": filename} if suffix == ".json" else imports.submit(target, analyse).dump()
         )
 
+    async def still_preview(asset: Any) -> Path:
+        """The PNG preview of a still image (docs/features/still-images.md)."""
+        try:
+            return await build_still_preview(
+                Path(asset.path), bundle.proxies_dir, asset.content_hash
+            )
+        except MediaError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
     @app.get("/api/media/{asset_id}")
     async def media(asset_id: str, codec: Literal["auto", "webm"] = "auto") -> FileResponse:
         asset = bundle.project.asset(asset_id)
         if asset is None:
             raise HTTPException(404, "Unknown asset")
         path = Path(asset.path)
-        if asset.probe.video:
+        if asset.probe.still:
+            path = await still_preview(asset)
+        elif asset.probe.video:
             preview = (asset.model_extra or {}).get("previewPath")
             proxy_path = Path(preview) if preview else imports.proxies.get(asset_id)
             if proxy_path is not None and not proxy_path.resolve().is_relative_to(
@@ -824,8 +836,11 @@ def create_app(
         key = hashlib.sha256(asset.content_hash.encode()).hexdigest()[:24]
         target = bundle.thumbs_dir / f"{key}.jpg"
         if not target.is_file():
-            proxy = await build_proxy(Path(asset.path), bundle.proxies_dir, asset.content_hash)
-            source = proxy.path if proxy else Path(asset.path)
+            if asset.probe.still:
+                source = await still_preview(asset)
+            else:
+                proxy = await build_proxy(Path(asset.path), bundle.proxies_dir, asset.content_hash)
+                source = proxy.path if proxy else Path(asset.path)
             result = await ffmpeg.run(
                 ["-y", "-i", str(source), "-frames:v", "1", "-vf", "scale=240:-2", str(target)]
             )

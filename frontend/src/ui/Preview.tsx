@@ -9,6 +9,7 @@ import {
   clone,
   duration,
   fps,
+  isStill,
   layout,
   type Clip,
   type Transform,
@@ -47,11 +48,19 @@ function Media({
 }) {
   const ref = useRef<HTMLVideoElement & HTMLAudioElement>(null);
   const settings = useEditor((s) => s.project?.settings);
+  // A still image is drawn as a picture; a still clip of a video stays on its frame
+  // (docs/features/still-images.md).
+  const image = useEditor(
+    (s) => !!s.project?.assets.find((a) => a.id === clip.assetId)?.probe.still,
+  );
+  const still = isStill(clip);
+  if (still) playing = false;
   useEffect(() => {
     const media = ref.current;
     if (!media) return;
-    const target =
-      (clip.sourceIn + (frame - clip.start) * (clip.speed ?? 1)) / rate;
+    const target = still
+      ? (clip.stillFrame ?? 0) / rate
+      : (clip.sourceIn + (frame - clip.start) * (clip.speed ?? 1)) / rate;
     media.playbackRate = clip.speed ?? 1;
     const sync = () => {
       if (Math.abs(media.currentTime - target) > (playing ? 0.12 : 0.005))
@@ -70,7 +79,7 @@ function Media({
     if (media.readyState) sync();
     else media.addEventListener("loadedmetadata", sync, { once: true });
     return () => media.removeEventListener("loadedmetadata", sync);
-  }, [frame, rate, playing, clip, gain]);
+  }, [frame, rate, playing, clip, gain, still]);
   if (clip.kind === "audio")
     return <audio ref={ref} src={mediaUrl(clip.assetId)} preload="auto" />;
   const t = clip.transform,
@@ -98,11 +107,9 @@ function Media({
         />
       )}
       {backdrop ? (
-        <video
-          ref={ref}
-          muted
-          playsInline
-          preload="auto"
+        <Picture
+          image={image}
+          media={ref}
           src={mediaUrl(clip.assetId)}
           style={{
             position: "absolute",
@@ -130,11 +137,9 @@ function Media({
             clipPath: `inset(${t.cropTop * 100}% ${t.cropRight * 100}% ${t.cropBottom * 100}% ${t.cropLeft * 100}%)`,
           }}
         >
-          <video
-            ref={ref}
-            muted
-            playsInline
-            preload="auto"
+          <Picture
+            image={image}
+            media={ref}
             src={mediaUrl(clip.assetId)}
             style={{
               width: "100%",
@@ -148,6 +153,32 @@ function Media({
         </div>
       )}
     </>
+  );
+}
+
+// The picture of a video clip: a muted video element, or an image for a still image.
+function Picture({
+  image,
+  media,
+  src,
+  style,
+}: {
+  image: boolean;
+  media: React.RefObject<(HTMLVideoElement & HTMLAudioElement) | null>;
+  src: string;
+  style: React.CSSProperties;
+}) {
+  return image ? (
+    <img src={src} alt="" draggable={false} style={style} />
+  ) : (
+    <video
+      ref={media}
+      muted
+      playsInline
+      preload="auto"
+      src={src}
+      style={style}
+    />
   );
 }
 

@@ -2910,3 +2910,7 @@ button.timecode:hover {
   background: #2d3a30;
   color: #fff;
 }
+.still-hint {
+  font-size: 12px;
+  margin: 6px 0 0;
+}

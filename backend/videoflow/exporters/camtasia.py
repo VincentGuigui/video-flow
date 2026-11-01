@@ -58,6 +58,13 @@ _VIDEO: dict[str, Any] = {
     "metadata": dict(_MEDIA_METADATA),
     "animationTracks": {},
 }
+_IMAGE: dict[str, Any] = {
+    **{k: v for k, v in _VIDEO.items() if k != "metadata"},
+    "_type": "IMFile",
+    "mediaDuration": 1,
+    "metadata": dict(_MEDIA_METADATA),
+}
+"""A still picture: an image, or one frame of a video (docs/features/still-images.md)."""
 _AUDIO: dict[str, Any] = {
     "id": 0,
     "_type": "AMFile",
@@ -225,7 +232,14 @@ DEFAULT_TEMPLATE: dict[str, Any] = {
                         "tracks": [
                             {
                                 "trackIndex": 0,
-                                "medias": [_UNIFIED, _VIDEO, _AUDIO, _CALLOUT, _BOX_CALLOUT],
+                                "medias": [
+                                    _UNIFIED,
+                                    _VIDEO,
+                                    _AUDIO,
+                                    _IMAGE,
+                                    _CALLOUT,
+                                    _BOX_CALLOUT,
+                                ],
                                 "transitions": [
                                     {
                                         "name": "Fade",
@@ -293,6 +307,8 @@ class Prototypes:
     bin_tracks: dict[int, dict[str, Any]]
     callouts: dict[str, dict[str, Any]] = field(default_factory=dict)
     """Text callouts by shape: plain text, and text on a filled rectangle."""
+    image: dict[str, Any] = field(default_factory=lambda: copy.deepcopy(_IMAGE))
+    image_from_template: bool = False
     warnings: list[str] = field(default_factory=list)
 
 
@@ -350,7 +366,10 @@ def prototypes(template: dict[str, Any]) -> Prototypes:
         )
         for shape in TEXT_SHAPES
     }
+    own_image = next((m for m in medias if m.get("_type") == "IMFile"), None)
     return Prototypes(
+        image=own_image or _IMAGE,
+        image_from_template=own_image is not None and template is not DEFAULT_TEMPLATE,
         unified=unified,
         video=video,
         audio=audio,
@@ -472,9 +491,12 @@ def export_camtasia(
     output["sourceBin"] = entries
 
     def video_media(clip: EditorClip, model: dict[str, Any]) -> dict[str, Any]:
-        media = copy.deepcopy(model)
+        media = copy.deepcopy(proto.image if clip.still_frame is not None else model)
         media.update(id=new_id(), src=bin_ids[clip.asset_id or ""], trackNumber=0)
         timing(media, clip)
+        if clip.still_frame is not None:
+            # One picture held for the clip's length: an image, or a frame of a video.
+            media.update(mediaStart=ticks(clip.still_frame), mediaDuration=1, scalar=1)
         media.setdefault("attributes", {})["ident"] = clip.name
         parameters = media.setdefault("parameters", {})
         placement = _placement(clip, assets[clip.asset_id or ""], settings)
@@ -555,6 +577,12 @@ def export_camtasia(
         track.update(trackIndex=index, medias=medias, transitions=[])
         tracks.append(track)
     videos = [c for c in media_clips if c.kind == "video"]
+    if (
+        any(c.still for c in videos)
+        and not proto.image_from_template
+        and template is not DEFAULT_TEMPLATE
+    ):
+        warnings.append("Template has no image clip (IMFile); using the built-in structure.")
     if any(getattr(c.transform, k) for c in videos for k in CROP_KEYS):
         warnings.append("Crop is not exported to Camtasia; clips are placed uncropped.")
     if any(c.background.mode != "transparent" for c in videos):
@@ -623,7 +651,20 @@ def _bin_entry(proto: Prototypes, asset: Asset, identifier: int) -> dict[str, An
     seconds = Fraction(asset.probe.duration_us, 1_000_000)
     name = Path(asset.path.replace("\\", "/")).name + ";"
     tracks = []
-    if video:
+    if video and asset.probe.still:
+        # An image has a single-frame picture track (type 1).
+        tracks.append(
+            {
+                **_SOURCE_TRACK,
+                "type": 1,
+                "range": [0, 1],
+                "editRate": 10_000_000,
+                "trackRect": [0, 0, width, height],
+                "sampleRate": 0,
+                "metaData": name,
+            }
+        )
+    elif video:
         track = copy.deepcopy(proto.bin_tracks.get(0) or {"editRate": 90000})
         track.update(
             type=0,

@@ -75,7 +75,7 @@ All positions and lengths are integer project-rate frames. `start` is the timeli
       "transform": { "x": 0, "y": 0, "width": 1920, "height": 1080,
                      "cropLeft": 0, "cropRight": 0, "cropTop": 0, "cropBottom": 0 },
       "resizeReference": null, "background": { "mode": "transparent", "color": "#000000" },
-      "heldRange": null, "zooms": [], "volumeRanges": [], "title": null },
+      "heldRange": null, "zooms": [], "volumeRanges": [], "title": null, "stillFrame": null },
     { "id": "clp_…", "kind": "text", "assetId": null, "name": "Title", "start": 0,
       "sourceIn": 0, "sourceOut": 90, "layer": 1, "linkId": null,
       "title": { "text": "Chapter 1", "style": "title", "size": 0.08, "color": "#ffffff",
@@ -91,6 +91,7 @@ All positions and lengths are integer project-rate frames. `start` is the timeli
 | `layer` | Lane number 0–999; higher video layers composite on top. Video and audio lanes are numbered independently. |
 | `speed` | 0.1–10, source frames per timeline frame. Timeline `duration = round_half_up(span / speed)` with `span = sourceOut - sourceIn` ≥ 1. |
 | `transform` | Picture rectangle in output pixels plus crop fractions (`crop*` in `[0, 1)`, opposite crops sum below 1). `resizeReference` keeps the canvas size and transform a resize started from. `background`: `transparent`, `color` or `blur`. Frontend-only `fitMode` survives as an extra field. |
+| `stillFrame` | Source frame a still clip shows for its whole length (0 for an image); `null` for moving clips. Video clips at speed 1 only; a still clip has no source limit ([still images](../features/still-images.md)). |
 | `heldRange` | `{start, end}` timeline frames kept by a standard audio trim without a placeholder clip. |
 | `fadeIn`, `fadeOut` | Edge fades in frames (picture from what lies below, audio from silence). |
 | `gainDb` | −60 to +24 dB. |
@@ -147,7 +148,7 @@ The original model is still in the schema, the commands and the legacy resolver.
 |------|---------|
 | `ResolvedTimeline` | `projectId`, `revision`, `rate`, `width`, `height`, `sampleRate`, `duration` (frames), `tracks`, `transitions`, `dormantTransitions`, `beats`, `markers`, `warnings` (`code`, `message`). |
 | `ResolvedTrack` | `id` (`V1`…`Vn`, `A1`…`An`, one per used layer, bottom up), `kind`, `clips`. |
-| `ResolvedClip` | `itemId`, `track`, `assetId` (`__gap__` for gap and text clips), `timelineStart`, `duration`, `sourceInFrame`, `sourceInUs`/`sourceOutUs`, handles and `availableBefore`/`availableAfter`, `audio` (`mode`, `gainDb`, fade frames). From the editor it also carries `kind` (`media`/`gap`), `layer`, `transform`, and `speed` and `title` when set. |
+| `ResolvedClip` | `itemId`, `track`, `assetId` (`__gap__` for gap and text clips), `timelineStart`, `duration`, `sourceInFrame`, `sourceInUs`/`sourceOutUs`, handles and `availableBefore`/`availableAfter`, `audio` (`mode`, `gainDb`, fade frames). From the editor it also carries `kind` (`media`/`gap`), `layer`, `transform`, and `speed`, `title` and `stillFrame` when set. A still clip has no `availableBefore`/`availableAfter` (unbounded). |
 | `ResolvedTransition` | `afterItemId`, `beforeItemId`, `type`, `state`, `duration`, `cutFrame`, `leftFrames`, `rightFrames`, `audioDuration`. Editor transitions above the bottom video lane are rendered but not resolved (warning). |
 
 Zooms, volume ranges, held ranges, backgrounds and video fades are not in the resolved timeline: the FFmpeg render and the Camtasia exporter read the `EditorDocument` directly, and warnings (`editor_speed`, `editor_titles`, `editor_transforms`, `editor_transition_audio`) list what other formats lose.

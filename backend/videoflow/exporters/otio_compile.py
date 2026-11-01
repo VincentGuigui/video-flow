@@ -68,7 +68,10 @@ def compile_timeline(
             reference = (
                 otio.schema.ExternalReference(
                     target_url=media_url(asset.path),
-                    available_range=time_range(0, frames(asset.probe.duration_us, resolved.rate)),
+                    # A still image has no duration (docs/features/still-images.md).
+                    available_range=None
+                    if asset.probe.still
+                    else time_range(0, frames(asset.probe.duration_us, resolved.rate)),
                 )
                 if asset is not None
                 else otio.schema.MissingReference()
