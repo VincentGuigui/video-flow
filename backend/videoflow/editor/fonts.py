@@ -5,7 +5,9 @@ from pathlib import Path
 
 from PIL import ImageFont
 
-FONTS_DIR = Path(__file__).resolve().parent.parent / "assets" / "fonts"
+from videoflow.runtime import assets_dir
+
+FONTS_DIR = assets_dir() / "fonts"
 FONT_FILES = {False: "Inter-Regular.otf", True: "Inter-Bold.otf"}
 FAMILY = "Inter"
 

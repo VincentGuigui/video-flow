@@ -1,4 +1,4 @@
-"""Draw the Video-Flow icon files into backend/videoflow/assets/icons/.
+"""Draw the Video-Flow icon files into assets/icons/.
 
 The mark matches the editor header: a green rounded square tilted 7 degrees with the
 upright Lucide "Film" glyph in white. Outputs:
@@ -13,7 +13,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-ICONS = Path(__file__).resolve().parent.parent / "backend" / "videoflow" / "assets" / "icons"
+ICONS = Path(__file__).resolve().parent.parent / "assets" / "icons"
 GREEN = (43, 88, 68, 255)  # .brand-mark background in frontend/src/style.css
 WHITE = (251, 252, 248, 255)
 CANVAS = 1024  # drawn large, then downscaled

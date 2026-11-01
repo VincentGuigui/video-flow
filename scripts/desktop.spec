@@ -12,8 +12,8 @@ a = Analysis(
     binaries=[],
     datas=[
         (str(root / "backend" / "videoflow" / "engines" / "manifest.toml"), "videoflow/engines"),
-        (str(root / "backend" / "videoflow" / "assets" / "fonts"), "videoflow/assets/fonts"),
-        (str(root / "backend" / "videoflow" / "assets" / "icons"), "videoflow/assets/icons"),
+        (str(root / "assets" / "fonts"), "assets/fonts"),
+        (str(root / "assets" / "icons"), "assets/icons"),
         (str(root / "docs" / "reference" / "desktop-runtime.md"), "notices"),
     ] + collect_data_files("opentimelineio") + copy_metadata("opentimelineio")
       # onnx_asr reads its own version with importlib.metadata on import.
@@ -51,5 +51,5 @@ a.datas += [(str(Path("frontend/dist") / f.relative_to(dist)), str(f), "DATA")
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="Video-Flow", debug=False,
           bootloader_ignore_signals=False, strip=False, upx=False, console=False,
-          icon=str(root / "backend" / "videoflow" / "assets" / "icons" / "video-flow.ico"))
+          icon=str(root / "assets" / "icons" / "video-flow.ico"))
 coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name="Video-Flow")

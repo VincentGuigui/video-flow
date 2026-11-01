@@ -23,6 +23,7 @@ Targets Windows and Linux (x64). AI runs on the NPU, then the GPU, then the CPU.
 |------|---------|
 | `backend/` | API, editor model, media, analysis engines, render, exporters, desktop shell, tests |
 | `frontend/` | Editor UI; `src/*.ts` pure logic with vitest tests, `src/ui/` React components |
+| `assets/` | Bundled resources: `fonts/` (Inter, OFL), `icons/` (app icon, drawn by `scripts/make_icons.py`); found through `runtime.assets_dir()` |
 | `scripts/` | Install, run and dev scripts (`*.sh` Linux, `*.ps1` and `*.bat` Windows), desktop build spec |
 | `docs/` | Documentation |
 

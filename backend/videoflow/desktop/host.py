@@ -31,6 +31,7 @@ from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow, QWidget
 from videoflow.api.app import create_app
 from videoflow.media.ingest import MEDIA_EXTENSIONS
 from videoflow.project.store import Bundle
+from videoflow.runtime import assets_dir
 
 LOG = logging.getLogger(__name__)
 
@@ -332,7 +333,7 @@ new QWebChannel(qt.webChannelTransport, function(channel) {
         event.accept()
 
 
-ICONS = Path(__file__).resolve().parent.parent / "assets" / "icons"
+ICONS = assets_dir() / "icons"
 APP_USER_MODEL_ID = "VideoFlow.Desktop"
 
 

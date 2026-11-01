@@ -11,6 +11,13 @@ def application_dir() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def assets_dir() -> Path:
+    """Bundled resources (fonts, icons): `assets/` at the repository root, or in the build."""
+    if getattr(sys, "frozen", False):
+        return Path(getattr(sys, "_MEIPASS", application_dir())) / "assets"
+    return application_dir() / "assets"
+
+
 def cache_root() -> Path:
     """Rebuildable per-project caches: `cache/<project id>/` beside the executable.
 

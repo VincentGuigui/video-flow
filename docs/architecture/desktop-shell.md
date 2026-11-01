@@ -26,7 +26,7 @@ Built frontend assets come from `frontend/dist` in development. In a packaged bu
 
 ## Icons
 
-All icon files live in `backend/videoflow/assets/icons/`: `video-flow.ico` (16 to 256 px) and `video-flow.png` (256 px). They are drawn by `scripts/make_icons.py` from the header mark (the tilted green square with the Film glyph); run it again after changing the mark. The packaged executable embeds the `.ico`. At startup the host sets the application and window icon from both files, so the window and its taskbar button show the mark. On Windows it also sets an explicit AppUserModelID (`VideoFlow.Desktop`), so a run from source gets its own taskbar entry instead of grouping under `python.exe`.
+All icon files live in `assets/icons/`: `video-flow.ico` (16 to 256 px) and `video-flow.png` (256 px). They are drawn by `scripts/make_icons.py` from the header mark (the tilted green square with the Film glyph); run it again after changing the mark. The packaged executable embeds the `.ico`. At startup the host sets the application and window icon from both files, so the window and its taskbar button show the mark. On Windows it also sets an explicit AppUserModelID (`VideoFlow.Desktop`), so a run from source gets its own taskbar entry instead of grouping under `python.exe`.
 
 ## Shutdown
 
@@ -112,7 +112,7 @@ The hidden `videoflow desktop-check MEDIA OUTPUT [--features]` command, also run
 `scripts/desktop.spec` builds a PyInstaller one-folder release named `Video-Flow`, without a console window. The entry point is `desktop_entry.py`.
 
 - **Bundled data:** `frontend/dist`, `engines/manifest.toml`, the Inter fonts, the app icons, OpenTimelineIO adapter data and metadata, and a notices file.
-- **Icon:** the executable embeds `backend/videoflow/assets/icons/video-flow.ico` (Windows only; PyInstaller ignores it on Linux).
+- **Icon:** the executable embeds `assets/icons/video-flow.ico` (Windows only; PyInstaller ignores it on Linux).
 - **Hidden imports:** the analysis engines and the OTIO adapters, which PyInstaller does not detect.
 - **Windows runtime:** the MSVC runtime DLLs are pinned to the ones shipped with PySide6, and unsuffixed ICU DLLs are excluded so that Qt uses the Windows system ICU.
 

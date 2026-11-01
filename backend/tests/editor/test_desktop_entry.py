@@ -33,7 +33,7 @@ def test_app_icons_are_bundled_with_every_size():
 
     from PIL import Image
 
-    icons = Path(__file__).resolve().parents[2] / "videoflow" / "assets" / "icons"
+    icons = Path(__file__).resolve().parents[3] / "assets" / "icons"
     with Image.open(icons / "video-flow.ico") as ico:
         sizes = {w for w, _ in ico.info["sizes"]}
     assert {16, 24, 32, 48, 256} <= sizes
