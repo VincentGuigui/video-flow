@@ -26,3 +26,16 @@ def test_windowed_workers_have_log_streams_before_freeze_support(monkeypatch, tm
     stream.close()
     assert events == ["worker setup", "application"]
     assert (tmp_path / "Video-Flow" / "logs" / "desktop.log").exists()
+
+
+def test_app_icons_are_bundled_with_every_size():
+    from pathlib import Path
+
+    from PIL import Image
+
+    icons = Path(__file__).resolve().parents[2] / "videoflow" / "assets" / "icons"
+    with Image.open(icons / "video-flow.ico") as ico:
+        sizes = {w for w, _ in ico.info["sizes"]}
+    assert {16, 24, 32, 48, 256} <= sizes
+    with Image.open(icons / "video-flow.png") as png:
+        assert png.size == (256, 256) and png.mode == "RGBA"

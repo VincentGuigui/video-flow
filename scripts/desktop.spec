@@ -14,6 +14,7 @@ a = Analysis(
         (str(root / "frontend" / "dist"), "frontend/dist"),
         (str(root / "backend" / "videoflow" / "engines" / "manifest.toml"), "videoflow/engines"),
         (str(root / "backend" / "videoflow" / "assets" / "fonts"), "videoflow/assets/fonts"),
+        (str(root / "backend" / "videoflow" / "assets" / "icons"), "videoflow/assets/icons"),
         (str(root / "docs" / "reference" / "desktop-runtime.md"), "notices"),
     ] + collect_data_files("opentimelineio") + copy_metadata("opentimelineio"),
     hiddenimports=["videoflow.editor.analysis", "videoflow.engines.asr.parakeet_onnx",
@@ -40,5 +41,6 @@ if sys.platform == "win32":
     a.binaries = [entry for entry in a.binaries if Path(entry[0]).name.lower() not in system_icu]
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="Video-Flow", debug=False,
-          bootloader_ignore_signals=False, strip=False, upx=False, console=False)
+          bootloader_ignore_signals=False, strip=False, upx=False, console=False,
+          icon=str(root / "backend" / "videoflow" / "assets" / "icons" / "video-flow.ico"))
 coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name="Video-Flow")

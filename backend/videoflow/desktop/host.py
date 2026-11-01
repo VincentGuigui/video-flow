@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QEvent, QFile, QIODevice, QObject, QUrl, Signal, Slot
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineCore import (
     QWebEnginePage,
@@ -267,6 +267,7 @@ class EditorWindow(QMainWindow):
         super().__init__()
         self.backend = backend
         self.setWindowTitle(f"{title} — Video-Flow")
+        self.setWindowIcon(app_icon())
         self.resize(1440, 980)
         self.setMinimumSize(850, 720)
         self.view = QWebEngineView(self)
@@ -325,14 +326,38 @@ new QWebChannel(qt.webChannelTransport, function(channel) {
         event.accept()
 
 
+ICONS = Path(__file__).resolve().parent.parent / "assets" / "icons"
+APP_USER_MODEL_ID = "VideoFlow.Desktop"
+
+
+def app_icon() -> QIcon:
+    """The Video-Flow mark for the window and taskbar (assets/icons, see make_icons.py)."""
+    icon = QIcon(str(ICONS / "video-flow.ico"))
+    icon.addFile(str(ICONS / "video-flow.png"))
+    return icon
+
+
+def group_taskbar_entry() -> None:
+    """Give the process its own Windows taskbar identity.
+
+    Without it, a run from source groups under python.exe and shows Python's icon.
+    """
+    if sys.platform == "win32":
+        import ctypes
+
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_USER_MODEL_ID)
+
+
 def run_desktop(bundle: Bundle, *, port: int = 0, roots: list[Path] | None = None) -> int:
     if not port:
         with socket.socket() as candidate:
             candidate.bind(("127.0.0.1", 0))
             port = candidate.getsockname()[1]
+    group_taskbar_entry()
     app = QApplication.instance() or QApplication(sys.argv[:1])
     app.setApplicationName("Video-Flow")
     app.setOrganizationName("Video-Flow")
+    QApplication.setWindowIcon(app_icon())
     backend = Backend(bundle, port, roots)
     app.aboutToQuit.connect(backend.close)
     try:

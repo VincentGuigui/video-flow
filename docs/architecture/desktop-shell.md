@@ -24,6 +24,10 @@ One process serves one open project at a time. The home screen switches projects
 
 Built frontend assets come from `frontend/dist` in development. In a packaged build they come from the PyInstaller resource folder (`sys._MEIPASS`). If they are missing, the server answers 503 with build instructions. End users do not need Node, Vite or uv.
 
+## Icons
+
+All icon files live in `backend/videoflow/assets/icons/`: `video-flow.ico` (16 to 256 px) and `video-flow.png` (256 px). They are drawn by `scripts/make_icons.py` from the header mark (the tilted green square with the Film glyph); run it again after changing the mark. The packaged executable embeds the `.ico`. At startup the host sets the application and window icon from both files, so the window and its taskbar button show the mark. On Windows it also sets an explicit AppUserModelID (`VideoFlow.Desktop`), so a run from source gets its own taskbar entry instead of grouping under `python.exe`.
+
 ## Shutdown
 
 Closing the window stops the view, deregisters the bridge object and calls `Backend.close()`. `QApplication.aboutToQuit` calls the same method, and `run_desktop` calls it again in `finally`. Repeated calls are harmless.
@@ -90,6 +94,8 @@ The host object is registered on the `QWebChannel` as `desktop`. The injected sc
 
 At load time, `frontend/src/desktop.ts` checks once whether the page can play H.264 (`video/mp4; codecs="avc1.42E01E"`). If not, it adds `?codec=webm` to every preview and compare URL. Qt WebEngine builds without proprietary codecs therefore play the WebM proxies. All playback files are generated caches and never copies of the originals.
 
+While a dialog is open (Settings, import, help, save, project home dialogs), the editor workspace is hidden with `visibility: hidden` and only the dialog stays visible. Video layers repainting under a dialog corrupted compositing tiles in Qt WebEngine on Windows; taking them out of compositing avoids it.
+
 ## Browser diagnostic mode
 
 `videoflow serve [--project PATH] [--port 8765] [--media-root DIR ...] [--no-open-browser]` runs the same API and interface in a normal browser. It prints the launch URL with its token and, unless disabled, opens it after 1.5 seconds. The default project is `edit.videoflow`. It differs from the desktop app in these ways:
@@ -105,7 +111,8 @@ The hidden `videoflow desktop-check MEDIA OUTPUT [--features]` command, also run
 
 `scripts/desktop.spec` builds a PyInstaller one-folder release named `Video-Flow`, without a console window. The entry point is `desktop_entry.py`.
 
-- **Bundled data:** `frontend/dist`, `engines/manifest.toml`, the Inter fonts, OpenTimelineIO adapter data and metadata, and a notices file.
+- **Bundled data:** `frontend/dist`, `engines/manifest.toml`, the Inter fonts, the app icons, OpenTimelineIO adapter data and metadata, and a notices file.
+- **Icon:** the executable embeds `backend/videoflow/assets/icons/video-flow.ico` (Windows only; PyInstaller ignores it on Linux).
 - **Hidden imports:** the analysis engines and the OTIO adapters, which PyInstaller does not detect.
 - **Windows runtime:** the MSVC runtime DLLs are pinned to the ones shipped with PySide6, and unsuffixed ICU DLLs are excluded so that Qt uses the Windows system ICU.
 
