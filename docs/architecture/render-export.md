@@ -114,7 +114,7 @@ Resolver warnings are copied into `edit.report.json` and printed by the CLI:
 | `editor_titles` | Titles go to the render and Camtasia; OTIO and EDL see gaps (OTIO keeps the text as metadata) |
 | `editor_transforms` | Spatial transforms are OTIO metadata |
 
-The service adds that OTIO gain, fades and fit are metadata only; the EDL adds that audio, overlays, gain and fades are omitted, and that dips become dissolves. Zooms, mute and duck ranges, backgrounds and crop are not carried by OTIO, EDL, SRT or paper edit. SRT and paper edit map words through the clip speed.
+The service adds that OTIO gain, fades and fit are metadata only; the EDL adds that audio, overlays, gain and fades are omitted, and that dips become dissolves. Zooms, mute and duck ranges, backgrounds and crop are not carried by OTIO or EDL; SRT and the paper edit drop words said inside a mute range (resolved audio clips carry them as `muted` source ranges) and read an editor video clip's words from its linked audio clip (`linkId`). SRT and paper edit map words through the clip speed.
 
 ### Camtasia
 

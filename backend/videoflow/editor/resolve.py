@@ -1,6 +1,6 @@
 """Resolve the interactive document into the common exporter/render contract."""
 
-from videoflow.core.time import frame_to_us, frames
+from videoflow.core.time import Rational, frame_to_us, frames
 from videoflow.editor.models import EditorClip, EditorDocument, Transform
 from videoflow.editor.transitions import active_transitions
 from videoflow.project.models import Project, ProjectSettings, VideoStreamInfo
@@ -91,6 +91,15 @@ def validate_assets(document: EditorDocument, project: Project) -> None:
             raise ValueError(f"{clip.name} has no audio")
 
 
+def muted_ranges(clip: EditorClip, rate: Rational) -> list[list[int]]:
+    """Silenced source ranges of an audio clip (mute ranges), in source microseconds."""
+    return [
+        [frame_to_us(r.start, rate), frame_to_us(r.end, rate)]
+        for r in clip.volume_ranges
+        if r.factor == 0
+    ]
+
+
 def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeline:
     settings = project.settings
     rate = settings.frame_rate
@@ -177,6 +186,11 @@ def resolve_editor(project: Project, document: EditorDocument) -> ResolvedTimeli
                         **({"title": clip.title.dump()} if clip.title else {}),
                         **({"speed": clip.speed} if clip.speed != 1 else {}),
                         **({"linkId": clip.link_id} if clip.link_id else {}),
+                        **(
+                            {"muted": muted}
+                            if clip.kind == "audio" and (muted := muted_ranges(clip, rate))
+                            else {}
+                        ),
                         transform=clip.transform.dump(),
                         layer=clip.layer,
                     )

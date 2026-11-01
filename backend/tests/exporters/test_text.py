@@ -152,3 +152,42 @@ def test_srt_follows_clip_speed():
     # Source 4–5 s and 8–9 s play at 2–2.5 s and 4–4.5 s.
     assert "00:00:02,000 -->" in result
     assert "00:00:04,000 -->" in result
+
+
+def test_muted_words_are_left_out_and_paper_edit_reads_linked_audio():
+    from videoflow.editor.models import EditorClip, EditorDocument, VolumeRange
+    from videoflow.editor.resolve import resolve_editor
+    from videoflow.exporters.paper_edit import paper_rows
+    from videoflow.project.commands import SetEditor
+
+    project = ProjectBuilder(rate=Rational.of(25)).asset("a", 20 * S).build()
+
+    def clip(kind, **values):
+        return EditorClip(
+            id=kind,
+            kind=kind,
+            asset_id="a",
+            name="a",
+            start=0,
+            source_in=0,
+            source_out=250,
+            link_id="p",
+            **values,
+        )
+
+    doc = EditorDocument(
+        clips=[
+            clip("video"),
+            # Source frames 75–125 (3–5 s) are muted.
+            clip("audio", volume_ranges=[VolumeRange(start=75, end=125, ramp=0)]),
+        ]
+    )
+    project, _ = SetEditor(document=doc).apply(project)
+    transcript = Transcript(
+        words=[word("Hello.", 1, 1.5), word("Secret.", 3.5, 4), word("Bye.", 6, 6.5)]
+    )
+    resolved = resolve_editor(project, doc)
+    srt = export_srt(resolved, project, {"a": transcript})
+    assert "Hello." in srt and "Bye." in srt and "Secret." not in srt
+    rows = paper_rows(resolved, project, {"a": transcript})
+    assert rows[0][-1] == "Hello. Bye."
