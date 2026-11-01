@@ -326,3 +326,25 @@ def test_open_cache_shows_the_project_cache(client, app_bundle, monkeypatch):
     assert client.get("/api/settings").json()["cacheDirectory"] == str(bundle.cache_dir)
     assert client.post("/api/open-cache").json() == {"path": str(bundle.cache_dir)}
     assert opened == [bundle.cache_dir]
+
+
+def test_close_and_rename_release_and_move_the_open_project(client, app_bundle):
+    _, original = app_bundle
+    identifier = original.project.id
+    revision = client.get("/api/project").json()["project"]["revision"]
+    response = client.post("/api/project/save", json={"baseRevision": revision, "name": "Cut A"})
+    assert response.status_code == 200, response.text
+    folders = [e["path"] for e in client.get("/api/projects").json()]
+    assert len(folders) == 1 and Path(folders[0]).name.startswith("Cut A-")
+    assert client.get("/api/project").json()["project"]["name"] == "Cut A"
+    closed = client.post("/api/projects/action", json={"kind": "close"})
+    assert closed.status_code == 200, closed.text
+    renamed = client.post(
+        "/api/projects/action", json={"kind": "rename", "id": identifier, "name": "Cut B"}
+    )
+    assert renamed.status_code == 200, renamed.text
+    entry = client.get("/api/projects").json()[0]
+    assert entry["name"] == "Cut B" and Path(entry["path"]).name.startswith("Cut B-")
+    opened = client.post("/api/projects/action", json={"kind": "open", "id": identifier})
+    assert opened.status_code == 200
+    assert client.get("/api/project").json()["project"]["name"] == "Cut B"

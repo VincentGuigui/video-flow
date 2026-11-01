@@ -42,7 +42,14 @@ def desktop(
         typer.echo("Desktop runtime missing. Install with: uv sync --extra desktop", err=True)
         raise typer.Exit(1) from exc
     if project is None:
+        from videoflow.project.library import ProjectLibrary
+
+        # The project library: reopen the last saved project, else start an untitled one.
         root = Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local" / "share"))
+        library = ProjectLibrary(root / "Video-Flow")
+        latest = library.latest() if library.root.is_dir() else None
+        if latest is not None:
+            raise typer.Exit(run_desktop(latest))
         project = root / "Video-Flow" / "Untitled.videoflow"
     path = project.resolve()
     bundle = (

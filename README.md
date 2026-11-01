@@ -64,7 +64,7 @@ Everything plays in the preview, renders in the MP4 and is exported to Camtasia;
 
 Use Settings in the editor header to select transcription and summary engines, manage model downloads, set import/export defaults and open the project cache folder. Models always live in the application `models/` subdirectory; `VIDEOFLOW_MODELS_DIR` points there. Missing weights require an explicit download action. Compatible analysis JSON is reused first. Deterministic summaries need no generative model; optional Qwen summaries run locally on CPU. Development installs offering both optional engines use `uv sync --extra desktop --extra cpu --extra whisper --extra qwen` in `backend/`.
 
-The logo opens the project library. Save names an untitled project; Save as copies the edit with source references retained. Export → Save as MP4 video renders the enabled edit with progress, cancellation and a native save dialog. Other handoff formats remain available below it.
+The logo closes the current project and opens the project library (open, new, rename, delete); renaming also renames the project folder. Save names an untitled project; Save as copies the edit with source references retained and opens the copy. The window title shows the open project, and the app reopens the last saved project at launch. Export → Save as MP4 video renders the enabled edit with progress, cancellation and a native save dialog. Other handoff formats remain available below it.
 
 ## Export an edit
 

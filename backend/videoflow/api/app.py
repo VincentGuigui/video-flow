@@ -268,6 +268,14 @@ def create_app(
         trusted_paths.clear()
         trusted_paths.update({a.id: {a.path} for a in target.project.assets})
 
+    async def rename_project(target: Bundle, name: str) -> None:
+        """Rename a project and its folder; the open one releases its files first."""
+        if target.project.id != bundle.project.id:
+            await asyncio.to_thread(library.rename, target, name)
+            return
+        await switch_project(bundle)
+        await switch_project(await asyncio.to_thread(library.rename, bundle, name))
+
     @app.get("/api/projects")
     async def projects() -> Any:
         return await asyncio.to_thread(library.entries)
@@ -299,7 +307,7 @@ def create_app(
                         if payload.id == bundle.project.id
                         else library.find(payload.id or "")
                     )
-                    library.rename(target, payload.name)
+                    await rename_project(target, payload.name)
                 else:
                     if payload.id == bundle.project.id and project_open:
                         await switch_project(await asyncio.to_thread(library.create, "Untitled"))
@@ -329,7 +337,7 @@ def create_app(
                     )
                     await switch_project(target)
                 elif payload.name is not None:
-                    library.rename(bundle, payload.name)
+                    await rename_project(bundle, payload.name)
                 else:
                     bundle.save(bundle.project)
             except (ValueError, OSError, ProjectStoreError) as exc:

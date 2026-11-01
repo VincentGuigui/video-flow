@@ -34,6 +34,15 @@ class ProjectLibrary:
                 continue
         return sorted(entries, key=lambda e: e["name"].casefold())
 
+    def latest(self) -> Bundle | None:
+        """The most recently saved project, opened at launch."""
+        paths = [Path(e["path"]) for e in self.entries()]
+        if not paths:
+            return None
+        bundle = Bundle(max(paths, key=lambda p: (p / "project.json").stat().st_mtime))
+        bundle.load()
+        return bundle
+
     def find(self, identifier: str) -> Bundle:
         entries = [e for e in self.entries() if e["id"] == identifier]
         if len(entries) != 1:
@@ -42,10 +51,14 @@ class ProjectLibrary:
         bundle.load()
         return bundle
 
+    def folder(self, name: str, suffix: str | None = None) -> Path:
+        """`<name>-<suffix>.videoflow`: readable, and unique through the suffix."""
+        slug = re.sub(r"[^\w -]", "", project_name(name))[:60].strip() or "Project"
+        return self.root / f"{slug}-{suffix or uuid.uuid4().hex[:12]}.videoflow"
+
     def create(self, name: str, source: Bundle | None = None) -> Bundle:
         name = project_name(name)
-        slug = re.sub(r"[^\w -]", "", name)[:60].strip() or "Project"
-        path = self.root / f"{slug}-{uuid.uuid4().hex[:12]}.videoflow"
+        path = self.folder(name)
         project = new_project(name)
         if source is not None:
             project = source.project.model_copy(
@@ -67,8 +80,25 @@ class ProjectLibrary:
                 shutil.copytree(source.path / folder, target.path / folder, dirs_exist_ok=True)
         return target
 
-    def rename(self, bundle: Bundle, name: str) -> None:
+    def rename(self, bundle: Bundle, name: str) -> Bundle:
+        """Rename the project and its folder (keeping its unique suffix); returns the bundle.
+
+        The caller must have closed everything that uses the bundle's files.
+        """
         bundle.commit(bundle.project.revision, [RenameProject(name=project_name(name))])
+        match = re.search(r"-([0-9a-f]{12})$", bundle.path.stem)
+        target = self.folder(name, match.group(1) if match else None)
+        if target == bundle.path or bundle.path.parent.resolve() != self.root:
+            return bundle
+        if target.exists():
+            raise ValueError(f"A project folder named {target.name} already exists")
+        try:
+            bundle.path.rename(target)
+        except PermissionError:
+            return bundle  # a file is still in use (Windows): keep the folder, name is saved
+        moved = Bundle(target)
+        moved.load()
+        return moved
 
     def delete(self, identifier: str) -> None:
         bundle = self.find(identifier)
