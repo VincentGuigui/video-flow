@@ -1,10 +1,27 @@
 #!/usr/bin/env bash
-# Plain equivalent of the justfile: scripts/dev.sh {test|smoke|lint|serve} [args...]
+# Plain equivalent of the justfile: scripts/dev.sh {test|smoke|lint|serve|build|package} [args...]
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT/backend"
 cmd="${1:-}"
 [ $# -gt 0 ] && shift
+
+build_frontend() {
+  cd "$ROOT/frontend"
+  [ -d node_modules ] || npm ci
+  npm run build
+}
+
+case "$cmd" in
+  build) build_frontend; exit 0 ;;
+  package)
+    build_frontend
+    cd "$ROOT"
+    # --inexact keeps the installed inference extras; desktop and PyInstaller are added.
+    exec uv run --project backend --inexact --extra desktop --group packaging \
+      pyinstaller --noconfirm --distpath releases --workpath .cache/pyinstaller scripts/desktop.spec
+    ;;
+esac
+cd "$ROOT/backend"
 case "$cmd" in
   test) exec uv run pytest "$@" ;;
   smoke) exec uv run pytest -m smoke "$@" ;;
@@ -14,5 +31,5 @@ case "$cmd" in
     exec uv run mypy
     ;;
   serve) exec uv run videoflow serve "$@" ;;
-  *) echo "usage: scripts/dev.sh {test|smoke|lint|serve} [args...]" >&2; exit 2 ;;
+  *) echo "usage: scripts/dev.sh {test|smoke|lint|serve|build|package} [args...]" >&2; exit 2 ;;
 esac

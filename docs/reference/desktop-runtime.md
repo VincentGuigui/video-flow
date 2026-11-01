@@ -18,10 +18,10 @@ Linux x86_64 and Windows ARM64 remain unqualified until the same native, media, 
 
 ## Packaging
 
-Build frontend assets, install the `packaging` dependency group alongside `desktop` and the selected inference extra, plus `whisper` and `qwen` when those engines are offered, then run:
+Run `scripts/dev.ps1 package` (Windows) or `scripts/dev.sh package` (Linux), or `just package`. It builds the frontend, then runs PyInstaller with the `desktop` extra and the `packaging` group added to the installed environment (the selected inference extra, and `whisper` / `qwen` when offered, must already be installed):
 
 ```text
-pyinstaller --noconfirm --distpath releases --workpath .cache/pyinstaller scripts/desktop.spec
+uv run --project backend --inexact --extra desktop --group packaging pyinstaller --noconfirm --distpath releases --workpath .cache/pyinstaller scripts/desktop.spec
 ```
 
 The one-folder release includes the Python runtime, Qt WebEngine resources, OTIO adapter data and built frontend. End users do not need Node, Vite, uv or a frontend development server. FFmpeg/ffprobe are separately provisioned: put a supported build in `tools/ffmpeg/` beside the executable, or on PATH. Model downloads remain governed by the pinned engine manifest. Weights always live in `models/` beside the executable (repository `models/` in development); `VIDEOFLOW_MODELS_DIR` is set to that directory, and external overrides are ignored. Settings lists missing, obsolete and up-to-date models, with explicit download/update and cancellation. No model download begins merely by opening the editor. Signatures, installers, updates and distribution hardening are later release work. Packaging success alone does not qualify playback on another platform.

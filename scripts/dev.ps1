@@ -1,10 +1,36 @@
-# Plain equivalent of the justfile: scripts/dev.ps1 {test|smoke|lint|serve} [args...]
+# Plain equivalent of the justfile: scripts/dev.ps1 {test|smoke|lint|serve|build|package} [args...]
 param(
     [Parameter(Position = 0)][string]$Command = '',
     [Parameter(ValueFromRemainingArguments = $true)][string[]]$Rest = @()
 )
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
+
+function Build-Frontend {
+    Push-Location (Join-Path $Root 'frontend')
+    try {
+        if (-not (Test-Path 'node_modules')) { npm ci; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }
+        npm run build
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    } finally {
+        Pop-Location
+    }
+}
+
+if ($Command -eq 'build') { Build-Frontend; exit 0 }
+if ($Command -eq 'package') {
+    Build-Frontend
+    Push-Location $Root
+    try {
+        # --inexact keeps the installed inference extras; desktop and PyInstaller are added.
+        uv run --project backend --inexact --extra desktop --group packaging `
+            pyinstaller --noconfirm --distpath releases --workpath .cache/pyinstaller scripts/desktop.spec
+        exit $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+}
+
 Push-Location (Join-Path $Root 'backend')
 try {
     switch ($Command) {
@@ -16,7 +42,7 @@ try {
             if ($LASTEXITCODE -eq 0) { uv run mypy }
         }
         'serve' { uv run videoflow serve @Rest }
-        default { Write-Error 'usage: scripts/dev.ps1 {test|smoke|lint|serve} [args...]'; exit 2 }
+        default { Write-Error 'usage: scripts/dev.ps1 {test|smoke|lint|serve|build|package} [args...]'; exit 2 }
     }
     exit $LASTEXITCODE
 } finally {

@@ -41,12 +41,12 @@ See [desktop runtime and platform checks](docs/reference/desktop-runtime.md) and
 ## Develop
 
 ```bash
-just test | smoke | lint | serve        # or: scripts/dev.sh test | smoke | lint | serve  (scripts\dev.ps1)
+just test | smoke | lint | serve | build | package   # or scripts/dev.sh … (scripts\dev.ps1 on Windows)
 ```
 
 `test` runs the unit tier (CPU, synthetic media, no network; tests that need the `ml` extra are skipped without it); `smoke` runs the tests marked `smoke` (small CPU models, downloads them; needs an inference extra such as `cpu`/`smoke`, and `whisper` for the faster-whisper test). Synthetic samples are generated with FFmpeg (needs the `flite` filter) and cached under `VIDEOFLOW_SAMPLES_CACHE`.
 
-The standalone desktop build is in `releases/Video-Flow/Video-Flow.exe`. Keep the entire `Video-Flow/` folder together when moving or distributing it. Repository `tools/` is reserved for development dependencies.
+`build` rebuilds the editor interface (`frontend/dist`): run it after pulling frontend changes, since `scripts/run.*` serves the built files. `package` builds the interface, then the standalone desktop app with PyInstaller (only needed to distribute the app or to run it without the source tree). The standalone desktop build is in `releases/Video-Flow/Video-Flow.exe`. Keep the entire `Video-Flow/` folder together when moving or distributing it. Repository `tools/` is reserved for development dependencies.
 
 ## Features
 

@@ -17,3 +17,11 @@ lint:
 
 serve *args:
     cd backend && uv run videoflow serve {{args}}
+
+# Rebuild the editor interface (frontend/dist), used by the run scripts and the app
+build:
+    cd frontend && npm run build
+
+# Frontend, then the one-folder desktop app in releases/Video-Flow
+package: build
+    uv run --project backend --inexact --extra desktop --group packaging pyinstaller --noconfirm --distpath releases --workpath .cache/pyinstaller scripts/desktop.spec
