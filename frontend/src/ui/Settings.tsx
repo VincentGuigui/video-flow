@@ -50,7 +50,10 @@ export function Settings({
       try {
         const result = await api<SettingsData>("/settings");
         if (!stopped) {
-          setData(result);
+          // Polling must not re-render an unchanged dialog.
+          setData((old) =>
+            JSON.stringify(old) === JSON.stringify(result) ? old : result,
+          );
           setPreferences((old) => old ?? result.preferences);
         }
       } catch (e) {
@@ -309,9 +312,14 @@ export function Settings({
                     ) : (
                       <button
                         className="button"
+                        disabled={model.state === "up-to-date"}
                         onClick={() => void download(model.id)}
                       >
-                        {model.state === "missing" ? "Download" : "Update"}
+                        {model.state === "up-to-date"
+                          ? "Already downloaded"
+                          : model.state === "obsolete"
+                            ? "Update"
+                            : "Download"}
                       </button>
                     )}
                   </article>
