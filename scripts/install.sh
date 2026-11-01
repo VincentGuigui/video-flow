@@ -75,7 +75,7 @@ detect_extra() {
     log "detected Intel NPU"; echo openvino; return
   fi
   if printf '%s' "$pci" | grep -qi 'amdxdna\|Ryzen AI\|IPU' || [ -e /dev/accel/accel1 ]; then
-    warn "AMD Ryzen AI NPU detected: the VitisAI EP needs the Ryzen AI SDK (Windows only); see docs/dependencies.md. Using the CPU extra."
+    warn "AMD Ryzen AI NPU detected: the VitisAI EP needs the Ryzen AI SDK (Windows only); see docs/reference/dependencies.md. Using the CPU extra."
   fi
   if have nvidia-smi && nvidia-smi -L >/dev/null 2>&1 && [ "$arch" = "x86_64" ]; then
     log "detected NVIDIA GPU"; echo cuda; return

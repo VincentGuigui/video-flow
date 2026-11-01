@@ -1,4 +1,4 @@
-# 06. Render and export
+# Render and export
 
 ## 1. Render pipeline overview
 
@@ -90,11 +90,11 @@ Check: `offset = r_A − T = 8.25 − 0.5 = 7.75`; output duration = 8.25 + 6.05
 
 ### Overlays (V2 B-roll, A2 music)
 - V2 clip: normalised with `fill`, shifted with `setpts=PTS-STARTPTS+<t>/TB`, composited with `overlay=enable='between(t,<t>,<t+d>)':eof_action=pass`.
-- A2 clip: `adelay` to its position, mixed with `amix=normalize=0` and per-item gain; music is ducked under speech by volume ranges computed from the transcript (spec 21).
+- A2 clip: `adelay` to its position, mixed with `amix=normalize=0` and per-item gain; music is ducked under speech by volume ranges computed from the transcript ([clip effects](../features/clip-effects.md)).
 - V2 audio is muted by default (`mode: muted`).
 
 ### Titles and subtitles (P2)
-Title cards and lower thirds are text clips drawn by the backend as transparent pictures with the bundled Inter font and overlaid by FFmpeg (spec 21); `subtitles` filter for burn-in from the generated SRT.
+Title cards and lower thirds are text clips drawn by the backend as transparent pictures with the bundled Inter font and overlaid by FFmpeg ([clip effects](../features/clip-effects.md)); `subtitles` filter for burn-in from the generated SRT.
 
 ## 4. Transition catalog
 
@@ -174,7 +174,7 @@ Hardware encoders are detected at startup (`ffmpeg -encoders` plus a one-frame t
 
 ### 8.2 Per-format notes
 
-- **OTIO (P0)**: written by the core library from the compiled timeline (05 §6). `.otioz` bundles media for handoff to another machine. Primary targets: DaVinci Resolve, Premiere Pro (recent versions), Kdenlive (native OTIO since 25.04), Avid (preview).
+- **OTIO (P0)**: written by the core library from the compiled timeline ([data model](data-model.md) §6). `.otioz` bundles media for handoff to another machine. Primary targets: DaVinci Resolve, Premiere Pro (recent versions), Kdenlive (native OTIO since 25.04), Avid (preview).
 - **FCPXML (P0)**: `fcpx_xml` adapter from `OpenTimelineIO-Plugins`, then a post-processor adds `<audition>` elements when alternates are included. The emitted FCPXML version is checked against the installed Final Cut Pro during interop tests.
 - **FCP7 XML (P1)**: `fcp_xml` adapter. Broadest legacy compatibility (Premiere, Resolve, OpenShot).
 - **CMX 3600 EDL (P0)**: `cmx_3600` adapter; main video track only, 32-character reel names derived from asset ids with a mapping table exported alongside; useful as a last resort.
@@ -184,7 +184,7 @@ Hardware encoders are detected at startup (`ffmpeg -encoders` plus a one-frame t
 
 ### 8.3 Camtasia writer (P1)
 
-Implemented for Windows as described in [19](19-camtasia-export.md), which supersedes this section where they differ (no media pack or `.cmproj`).
+Implemented for Windows as described in [Camtasia export](../features/camtasia-export.md), which supersedes this section where they differ (no media pack or `.cmproj`).
 
 Camtasia project files (`.tscproj`) are JSON, undocumented and versioned. Community libraries (`camtasio`, `tscprojpy`, `camtasia`) document the structure: canvas settings, a source bin of media, and a timeline of tracks with clips, effects and transitions. On macOS a project is a `.cmproj` directory containing `project.tscproj` and media. Camtasia does not appear to import EDL, XML or OTIO, so a native writer is the only route.
 

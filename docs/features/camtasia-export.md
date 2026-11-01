@@ -1,6 +1,6 @@
-# 19. Camtasia export — 2026-10-28
+# Camtasia export — 2026-10-28
 
-This revision implements EXP-06 for Windows and supersedes 06 §8.3 where they differ. Targets Camtasia 2023.4 and later on Windows (the `.tscproj` format version 7.0 opens in newer releases). The media pack fallback and `.cmproj` (macOS) are not implemented.
+This revision implements EXP-06 for Windows and supersedes [render and export](../architecture/render-export.md) §8.3 where they differ. Targets Camtasia 2023.4 and later on Windows (the `.tscproj` format version 7.0 opens in newer releases). The media pack fallback and `.cmproj` (macOS) are not implemented.
 
 ## Template-driven writer
 

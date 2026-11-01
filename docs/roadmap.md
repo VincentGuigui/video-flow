@@ -1,0 +1,37 @@
+# Roadmap
+
+Snapshot of what is built and what comes next. Update it with every feature. History lives in [decisions/](decisions/).
+
+## Built
+
+- **Desktop app:** PySide6 / Qt WebEngine window hosting the React editor; native file dialogs and drops; originals referenced in place, relink when offline; project home, save, save as. See [desktop shell](architecture/desktop-shell.md).
+- **Import and analysis:** probe, playback proxies, thumbnails, waveforms; VAD, transcription (Parakeet TDT or Whisper), summary, keywords and topic sections; reusable analysis sidecars; models downloaded only on request; NPU → GPU → CPU device choice. See [interactive editor](features/interactive-editor.md), [transcript panel](features/transcript-panel.md).
+- **Retakes:** retakes stacked on import by sentence similarity; compare takes side by side and pick one. See [retake grouping](features/retake-grouping.md), [compare takes](features/compare-takes.md).
+- **Editing:** layered clip flow and timeline, linked video/audio, split, lift, ripple delete, trim modes, focus, undo/redo, transforms and backgrounds, timeline range and range playback, transcript-driven trim and delete, auto-trim silence, detach and restore audio, workspace zones with select all and delete. See [unified timeline](features/unified-timeline.md), [range and trim](features/range-and-trim.md), [audio tracks](features/audio-tracks.md), [workspace zones](features/workspace-zones.md).
+- **Finishing:** cross dissolve and dips, edge fades, speed, zoom & pan, mute ranges, ducking under speech, titles and lower thirds. See [transitions](features/transitions.md), [clip effects](features/clip-effects.md).
+- **Output:** MP4 render with hardware encoders when available and loudness normalisation; OTIO, OTIOZ, EDL, SRT, paper edit, transcript and Camtasia 2023.4+ exports. See [render and export](architecture/render-export.md), [Camtasia export](features/camtasia-export.md).
+
+## Next
+
+- Confirm the Camtasia export in Camtasia itself (opening, fades, linked audio, titles).
+- Measure retake grouping and transcription accuracy on real rushes, and tune thresholds.
+- Qualify NPU execution providers (OpenVINO, QNN, VitisAI) and GPU encoders on target Windows and Linux machines; Windows ARM64 qualification gate.
+- Release packaging and installer hardening for the desktop build.
+
+## Later
+
+- FCPXML and FCP7 XML export; OTIO re-import; interoperability checks in Resolve, Premiere and Final Cut Pro.
+- Sync groups (multicam) and replacing a take's audio with another take's audio.
+- Comping (ranges from several takes of one beat) and script-guided grouping.
+- Extended transition catalog (wipes, slides) and subtitle burn-in.
+- B-roll suggestions, vertical reframing, YouTube chapters from topics.
+- French interface.
+
+## Open risks
+
+| Risk | Mitigation |
+|------|------------|
+| Grouping is less accurate on non-speech footage | Manual stacking and moving; visual features from the analysis pipeline |
+| Phone footage quirks (VFR, HDR, rotation) | Proxies for preview, normalisation and tone mapping in the render |
+| Camtasia format changes between versions | Template-driven writer: a project saved by the user's version provides the structures |
+| Scope creep towards a full editor | Handoff to other editors through OTIO and Camtasia for advanced finishing |

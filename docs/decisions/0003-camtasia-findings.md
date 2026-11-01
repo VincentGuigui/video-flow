@@ -1,4 +1,4 @@
-# 20. Features inspired by the user's Camtasia projects — 2026-10-28
+# Features inspired by the user's Camtasia projects — 2026-10-28
 
 Four real Camtasia projects were analysed (RayNeo IO review 1920×1080 21 min, ArtCapital debrief 1080×1080 44 s, TangrIAm teaser 1920×1080 made with Camtasia 2020, demo 11 s). They are not stored in the repository.
 

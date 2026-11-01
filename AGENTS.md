@@ -28,14 +28,15 @@ Targets Windows and Linux (x64). AI runs on the NPU, then the GPU, then the CPU.
 
 ## Documentation
 
-- `README.md`: essentials, install, run, usage. Keep it current.
-- `docs/spec/`: numbered specification indexed in `docs/spec/README.md`. 01–07 are the original spec; 08 onwards are dated revisions that supersede earlier ones.
-- `docs/dependencies.md`: every dependency with version, licence and purpose. Update it with any dependency change.
+- `README.md`: a snapshot of what is developed (what it does, install, run, usage). Always update and consolidate it with each feature: describe the current state, no history or changelog.
+- `docs/roadmap.md`: built / next / later. Update it with each feature.
+- `docs/README.md`: index of the documentation. `docs/product/` functional spec, `docs/features/` one document per built feature (current behaviour), `docs/architecture/` how it is built, `docs/decisions/` dated decision records (history, not rewritten), `docs/reference/` dependencies and runtime notes, `docs/validation/` validation records.
+- `docs/reference/dependencies.md`: every dependency with version, licence and purpose. Update it with any dependency change.
 
 ## Rules
 
 - **Commits:** atomic, one feature or fix per commit, with a concise message prefixed by its type: `FEATURE:`, `FIX:`, `DOC:`, `DEV:` (tooling, tests, build, refactoring). Never add a `Co-Authored-By` or any other trailer mentioning AI co-authoring.
-- **Specs:** document every feature in `docs/spec` (update a file or add a numbered revision listed in the index). When a feature is removed or replaced, amend every description of it in `docs/`.
+- **Docs:** document every feature in `docs/features/` (new document or section, listed in `docs/README.md`), and update `README.md` and `docs/roadmap.md` in the same change. When a feature is removed or replaced, amend every description of it in `docs/`. Refer to documents by path (e.g. `docs/features/clip-effects.md`), not by number.
 - No refactoring, rollback, framework or major-version change without asking first.
 - Windows and Linux: pathlib, no `shell=True`, both `.sh` and `.ps1` scripts.
 - English everywhere (code, comments, docs, commit messages).

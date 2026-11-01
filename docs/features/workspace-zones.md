@@ -1,6 +1,6 @@
-# 22. Workspace zones, selection and cache — 2026-11-01
+# Workspace zones, selection and cache — 2026-11-01
 
-This revision supplements 09 and 11.
+This revision supplements [interactive editor](interactive-editor.md) and [editor refinements](editor-refinements.md).
 
 ## Zones
 

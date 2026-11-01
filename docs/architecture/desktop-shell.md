@@ -1,10 +1,10 @@
-# 10. Desktop shell and direct local media access — 2026-10-25
+# Desktop shell and direct local media access — 2026-10-25
 
-Status: accepted architecture revision. This document supersedes conflicting browser-first, upload/copy, pywebview and optional-desktop-packaging decisions in 01–09. It specifies intended behavior; it does not claim that the desktop shell has been implemented or validated.
+Status: accepted architecture revision. This document supersedes conflicting browser-first, upload/copy, pywebview and optional-desktop-packaging decisions in [feasibility study](../decisions/0001-feasibility.md)–[interactive editor](../features/interactive-editor.md). It specifies intended behavior; it does not claim that the desktop shell has been implemented or validated.
 
 ## Decision
 
-Video-Flow is a desktop application using **PySide6 with Qt WebEngine** to host the existing **React/Vite interface**. **Python/FastAPI, FFmpeg and the inference workers** retain their processing responsibilities. The three-part workspace and editing behavior in 09 remain unchanged.
+Video-Flow is a desktop application using **PySide6 with Qt WebEngine** to host the existing **React/Vite interface**. **Python/FastAPI, FFmpeg and the inference workers** retain their processing responsibilities. The three-part workspace and editing behavior in [interactive editor](../features/interactive-editor.md) remain unchanged.
 
 The normal launch opens an application window, with no separate browser tab. A browser mode may remain available explicitly for development and diagnostics. Qt is the chosen desktop shell; pywebview, Tauri and Electron are not parallel implementation targets.
 
@@ -14,14 +14,14 @@ This choice preserves the interactive frontend while providing native file dialo
 
 - Dropping files from the operating system onto the flow, or using the native Import dialog, supplies their local filesystem paths through the desktop host. The host forwards path references to the existing import queue. No video bytes are uploaded, base64-encoded, sent through the JavaScript bridge or copied into the bundle during normal import.
 - Qt handles local file URLs and path decoding, including spaces, Unicode, Windows drive paths and supported network locations. The host accepts actual files, checks media types and obtains canonical paths. Remote HTTP URLs are not treated as local-file imports.
-- Importing several files retains the sequential processing, analyse/skip choice, per-file and global progress, cancellation and similarity grouping defined in 09. Referencing a file is quick; probing, hashing, proxy generation and optional analysis can still take time and must report their own progress.
+- Importing several files retains the sequential processing, analyse/skip choice, per-file and global progress, cancellation and similarity grouping defined in [interactive editor](../features/interactive-editor.md). Referencing a file is quick; probing, hashing, proxy generation and optional analysis can still take time and must report their own progress.
 - Original video and audio files remain unmodified at their selected locations. Project decisions, proxies, thumbnails, waveforms and working caches live in the project bundle. Re-importing known content reuses the existing asset and valid caches.
 - Copying originals is an explicit **Collect media / portable project** operation, never an implicit cost of drag-and-drop. OTIOZ remains an explicit media-bundling export and may copy media for that purpose.
 - Persist absolute source paths plus relative relinking hints where possible. Reopening a project must not require re-import or copying. If files are moved, renamed, deleted or temporarily unavailable, mark them offline and offer a native relink dialog; retain edits and never silently substitute another file.
 
 ## Analysis sidecars
 
-The source-adjacent `<source stem>.json` contract from 09 remains in force: check for compatible timecoded transcription, summary, keywords and source fingerprint before loading speech models. Write a newly requested sidecar atomically next to the original source, without overwriting unrelated or incompatible JSON. Source media itself is never rewritten.
+The source-adjacent `<source stem>.json` contract from [interactive editor](../features/interactive-editor.md) remains in force: check for compatible timecoded transcription, summary, keywords and source fingerprint before loading speech models. Write a newly requested sidecar atomically next to the original source, without overwriting unrelated or incompatible JSON. Source media itself is never rewritten.
 
 For a read-only source folder, keep the analysis in the bundle's analysis cache, associated with the source fingerprint, and report its location. Check that cache on subsequent imports so a failed sidecar write does not force retranscription. A later explicit action may write the sidecar next to the source when the folder becomes writable. The UI must distinguish analysis failure from successful analysis whose sidecar could not be saved beside the source.
 
@@ -56,5 +56,5 @@ Windows 11 x64 and Linux x86_64 remain release targets. Windows ARM64/Snapdragon
 - Test Unicode/spaces, paths outside configured browser roots, multiple files, cancellation and supported network/read-only locations. The renderer cannot turn an import grant into arbitrary file access.
 - An existing compatible sidecar skips transcription. A read-only source can reuse bundle-cached analysis without failing the whole import or retranscribing on reopening.
 - Original source hashes stay unchanged. Saving/reopening preserves edits and source references; missing media becomes offline and can be relinked without losing trims or links.
-- Verify the preview, layered audio/video, keyboard shortcuts, cursor-centred zoom, linked edits and transforms from 09 in the actual Qt WebEngine window. Measure responsiveness with many clips; record actual import/proxy/analysis timings rather than claiming instantaneous processing.
+- Verify the preview, layered audio/video, keyboard shortcuts, cursor-centred zoom, linked edits and transforms from [interactive editor](../features/interactive-editor.md) in the actual Qt WebEngine window. Measure responsiveness with many clips; record actual import/proxy/analysis timings rather than claiming instantaneous processing.
 - Existing headless CLI and export tests continue to pass. Packaged builds are tested separately on each supported platform, including codec/proxy playback and required Qt runtime resources.

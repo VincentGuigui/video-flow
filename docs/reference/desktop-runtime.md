@@ -34,7 +34,7 @@ The Windows recipe pins the bundled MSVC family to Qt's working runtime and excl
 - PySide6/Shiboken and Qt libraries: LGPL-3.0/GPL/commercial terms according to the included Qt component; preserve the wheel's licence files and Qt's third-party notices when redistributing. Qt WebEngine includes Chromium and its third-party licences. This development packaging recipe is not a substitute for a distributor's licence review.
 - React, Vite, Zustand and Lucide: MIT; retain package licence notices in releases.
 - FFmpeg licensing depends on the selected external build (the full GPL build includes GPL components). It is not silently embedded by this recipe.
-- AI model licences and attribution remain in `docs/dependencies.md` and `engines/manifest.toml`; models are not included in the application bundle by default.
+- AI model licences and attribution remain in `docs/reference/dependencies.md` and `engines/manifest.toml`; models are not included in the application bundle by default.
 
 ## Settings and AI engines
 

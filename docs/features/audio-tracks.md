@@ -1,6 +1,6 @@
-# 13. Audio tracks of video clips — 2026-10-26
+# Audio tracks of video clips — 2026-10-26
 
-This revision supplements 09 and 12. It sets the audio rules for clips imported with both picture and sound.
+This revision supplements [interactive editor](interactive-editor.md) and [unified timeline](unified-timeline.md). It sets the audio rules for clips imported with both picture and sound.
 
 - **No mute control.** The per-clip enable checkbox is the only way to silence audio. Disabled audio clips stay visible in their lane and render as silence. TL-09 no longer includes mute.
 - **Detach.** Detach (chain button in the flow, or Detach audio & video in Properties) breaks the link without changing timing. The audio clip then moves, splits and trims on its own (standard audio handles, retained time per 12).

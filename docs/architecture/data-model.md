@@ -1,6 +1,6 @@
-# 05. Data model and project format
+# Data model and project format
 
-Current contracts follow revisions [08](08-review-and-plan.md), [09](09-interactive-editor.md) and [10](10-desktop-shell.md). In particular, normal desktop imports reference originals in place; generated caches stay in the bundle and requested analysis JSON sits beside the source, with a bundle-cache fallback for read-only folders. Media collection is explicit, and missing sources retain edits for relinking. Historical schemas/layouts below are superseded where those revisions conflict.
+Current contracts follow revisions [review and plan](../decisions/0002-review-and-plan.md), [interactive editor](../features/interactive-editor.md) and [desktop shell](desktop-shell.md). In particular, normal desktop imports reference originals in place; generated caches stay in the bundle and requested analysis JSON sits beside the source, with a bundle-cache fallback for read-only folders. Media collection is explicit, and missing sources retain edits for relinking. Historical schemas/layouts below are superseded where those revisions conflict.
 
 ## 1. Principles
 
@@ -120,7 +120,7 @@ interface Transition {
   id: Id;
   leftItemId: Id;               // cut between these two main-line items
   rightItemId: Id;
-  type: TransitionType;         // see 06-render-export.md §4
+  type: TransitionType;         // see architecture/render-export.md §4
   duration: Seconds;
   alignment: "center" | "start" | "end";   // relative to the cut
   audio: "follow" | "cut" | { type: "crossfade"; duration: Seconds };
@@ -246,7 +246,7 @@ Metadata namespace `videoflow` (ignored by other tools, preserved by most):
 ```
 
 Notes:
-- OTIO transitions use **handles** (media beyond the visible in/out). The render follows the same semantics (see 06 §3) so the exported timeline and the FFmpeg output have the same duration and the same frames.
+- OTIO transitions use **handles** (media beyond the visible in/out). The render follows the same semantics (see [render and export](render-export.md) §3) so the exported timeline and the FFmpeg output have the same duration and the same frames.
 - `target_url` style (plain absolute path vs `file://` URL) is a per-export option; interop tests decide the default per target (Resolve has been reported to reject `file://` URLs in OTIO files written by Premiere).
 - Requires OpenTimelineIO ≥ 0.17 and `OpenTimelineIO-Plugins` for non-native adapters.
 

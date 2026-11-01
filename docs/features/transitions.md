@@ -1,6 +1,6 @@
-# 17. Transitions in the interactive editor — 2026-10-26
+# Transitions in the interactive editor — 2026-10-26
 
-This revision implements TR-01, TR-02, TR-04, TR-06 (shortening only) and TR-07 of 02 §4.6, and PRV-02 for these types, for the editor document of 09. It replaces the legacy `Transition` entity of 05 for interactive edits.
+This revision implements TR-01, TR-02, TR-04, TR-06 (shortening only) and TR-07 of [functional spec](../product/functional-spec.md) §4.6, and PRV-02 for these types, for the editor document of [interactive editor](interactive-editor.md). It replaces the legacy `Transition` entity of [data model](../architecture/data-model.md) for interactive edits.
 
 ## Model
 

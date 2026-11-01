@@ -1,6 +1,8 @@
-# 07. Roadmap, risks and open questions
+# Initial roadmap, risks and open questions — 2026-10-23
 
-Roadmap amendment (2026-10-25): [10-desktop-shell.md](10-desktop-shell.md) makes the PySide6/Qt WebEngine host and native path-based imports part of the editor foundation. They are no longer optional Phase 3 work. Release/installer hardening remains a later milestone; Windows ARM64 requires the qualification gate in 10.
+Historical record of the first plan. The live roadmap is [docs/roadmap.md](../roadmap.md).
+
+Roadmap amendment (2026-10-25): [desktop shell](../architecture/desktop-shell.md) makes the PySide6/Qt WebEngine host and native path-based imports part of the editor foundation. They are no longer optional Phase 3 work. Release/installer hardening remains a later milestone; Windows ARM64 requires the qualification gate in [desktop shell](../architecture/desktop-shell.md).
 
 ## 1. Phases
 
@@ -10,7 +12,7 @@ Goal: prove that grouping works on real footage before any UI work.
 Deliverables:
 - `videoflow analyse <folder>` CLI: probe, audio extract, VAD, ASR (two engines compared: Whisper large-v3-turbo and Parakeet TDT 0.6B v3), segmentation, text and visual embeddings, relations, clustering, LLM labels.
 - Static HTML or Markdown report: beats with thumbnails, takes, scores, flags.
-- Hand-labelled ground truth for 2 to 3 real unboxing projects and the metrics of 04 §11.
+- Hand-labelled ground truth for 2 to 3 real unboxing projects and the metrics of [analysis pipeline](../architecture/analysis-pipeline.md) §11.
 
 Exit criteria:
 - Pairwise F1 ≥ 0.85 on speech segments, ≥ 0.70 on visual segments (or a clear plan to reach it).
@@ -26,7 +28,7 @@ Exit criteria:
 | 1c Editing | Trims with word and shot snapping, blade, ripple delete, auto-tighten, clip gain and fades, undo/redo, cut/dissolve/dip-to-black/dip-to-white transitions with handle checks, live preview |
 | 1d Output | Render strategy A, presets, two-pass loudness, HDR tone mapping, validation; exports OTIO, OTIOZ, FCPXML, EDL, SRT/VTT, paper edit |
 
-Exit criteria: the acceptance scenarios of 02 §8 pass on a real project; a 40-rush project goes from import to rendered MP4 with less than 30 minutes of user time (analysis excluded).
+Exit criteria: the acceptance scenarios of [functional spec](../product/functional-spec.md) §8 pass on a real project; a 40-rush project goes from import to rendered MP4 with less than 30 minutes of user time (analysis excluded).
 
 ### Phase 2: pro features (3 to 4 weeks)
 - Sync groups (multicam) with angle switching and audio source choice.
@@ -42,7 +44,7 @@ Exit criteria: the acceptance scenarios of 02 §8 pass on a real project; a 40-r
 - FCP7 XML, FCPXML auditions, AAF.
 - OTIO re-import (round trip).
 - Interop test matrix: Resolve, Premiere, Final Cut Pro, Kdenlive, Camtasia (Windows and macOS).
-- French UI; release packaging and installer hardening for the PySide6/Qt WebEngine desktop app (the host and native imports are delivered in the editor foundation; see 10).
+- French UI; release packaging and installer hardening for the PySide6/Qt WebEngine desktop app (the host and native imports are delivered in the editor foundation; see [desktop shell](../architecture/desktop-shell.md)).
 
 ### Later ideas
 - Natural-language shot search and automatic B-roll suggestions (match transcript nouns to visual-text embeddings).
@@ -58,11 +60,11 @@ Exit criteria: the acceptance scenarios of 02 §8 pass on a real project; a 40-r
 | K-02 | ASR drops fillers; word timestamps drift in French | Medium | Medium | Verbatim prompting, voiced-gap detection from VAD, forced alignment (WhisperX), Parakeet as alternative engine |
 | K-03 | Browser cannot decode some sources (HEVC, HDR, 10-bit) | High | Medium | Always preview through H.264 8-bit SDR proxies |
 | K-04 | Preview not frame-accurate | Medium | Low | FFmpeg render is the reference; preview renders for transitions; frame checks in validation |
-| K-05 | Phone footage quirks (VFR, HLG, rotation, mixed frame rates) | High | Medium | Normalisation chain (06 §2); test corpus with real iPhone and Android files |
+| K-05 | Phone footage quirks (VFR, HLG, rotation, mixed frame rates) | High | Medium | Normalisation chain ([render and export](../architecture/render-export.md) §2); test corpus with real iPhone and Android files |
 | K-06 | Camtasia format changes between versions | Medium | Medium | Template-based writer per version; media pack fallback |
 | K-07 | OTIO adapter gaps (FCPXML version, gain, auditions) | Medium | Medium | Golden-file tests; post-processors; export report of dropped features |
 | K-08 | Tiny LLM produces invalid or poor output | Medium | Low | Constrained decoding, validation and retry, keyword fallback, LLM optional |
-| K-09 | Scope creep towards a full NLE | High | High | Non-goals in 02 §1; OTIO handoff for finishing; scope review at each phase gate |
+| K-09 | Scope creep towards a full NLE | High | High | Non-goals in [functional spec](../product/functional-spec.md) §1; OTIO handoff for finishing; scope review at each phase gate |
 | K-10 | Slow analysis on CPU-only machines | Medium | Medium | Engine auto-selection, smaller models, progressive UI (triage starts before visual features finish) |
 | K-11 | Large single FFmpeg graphs (memory, time) | Medium | Medium | Render strategy B |
 | K-12 | Model licences (attribution, usage terms) | Low | Low | Licence review per model; attributions in the About screen |

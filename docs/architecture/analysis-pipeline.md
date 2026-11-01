@@ -1,4 +1,4 @@
-# 04. Analysis pipeline
+# Analysis pipeline
 
 ## 1. Purpose and outputs
 

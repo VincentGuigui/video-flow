@@ -1,10 +1,10 @@
-# 03. Architecture
+# Architecture
 
-Current architecture: [08](08-review-and-plan.md), [09](09-interactive-editor.md) and [10](10-desktop-shell.md) supersede conflicting historical details below, including job storage, Python version and desktop packaging.
+Current architecture: [review and plan](../decisions/0002-review-and-plan.md), [interactive editor](../features/interactive-editor.md) and [desktop shell](desktop-shell.md) supersede conflicting historical details below, including job storage, Python version and desktop packaging.
 
 ## 1. Overview
 
-Video-Flow is a desktop application: a PySide6 host embeds the React interface in Qt WebEngine, while the Python backend performs media and ML work and serves the trusted editor origin on loopback. Native drag-and-drop and file dialogs pass local path references to the import service without copying originals. Normal launch opens a native window; browser mode is optional for development/diagnostics. See 10 for the bridge, lifecycle and platform gates.
+Video-Flow is a desktop application: a PySide6 host embeds the React interface in Qt WebEngine, while the Python backend performs media and ML work and serves the trusted editor origin on loopback. Native drag-and-drop and file dialogs pass local path references to the import service without copying originals. Normal launch opens a native window; browser mode is optional for development/diagnostics. See [desktop shell](desktop-shell.md) for the bridge, lifecycle and platform gates.
 
 ```mermaid
 flowchart TB
@@ -51,7 +51,7 @@ flowchart TB
 | D-3 | React 19 + Vite + TanStack Query + Zustand + shadcn/ui (Radix) | Known stack. TanStack Query for server state, Zustand (with Immer patches) for the latency-sensitive editor state and undo/redo. | Preact (lighter but React Flow and some libs target React) |
 | D-4 | Custom canvas timeline, React Flow (xyflow) for the flow overview | Off-the-shelf timeline components do not support branch lanes and word snapping; canvas keeps 300+ clips smooth | `react-timeline-editor` (too limited), PixiJS (only if canvas 2D proves too slow) |
 | D-5 | FFmpeg and ffprobe as external CLI binaries via subprocess | Full feature set, easy upgrade, process isolation, progress via `-progress pipe:1` | PyAV bindings (useful for frame access in analysis only) |
-| D-6 | OTIO as canonical interchange; `project.json` as source of truth | See 05-data-model.md | OTIO as the only file (take graph squeezed into metadata: possible but awkward to evolve) |
+| D-6 | OTIO as canonical interchange; `project.json` as source of truth | See [data model](data-model.md) | OTIO as the only file (take graph squeezed into metadata: possible but awkward to evolve) |
 | D-7 | SQLite (WAL) for jobs and analysis index; NumPy `.npy` files for embeddings | Zero-ops, portable inside the project bundle; embeddings counts are small (thousands) so brute-force cosine is enough | sqlite-vec / FAISS (unnecessary at this scale) |
 | D-8 | All engines behind interfaces, selected by config and hardware detection | Models evolve fast (ASR and small LLMs change every few months) | Hard-wiring one model |
 | D-9 | Local-only by default; cloud LLM provider is opt-in per project | Privacy, offline use | |
@@ -64,7 +64,7 @@ flowchart TB
 | `project/` | Load/save/migrate `project.json`, command log (undo history on disk), compile to OTIO |
 | `media/` | ffprobe wrapper, proxy/thumbnail/waveform generation, HTTP range serving of proxies |
 | `jobs/` | Persistent job queue (SQLite), worker process pool, cancellation, progress events |
-| `analysis/` | Pipeline stages (see 04), stage cache keyed by content hash + stage version + parameters |
+| `analysis/` | Pipeline stages (see [analysis pipeline](analysis-pipeline.md)), stage cache keyed by content hash + stage version + parameters |
 | `engines/asr`, `engines/embed`, `engines/vision`, `engines/llm`, `engines/vad` | Engine adapters behind Protocols |
 | `render/` | Timeline normalisation, FFmpeg graph builder, presets, loudness passes, render runner |
 | `exporters/` | OTIO, OTIOZ, FCPXML (+ auditions post-processor), FCP7 XML, EDL, AAF, Camtasia, SRT/VTT, paper edit |
@@ -156,7 +156,7 @@ Default engine selection:
 |--------|---------------|--------|----------|
 | ASR | whisper.cpp (Metal) or MLX Whisper, large-v3-turbo; or Parakeet v3 (MLX port) | faster-whisper large-v3-turbo (CUDA) + WhisperX alignment, or Parakeet v3 (NeMo) | Parakeet v3 (ONNX, int8) or faster-whisper `small`/`medium` int8 |
 | VAD | Silero VAD | Silero VAD | Silero VAD |
-| Text embeddings | paraphrase-multilingual-MiniLM-L12-v2 (chosen by benchmark, see 18) | same | same |
+| Text embeddings | paraphrase-multilingual-MiniLM-L12-v2 (chosen by benchmark, see [retake grouping](../features/retake-grouping.md)) | same | same |
 | Visual embeddings | DINOv2-small (near-duplicate shots) | same | same, lower sampling rate |
 | LLM | Ollama with a ~2B to 4B instruct model (Gemma 4 E2B/E4B or Qwen3 class) | same | same, smallest size |
 
@@ -209,5 +209,5 @@ The CLI is part of the deliverable: `videoflow analyse <folder>` and `videoflow 
 - **Golden files**: compile fixtures `project.json` → expected `.otio`, expected FFmpeg argument list, expected FCPXML / EDL / tscproj. Diffed in CI.
 - **Synthetic media**: test rushes generated with FFmpeg `lavfi` sources plus TTS audio, covering retakes, false starts, simultaneous recordings, VFR and HDR flags.
 - **Render checks**: ffprobe duration and stream properties, `ebur128` loudness measurement, frame-hash spot checks at cut points.
-- **Grouping benchmark**: a small hand-labelled set from real rushes; pairwise precision/recall tracked per pipeline version (see 04 §11).
+- **Grouping benchmark**: a small hand-labelled set from real rushes; pairwise precision/recall tracked per pipeline version (see [analysis pipeline](analysis-pipeline.md) §11).
 - **Interop smoke tests** (manual, per release): open exports in Resolve, Premiere, Final Cut Pro, Kdenlive, Camtasia.

@@ -1,8 +1,8 @@
 # Video-Flow
 
-Local-first assembly tool for footage shot with many retakes: ingest rushes, transcribe and analyse them, group equivalent takes into beats, compare alternatives side by side, then render with FFmpeg or export to an editor (OpenTimelineIO, FCPXML, EDL, Camtasia).
+Local-first desktop app for footage shot with many retakes: import rushes, transcribe and analyse them locally, stack retakes of the same sentences and compare them, cut and finish the edit, then render an MP4 with FFmpeg or export to another editor (OpenTimelineIO, EDL, Camtasia).
 
-Status: implementation in progress. The PySide6/Qt WebEngine desktop editor hosts the React workspace: preview, transport timeline, layered clip flow, linked edits, trim modes, undo/redo, native file-reference imports, progress/cancellation and analysis-sidecar reuse. FastAPI serves the authenticated local API and media. OTIO/OTIOZ, EDL, SRT and paper-edit exports are available. Final-video rendering, full analysis calibration and release hardening remain unfinished.
+Status: the editor, analysis, MP4 render and exports work end to end. Accuracy tuning on real rushes, hardware qualification and release packaging remain; see the [roadmap](docs/roadmap.md).
 
 Targets Windows 11 x64 and Linux x86_64; Windows ARM64 requires qualification. Native desktop development playback has been checked on Windows x64. AI inference runs on NPU, then GPU, then CPU.
 
@@ -22,7 +22,7 @@ scripts/install.sh            # Linux
 scripts\install.ps1           # Windows
 ```
 
-The installer sets up uv, Python 3.13, FFmpeg, checks Node/pnpm, detects the hardware and runs `uv sync` with the desktop extra and matching inference extra (`openvino`, `cuda`, `directml`, `qnn` or `cpu`). Build the interface once with `npm install` then `npm run build` in `frontend/`. Flags: `--cpu-only`, `--extra X` (repeatable, e.g. `--extra whisper`), `--no-ffmpeg`, `--no-frontend-check` (PowerShell: `-CpuOnly`, `-Extra X`, `-NoFfmpeg`, `-NoFrontendCheck`). The accelerator extras are mutually exclusive; see [docs/dependencies.md](docs/dependencies.md).
+The installer sets up uv, Python 3.13, FFmpeg, checks Node/pnpm, detects the hardware and runs `uv sync` with the desktop extra and matching inference extra (`openvino`, `cuda`, `directml`, `qnn` or `cpu`). Build the interface once with `npm install` then `npm run build` in `frontend/`. Flags: `--cpu-only`, `--extra X` (repeatable, e.g. `--extra whisper`), `--no-ffmpeg`, `--no-frontend-check` (PowerShell: `-CpuOnly`, `-Extra X`, `-NoFfmpeg`, `-NoFrontendCheck`). The accelerator extras are mutually exclusive; see [docs/reference/dependencies.md](docs/reference/dependencies.md).
 
 ## Run
 
@@ -34,9 +34,9 @@ scripts/run.sh --help          # any other arguments go to the videoflow CLI
 
 Use `videoflow desktop --project PATH.videoflow` to open/create a particular project. Import uses native dialogs and OS file drops: originals stay in place, and derived proxies, thumbnails and waveforms live in the project bundle. Read-only source folders use bundle-cached analysis. Offline sources can be relinked through a native picker without losing edits. `videoflow serve --project PATH.videoflow` is an explicit browser diagnostic option; normal desktop import never uploads or copies original media.
 
-Keyboard: Space plays the timeline range (start/end markers on the ruler; with a marker selected, 2 s around it); arrows one frame; Shift+arrows one second; Ctrl+arrows ten seconds; Home/End or Ctrl+Shift+arrows timeline bounds; S split; Delete lift with an empty clip; Backspace ripple delete; Ctrl+A selects everything in the zone last clicked (project media, timeline, clip flow or editor) and Delete removes it (in project media, the media and their clips); Escape leave clip focus; Ctrl+Z undo, Ctrl+Shift+Z redo. Ctrl+wheel zooms around the pointer. Double-click a clip to focus it with two seconds of context; top trim handles ripple, bottom handles preserve time with empty clips. Shift stretches scale/crop; Alt edits symmetrically.
+Keyboard: Space plays the timeline range (start/end markers on the ruler; with a marker selected, 2 s around it); arrows one frame; Shift+arrows one second; Ctrl+arrows ten seconds; Home/End or Ctrl+Shift+arrows timeline bounds; S split; Delete lift with an empty clip; Backspace ripple delete; Ctrl+A select all in the clicked zone; Escape leave clip focus; Ctrl+Z undo, Ctrl+Shift+Z redo. Ctrl+wheel zooms around the pointer. Double-click a clip to focus it with two seconds of context; top trim handles ripple, bottom handles preserve time with empty clips. Shift stretches scale/crop; Alt edits symmetrically.
 
-See [desktop runtime and platform checks](docs/desktop-runtime.md) and the authoritative [desktop spec](docs/spec/10-desktop-shell.md).
+See [desktop runtime and platform checks](docs/reference/desktop-runtime.md) and the authoritative [desktop spec](docs/architecture/desktop-shell.md).
 
 ## Develop
 
@@ -48,17 +48,17 @@ just test | smoke | lint | serve        # or: scripts/dev.sh test | smoke | lint
 
 The standalone desktop build is in `releases/Video-Flow/Video-Flow.exe`. Keep the entire `Video-Flow/` folder together when moving or distributing it. Repository `tools/` is reserved for development dependencies.
 
-## Transcript and topics
+## Features
 
-Analysed imports get a short summary and topic sections (start/end time and a title of up to five words). Select a clip and open the Transcript tab in the properties panel: click a topic to expand its transcript and set the timeline range to it; click a word (Shift+click to extend) to set the range; click any timecode to move the cursor there. In the Clip tab, Trim clip to range keeps only the range and Delete range cuts it out, both moving later clips earlier; Auto-trim silence trims to the first and last spoken words.
+- **Transcript and topics:** analysed imports get a summary and titled topic sections. The Transcript tab expands a topic to its lines; clicking a topic or words (Shift+click to extend) sets the timeline range, clicking a timecode moves the cursor.
+- **Trim from the range:** Trim clip to range keeps only the range, Delete range cuts it out (later clips move earlier); Auto-trim silence trims to the first and last spoken words.
+- **Compare takes:** retakes are stacked on parallel lanes on import (MiniLM sentence similarity plus word overlap). Compare takes plays them side by side, synced on their first common word, with differing words highlighted; pick one with its button or keys 1–9.
+- **Transitions:** Cut, Cross dissolve, Dip to black or Dip to white on the cut before or after a video clip, or on all cuts. Dissolves use media beyond the cut and are shortened (with a warning) when there is not enough.
+- **Clip effects:** fade in/out (picture and sound); speed 25–400 % or fit to the range, audio keeping its pitch; zoom & pan toward a clicked point; mute a range; duck music (an audio clip not linked to a video) by 15 dB under transcribed speech.
+- **Titles:** Title and Lower third in the clip flow toolbar add a text clip at the cursor, above the picture; edit text, style, size, colours and box in clip properties.
+- **Zones:** Ctrl+A selects everything in the zone last clicked (project media, timeline, clip flow or editor); Delete removes it. Removing media also removes its clips; undo restores both.
 
-## Compare takes
-
-Import stacks retakes on parallel lanes: sentences are compared with the local MiniLM model plus word overlap (word overlap alone until the model is downloaded in Settings). Select one and click Compare takes in clip properties: the takes play side by side, synced on their first common word, with words said in only one take highlighted. Pick a take with its button or keys 1–9; it is enabled and the other takes are disabled.
-
-## Transitions
-
-Select a video clip: Transitions in clip properties sets the cut to the previous or next clip to Cut, Cross dissolve, Dip to black or Dip to white, with a duration in seconds, or applies one transition to all cuts. Dissolves use source media beyond the cut and are shortened (with a warning) when there is not enough. Transitions show on the timeline, play in the preview and render in the MP4. Fades in clip properties fade a clip in from black and out to black (picture and sound). Speed sets a clip's playback speed (25–400 %, or fit to the timeline range); later clips move accordingly and audio keeps its pitch. Zoom & pan adds an eased zoom toward a point you click, over the timeline range. Audio → Mute range silences the clip's sound inside the timeline range; on a music clip (an audio clip not linked to a video), Duck under speech lowers it by 15 dB wherever other clips have transcribed speech. Title and Lower third in the clip flow toolbar add a text clip at the cursor, above the picture; edit its text, style, size, colours and box in clip properties.
+Everything plays in the preview, renders in the MP4 and is exported to Camtasia; the [feature documents](docs/README.md#features) give the details.
 
 ## Settings and local models
 
@@ -86,12 +86,14 @@ SRT takes a JSON object mapping asset IDs to transcript objects, for example:
 
 Word times refer to the original source. Subtitles follow the audible cut, including replacement audio and transcript corrections; fillers are removed. Cues stay within clip boundaries, have up to two 42-character lines, and extend to one second when space permits. Transcript corrections lack word timings and are distributed within their authored range. Paper edits can be exported without transcripts.
 
-OTIO retains exact transition definitions, editing identifiers and clip settings as Video-Flow metadata. Other editors may ignore gain, fades, fit and freeze handles. OTIOZ copies source media and requires every referenced file to exist. EDL contains V1 only, uses eight-character reels with a mapping file, and approximates other transitions as dissolves. FCPXML remains planned for P1; real-editor interoperability is not yet validated.
+OTIO retains exact transition definitions, editing identifiers and clip settings as Video-Flow metadata. Other editors may ignore gain, fades, fit and freeze handles. OTIOZ copies source media and requires every referenced file to exist. EDL contains V1 only, uses eight-character reels with a mapping file, and approximates other transitions as dissolves. FCPXML is planned; real-editor interoperability is not yet validated.
 
 
 Camtasia: Export → Camtasia project, or `uv run videoflow export BUNDLE --camtasia`. To match your Camtasia version exactly, copy any project saved by it to `templates/camtasia.tscproj` in the application folder (or pass `--camtasia-template PATH`); its structures are cloned, its content is not. Crop, backgrounds and transition audio crossfades are not exported (see the export report).
+
 ## Documentation
 
-- [Specification](docs/spec/README.md), with authoritative [desktop architecture](docs/spec/10-desktop-shell.md) and [editor/settings refinements](docs/spec/11-editor-refinements.md)
-- [Dependencies and accelerator matrix](docs/dependencies.md)
-- [Agent guidelines](AGENTS.md): docs location, commit and spec rules
+- [Documentation index](docs/README.md): product, features, architecture, decisions, reference
+- [Roadmap](docs/roadmap.md): what is built and what comes next
+- [Dependencies and accelerator matrix](docs/reference/dependencies.md)
+- [Agent guidelines](AGENTS.md): conventions for contributors and coding agents

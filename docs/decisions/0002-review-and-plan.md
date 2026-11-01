@@ -1,6 +1,6 @@
-# 08. Architecture review and revised implementation plan
+# Architecture review and revised implementation plan
 
-Later accepted revisions: [09](09-interactive-editor.md) updates editing behavior; [10](10-desktop-shell.md) selects PySide6 + Qt WebEngine and native reference-in-place imports. Revision 10 supersedes this document's browser-first and pywebview/Tauri packaging decisions; the historical review and measurements below are retained for context.
+Later accepted revisions: [interactive editor](../features/interactive-editor.md) updates editing behavior; [desktop shell](../architecture/desktop-shell.md) selects PySide6 + Qt WebEngine and native reference-in-place imports. Revision [desktop shell](../architecture/desktop-shell.md) supersedes this document's browser-first and pywebview/Tauri packaging decisions; the historical review and measurements below are retained for context.
 
 Inputs: four evaluation reports (stack, analysis, render, model) on spec draft v0.1 (`docs/spec/00..07`), with experiments under `scratchpad/eval/{stack,analysis,render,otio}`. Container used for the tests: FFmpeg 6.1.1 (flite, loudnorm, xfade, zscale and tonemap are present), Python 3.13.17, Node 22.22, 4 CPUs, no GPU.
 
@@ -40,11 +40,11 @@ Consequences:
 
 - `scripts/install.sh` (Linux) and `scripts/install.ps1` (Windows): check/install uv, Python 3.13 via uv, Node 22 + pnpm (frontend build only), FFmpeg ≥ 6.1 (system package or pinned static build into `tools/ffmpeg/`), detect NPU/GPU and install the matching onnxruntime/OpenVINO extra, optionally pre-download models.
 - `scripts/run.sh` / `scripts/run.ps1`: start `videoflow serve` and open the browser; pass-through for CLI commands.
-- `docs/dependencies.md`: every runtime and dev dependency with version, licence, purpose, and per-accelerator matrix. Kept up to date by every WP that adds a dependency.
+- `docs/reference/dependencies.md`: every runtime and dev dependency with version, licence, purpose, and per-accelerator matrix. Kept up to date by every WP that adds a dependency.
 
 ### 0.4 Plan changes
 
-- WP1 also delivers the install/run scripts and `docs/dependencies.md`.
+- WP1 also delivers the install/run scripts and `docs/reference/dependencies.md`.
 - WP3 also delivers `hw/video.py` (hwaccel/encoder probing with test encode).
 - New **WP3b** `hw/ai.py`: provider probing, NPU → GPU → CPU ordering, warm-up validation, per-model fallback, settings override, `doctor` output. Tests here: CPU-only path, plus mocked provider lists for ordering and fallback.
 - WP11 engines use the `hw/ai.py` session factory exclusively.
@@ -92,7 +92,7 @@ Consequences:
 |---|---|---|
 | H1 | The stack installs on Python 3.13 with uv | ✅ fastapi, pydantic, OTIO and its adapters, faster-whisper, onnx-asr and silero install in 21 s and import |
 | H2 | The FFmpeg subprocess reports progress and can be cancelled | ✅ `-progress pipe:1` streams; `terminate()` gives rc 255 |
-| H3 | The handle/xfade/acrossfade/concat graph in 06 §3 renders mixed inputs (720p25, 480p29.97 mono, vertical 24p with no audio) | ✅ Renders, but ❌ "within 1 frame" fails with float `-t`. ✅ Exact with `trim=end_frame` / `atrim=end_sample`: 565 frames = Σ − T. |
+| H3 | The handle/xfade/acrossfade/concat graph in [render and export](../architecture/render-export.md) §3 renders mixed inputs (720p25, 480p29.97 mono, vertical 24p with no audio) | ✅ Renders, but ❌ "within 1 frame" fails with float `-t`. ✅ Exact with `trim=end_frame` / `atrim=end_sample`: 565 frames = Σ − T. |
 | H4 | acrossfade shortens audio by T, the same as xfade does for video | ✅ Sample-exact (18.80 s). `concat` pads each audio segment to its video length. |
 | H5 | All xfade names in the catalog exist | ✅ On 6.1.1 (58 transitions, `custom` works) |
 | H6 | The two-pass loudnorm JSON can be parsed | ✅ Result −14.0 LUFS, confirmed by ebur128. ❌ Digital silence gives `-inf`, so it needs a silent-input branch. |
@@ -102,7 +102,7 @@ Consequences:
 | H10 | Silero VAD runs without torch | ✅ ONNX, 0.4 s for 31 s of audio |
 | H11 | PySceneDetect finds the cuts | ✅ 3 of 3 cuts on synthetic media, 0.6 s |
 | H12 | DINOv2 separates near-duplicates | ✅ 0.99 for the near-duplicate vs 0.20–0.42 for other shots (synthetic). 14 frames/s on CPU. |
-| H13 | Segmentation in 04 S9 handles real retake gaps | ❌ With 1 s gaps: 2 blocks out of 5 utterances, and the retake is missed |
+| H13 | Segmentation in [analysis pipeline](../architecture/analysis-pipeline.md) S9 handles real retake gaps | ❌ With 1 s gaps: 2 blocks out of 5 utterances, and the retake is missed |
 | H14 | The PARTIAL_RETAKE suffix rule identifies false starts | ❌ It mislabels contained matches and misses the real false start |
 | H15 | A cosine pre-filter at 0.45 separates unrelated text | ❌ e5: unrelated pairs score 0.77–0.83. MiniLM: 0.02–0.34. Thresholds must be set per model. |
 | H16 | sklearn agglomerative clustering respects cannot-link | ❌ |
@@ -122,7 +122,7 @@ Consequences:
 7. Quality weights against picks made by hand (target 60% agreement). Consensus built from complete takes only.
 8. LLM label and flag precision vs the TF-IDF fallback (Ollama: gemma4 / qwen3 with thinking off).
 9. PySceneDetect on handheld footage (pans, auto-exposure).
-10. End-to-end timing budget (04 §12).
+10. End-to-end timing budget ([analysis pipeline](../architecture/analysis-pipeline.md) §12).
 11. Interop: OTIO in Resolve and Premiere, the EDL, and the custom FCPXML in FCP and Resolve.
 12. Windows: the asyncio Proactor loop under uvicorn, and spawned workers.
 13. Compare view: 4 or more players plus SSE under the connection limit.
@@ -138,8 +138,8 @@ Consequences:
 | 02 | PRJ-02 | Undo within a session is P0; undo across sessions is P1. |
 | 02 | TL-01, 05/06 | A2 music track is P1 everywhere. The MVP has only V2 overlays. |
 | 02 | TL-03 | Lift (leaves a gap) is P1, or add `ClipItem.kind='gap'`. Ripple delete is P0. |
-| 02 | EXP-02/03/04, AAF | FCPXML moves to P1 (custom writer). EDL: we generate reel names ourselves, max 8 characters (fix "32 chars" in 06 §8.2). SRT only, VTT dropped. AAF is unsupported. |
-| 02 | §8.5, 06 §8.1 | State that clip gain and fades are not carried in OTIO in the MVP. |
+| 02 | EXP-02/03/04, AAF | FCPXML moves to P1 (custom writer). EDL: we generate reel names ourselves, max 8 characters (fix "32 chars" in [render and export](../architecture/render-export.md) §8.2). SRT only, VTT dropped. AAF is unsupported. |
+| 02 | §8.5, [render and export](../architecture/render-export.md) §8.1 | State that clip gain and fades are not carried in OTIO in the MVP. |
 | 02 | P0 demotions (see §5 note) | RND-02 hardware encoders stay P0 (NVENC, QSV/VAAPI, AMF/VAAPI with libx264 fallback, see §0). Presets for the MVP: draft and youtube_1080p. PRV-02 live dissolve preview → P1 (rendered region instead). ANA-07 LLM → P1 (TF-IDF is the P0 path). TR-07 apply-all → P1. ING-03 thumbnails at one per 2 s, one peaks resolution. RND-04 HDR depends on Q2 (§4). |
 | 03 | D-1 | Folder picking through `GET /fs/list`. Phase 3 shell: pywebview first. |
 | 03 | D-2, §9 | Python 3.13. `fastapi.sse`. FFmpeg capability probe. |
@@ -171,7 +171,7 @@ Consequences:
 
 ---
 
-## 4. Defaults assumed for open questions Q1–Q9 (07 §3), pending the user's answers
+## 4. Defaults assumed for open questions Q1–Q9 ([initial roadmap](0000-initial-roadmap.md) §3), pending the user's answers
 
 | Q | Default assumed | Consequence for the build |
 |---|---|---|
@@ -210,7 +210,7 @@ Rules for every WP: tests run on CPU only, with synthetic media from FFmpeg lavf
 
 | WP | Goal | Scope (files) | Depends on | Acceptance tests (in this container) | Size | Model |
 |---|---|---|---|---|---|---|
-| **WP1** Scaffold | Repo tooling | `backend/pyproject.toml` (uv, py 3.13, extras `[smoke]` and the accelerator extras of §0, torch from the CPU index), `scripts/install.{sh,ps1}`, `scripts/run.{sh,ps1}`, `docs/dependencies.md`, `.python-version`, `videoflow/__init__.py`, ruff/pytest/mypy config, root `justfile`, `.gitignore` (samples/, caches) | — | `scripts/install.sh` then `uv sync && just test` passes on an empty suite; `scripts/run.sh --help` works; `ruff check` is clean; `python -c "import videoflow"` works | S | haiku |
+| **WP1** Scaffold | Repo tooling | `backend/pyproject.toml` (uv, py 3.13, extras `[smoke]` and the accelerator extras of §0, torch from the CPU index), `scripts/install.{sh,ps1}`, `scripts/run.{sh,ps1}`, `docs/reference/dependencies.md`, `.python-version`, `videoflow/__init__.py`, ruff/pytest/mypy config, root `justfile`, `.gitignore` (samples/, caches) | — | `scripts/install.sh` then `uv sync && just test` passes on an empty suite; `scripts/run.sh --help` works; `ruff check` is clean; `python -c "import videoflow"` works | S | haiku |
 | **WP2** Core contracts and project model | §5.0 contracts plus project.json v1, migrations, bundle | `core/time.py`, `core/ids.py`, `project/{models,commands,store,migrations,schema}.py`, `tests/fixtures/project_v1_full.json` | WP1 | Property tests: frame quantisation does not drift over 300 clips at 25, 29.97 and 23.976. JSON Schema golden. Round trip keeps unknown fields and enums. Dummy v1→v2 migration plus `.bak`. Atomic save survives a simulated crash (kill between temp write and rename). `apply` then `inverse` gives the identical project for every command. Blade, promote and reorder follow the §3 rules (dormant transition, anchors). | L | opus |
 | **WP3** FFmpeg toolkit | Capability probe, async runner, ffprobe | `media/ffmpeg.py`, `media/caps.py`, `hw/encoders.py` (detection only) | WP1 | Caps on 6.1.1 report `graph_flag=-filter_complex_script` and all xfade catalog names. Runner streams progress from `testsrc2` and cancel returns within 1 s. ffprobe parses rational fps, rotation and audio streams (including a file with no audio). | M | sonnet |
 | **WP4** Sample generator | Deterministic synthetic rushes | `scripts/gen_samples.py`, `tests/conftest.py` (session fixture, cache by hash) | WP1 | Produces in 30 s or less: 720p25, 480p29.97 mono, vertical 1080x1920p24 with no audio, a VFR file, an HLG-tagged file, flite FR/EN retake scripts with 1 s gaps and a false start, a B-camera copy delayed 3.217 s with filtering, silence | S | sonnet |

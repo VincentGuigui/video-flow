@@ -1,6 +1,6 @@
-# 21. Clip effects — 2026-10-28
+# Clip effects — 2026-10-28
 
-Features from the backlog in [20](20-camtasia-inspired-backlog.md), one section each. They apply to the editor, preview, MP4 render and Camtasia export.
+Features from the backlog in [Camtasia findings](../decisions/0003-camtasia-findings.md), one section each. They apply to the editor, preview, MP4 render and Camtasia export.
 
 ## Edge fades
 
@@ -14,7 +14,7 @@ Validation: backend tests cover planning, capping and merging with a dissolve; a
 ## Clip speed
 
 - Each clip has `speed` (0.1–10, default 1): source frames played per timeline frame. Its timeline length is `round(span / speed)` (half up), where `span = sourceOut − sourceIn`. Linked video and audio always share one speed (validated).
-- Clip properties → **Speed**: presets from 25 % to 400 %, and **Fit to range**, which sets the speed so the clip exactly fills the timeline range (15). Changing speed ripples later clips by the change in length; one undo step.
+- Clip properties → **Speed**: presets from 25 % to 400 %, and **Fit to range**, which sets the speed so the clip exactly fills the timeline range ([range and trim](range-and-trim.md)). Changing speed ripples later clips by the change in length; one undo step.
 - Every timeline↔source conversion uses the clip's speed: split boundaries, trims (handles drag in timeline frames, sources move at speed), transcript timecodes and ranges, auto-trim, transition handles (available source frames divided by speed), waveform and preview sync (`playbackRate` = speed).
 - Render: `setpts=(PTS−STARTPTS)/speed` then resampling to the project rate for picture; `atempo` (chained within 0.5–2) for pitch-preserving audio; output length exact.
 - OTIO and EDL: clip speed is metadata only (warning). Camtasia: `mediaDuration` is the source span and `scalar` = duration / mediaDuration as a fraction (e.g. `1/2` at 200 %), with `clipSpeedAttribute`.

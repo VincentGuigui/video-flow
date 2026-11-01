@@ -1,4 +1,4 @@
-# 01. Feasibility study
+# Feasibility study
 
 ## 1. Verdict
 
@@ -8,7 +8,7 @@
 2. **Scope control**: the request touches everything an NLE does. Trying to compete with Resolve or Premiere on editing depth would sink the project. Video-Flow must stay an assembly tool whose core value is *take triage*, with a clean handoff for finishing.
 3. **Camtasia export**, which relies on an undocumented, versioned JSON format.
 
-Recommendation: start with a one-week **analysis spike** on real rushes (CLI + notebook, no UI) to validate grouping accuracy before building the editor (see 07-roadmap.md, Phase 0).
+Recommendation: start with a one-week **analysis spike** on real rushes (CLI + notebook, no UI) to validate grouping accuracy before building the editor (see [initial roadmap](0000-initial-roadmap.md), Phase 0).
 
 ## 2. Requirement-by-requirement assessment
 
@@ -54,7 +54,7 @@ There is **no universal standard** that every editor reads and writes losslessly
 - HDR to SDR tone mapping (`zscale` + `tonemap`, or `libplacebo`), CFR conversion of variable frame rate phone footage,
 - hardware encoding (VideoToolbox on macOS, NVENC, Quick Sync, AMF).
 
-Limits that do not matter here: no real-time interactive preview engine, no motion graphics authoring, no colour grading UI. Preview is handled separately in the browser with proxies (see 03-architecture.md §6).
+Limits that do not matter here: no real-time interactive preview engine, no motion graphics authoring, no colour grading UI. Preview is handled separately in the browser with proxies (see [architecture overview](../architecture/overview.md) §6).
 
 FFmpeg 8.0 also ships an optional `whisper` audio filter (whisper.cpp inside the filter graph). It is interesting but depends on a build with `--enable-whisper` and outputs segment-level text, so it is an optional engine, not the default.
 
@@ -108,7 +108,7 @@ Assumptions: 30 to 90 minutes of rushes, 1080p to 4K, mostly phone or mirrorless
 
 Order-of-magnitude figures, to be measured in Phase 0. Target: full analysis of one hour of rushes in under 15 minutes on a recent laptop with acceleration.
 
-## 9. Key risks (details in 07-roadmap.md)
+## 9. Key risks (details in [initial roadmap](0000-initial-roadmap.md))
 
 1. Grouping accuracy on non-speech footage.
 2. Browser preview fidelity: frame accuracy, HEVC/HDR playback differences across browsers (mitigated by proxies).

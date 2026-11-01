@@ -1,4 +1,4 @@
-# 02. Functional specification
+# Functional specification
 
 ## 1. Scope
 
@@ -51,7 +51,7 @@ Priority: **P0** = MVP, **P1** = shortly after MVP, **P2** = later.
 
 | ID | Requirement | Prio |
 |----|-------------|------|
-| PRJ-01 | Create a project from a folder; the project is a bundle directory (see 05-data-model.md). | P0 |
+| PRJ-01 | Create a project from a folder; the project is a bundle directory (see [data model](../architecture/data-model.md)). | P0 |
 | PRJ-02 | Autosave every change; unlimited undo/redo within a session. | P0 |
 | PRJ-03 | Relink missing media by folder search on file name + size + content hash. | P1 |
 | PRJ-04 | Project settings: output resolution, frame rate, sample rate, aspect ratio (16:9, 9:16, 1:1), target loudness. Defaults inferred from the majority of rushes. | P0 |
@@ -69,7 +69,7 @@ Priority: **P0** = MVP, **P1** = shortly after MVP, **P2** = later.
 | ANA-01 | Transcribe every asset with word-level timestamps; language auto-detected or forced in settings (default `fr`). | P0 |
 | ANA-02 | Detect shots (scene changes) and silent ranges. | P0 |
 | ANA-03 | Split assets into segments (utterance blocks and non-speech shots). | P0 |
-| ANA-04 | Detect relations between segments: RETAKE, PARTIAL_RETAKE, VISUAL_DUPLICATE, SIMULTANEOUS (see 04-analysis-pipeline.md). | P0 (SIMULTANEOUS: P1) |
+| ANA-04 | Detect relations between segments: RETAKE, PARTIAL_RETAKE, VISUAL_DUPLICATE, SIMULTANEOUS (see [analysis pipeline](../architecture/analysis-pipeline.md)). | P0 (SIMULTANEOUS: P1) |
 | ANA-05 | Cluster segments into beats; propose a beat order. | P0 |
 | ANA-06 | Compute quality hints per take (filler words, false start, speech rate, pauses, loudness, clipping, sharpness, exposure, shake). | P0 (video metrics: P1) |
 | ANA-07 | Label each beat (short title + one-line summary) with the local LLM; fallback to keywords if no LLM. | P0 |
@@ -96,7 +96,7 @@ Priority: **P0** = MVP, **P1** = shortly after MVP, **P2** = later.
 
 | ID | Requirement | Prio |
 |----|-------------|------|
-| CMP-01 | Open a beat: one player per take (2 to 4 visible, scroll for more) plus each take's transcript. | P0 (implemented for stacked clips, see 16) |
+| CMP-01 | Open a beat: one player per take (2 to 4 visible, scroll for more) plus each take's transcript. | P0 (implemented for stacked clips, see [compare takes](../features/compare-takes.md)) |
 | CMP-02 | Synchronised playback from a common anchor (aligned word), with per-take solo audio. | P0 |
 | CMP-03 | Highlight divergences between takes (words present in one take only, fillers, hesitations). | P0 |
 | CMP-04 | "Pick" button per take; keyboard shortcuts 1 to 9 to pick. | P0 |
@@ -111,26 +111,26 @@ Priority: **P0** = MVP, **P1** = shortly after MVP, **P2** = later.
 | TL-02 | Trim in/out by dragging clip edges, with snapping to word boundaries, shot boundaries, playhead and other clips. | P0 |
 | TL-03 | Blade (split at playhead), ripple delete, lift. | P0 |
 | TL-04 | Roll edit (move a cut point between two clips) and slip (change source range, keep duration). | P1 |
-| TL-05 | Auto-trim silence of the selected clip to the project clip padding (default 0.15 s before first word, 0.30 s after last word), with ripple (see 15). | P0 |
-| TL-06 | Transcript editing: select words in the transcript panel to set the timeline range, then trim the clip to it or delete it (see 15). | P1 |
-| TL-07 | Unlink audio and video of a clip; replace the audio with the audio of another take of the same beat (aligned automatically); restore the clip's original audio (see 13). | P1 |
+| TL-05 | Auto-trim silence of the selected clip to the project clip padding (default 0.15 s before first word, 0.30 s after last word), with ripple (see [range and trim](../features/range-and-trim.md)). | P0 |
+| TL-06 | Transcript editing: select words in the transcript panel to set the timeline range, then trim the clip to it or delete it (see [range and trim](../features/range-and-trim.md)). | P1 |
+| TL-07 | Unlink audio and video of a clip; replace the audio with the audio of another take of the same beat (aligned automatically); restore the clip's original audio (see [audio tracks](../features/audio-tracks.md)). | P1 |
 | TL-08 | J/L cuts (audio leads or lags video). | P2 |
-| TL-09 | Clip volume and fade in/out (implemented as edge fades, see 21). Silencing a clip uses its enable checkbox; there is no separate mute (see 13). | P0 |
+| TL-09 | Clip volume and fade in/out (implemented as edge fades, see [clip effects](../features/clip-effects.md)). Silencing a clip uses its enable checkbox; there is no separate mute (see [audio tracks](../features/audio-tracks.md)). | P0 |
 | TL-10 | Markers with notes on timeline and on assets. | P1 |
-| TL-11 | Title cards and lower thirds from text templates (text clips, spec 21). | P2 |
+| TL-11 | Title cards and lower thirds from text templates (text clips, [clip effects](../features/clip-effects.md)). | P2 |
 | TL-12 | Zoom levels from whole project to frame level; timecode display (HH:MM:SS:FF at project rate). | P0 |
 
 ### 4.6 Transitions (TR)
 
 | ID | Requirement | Prio |
 |----|-------------|------|
-| TR-01 | Apply a transition at any cut between two main-line clips; default duration 0.5 s; default alignment centered on the cut. | P0 (implemented, see 17) |
-| TR-02 | MVP catalog: cut, cross dissolve, fade through black, fade through white. | P0 (implemented, see 17) |
-| TR-03 | Extended catalog mapped to FFmpeg `xfade` (wipes, slides, circle open/close, zoom, pixelize, radial...). See 06-render-export.md §4. | P1 |
-| TR-04 | Audio crossfade follows the video transition by default; independent audio transition optional. | P0 (follow implemented, see 17) |
+| TR-01 | Apply a transition at any cut between two main-line clips; default duration 0.5 s; default alignment centered on the cut. | P0 (implemented, see [transitions](../features/transitions.md)) |
+| TR-02 | MVP catalog: cut, cross dissolve, fade through black, fade through white. | P0 (implemented, see [transitions](../features/transitions.md)) |
+| TR-03 | Extended catalog mapped to FFmpeg `xfade` (wipes, slides, circle open/close, zoom, pixelize, radial...). See [render and export](../architecture/render-export.md) §4. | P1 |
+| TR-04 | Audio crossfade follows the video transition by default; independent audio transition optional. | P0 (follow implemented, see [transitions](../features/transitions.md)) |
 | TR-05 | Automatic micro-fade (10 ms) on audio hard cuts to avoid clicks. | P0 |
-| TR-06 | Warn when handles are insufficient; offer to shorten the transition or change its alignment (start / end of cut). | P0 (shortening implemented, see 17) |
-| TR-07 | Apply a transition to all cuts / to selected cuts in one action. | P0 (all cuts implemented, see 17) |
+| TR-06 | Warn when handles are insufficient; offer to shorten the transition or change its alignment (start / end of cut). | P0 (shortening implemented, see [transitions](../features/transitions.md)) |
+| TR-07 | Apply a transition to all cuts / to selected cuts in one action. | P0 (all cuts implemented, see [transitions](../features/transitions.md)) |
 | TR-08 | Each transition shows its export compatibility (which target formats support it, which fall back to dissolve). | P1 |
 
 ### 4.7 Preview (PRV)
@@ -162,7 +162,7 @@ Priority: **P0** = MVP, **P1** = shortly after MVP, **P2** = later.
 | EXP-03 | CMX 3600 EDL (main video track + dissolves). | P0 |
 | EXP-04 | SRT / VTT captions from the cut transcript. | P0 |
 | EXP-05 | FCP7 XML (xmeml) for Premiere / Resolve / OpenShot. | P1 |
-| EXP-06 | Camtasia project (`.tscproj`, Windows; implemented, see 19). | P1 |
+| EXP-06 | Camtasia project (`.tscproj`, Windows; implemented, see [Camtasia export](../features/camtasia-export.md)). | P1 |
 | EXP-07 | Option "include alternates": alternates exported as disabled tracks (OTIO, XML, Camtasia) or as auditions (FCPXML). | P1 |
 | EXP-08 | AAF for Avid / Pro Tools. | P2 |
 | EXP-09 | Paper edit: Markdown / CSV list of selected takes with source time codes and transcript. | P0 |

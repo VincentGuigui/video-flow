@@ -1,6 +1,6 @@
-# 15. Timeline range, transcript trimming and auto-trim — 2026-10-26
+# Timeline range, transcript trimming and auto-trim — 2026-10-26
 
-This revision supplements 09, 12 and 14.
+This revision supplements [interactive editor](interactive-editor.md), [unified timeline](unified-timeline.md) and [transcript panel](transcript-panel.md).
 
 ## Range selector
 
