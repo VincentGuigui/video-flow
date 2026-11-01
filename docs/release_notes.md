@@ -2,6 +2,11 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.5.0 — 2026-11-01
+
+- FFmpeg window: when no FFmpeg 6.1+ is found, the app offers at start (and from Settings) to download a pinned, checksum-verified build into `tools/ffmpeg/`, with its licence files, only on the user's consent.
+- The install scripts ask before downloading FFmpeg (`--yes` / `-Yes` to accept), always verify its checksum and keep its licence files; the Linux build moved to a working URL.
+
 ## 0.4.0 — 2026-11-01
 
 - GitHub releases for Windows and Linux, built by a workflow from a version tag.
