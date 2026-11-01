@@ -2,6 +2,11 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.3.0 — 2026-11-01
+
+- Manage AI models window (from Settings, at first start and when an import needs a model): exact download size before downloading, size on disk, download, update, cancel and remove per model.
+- `Add Video-Flow to Start Menu.bat` (Windows) / `add-video-flow-to-menu.sh` (Linux) next to the packaged executable.
+
 ## 0.2.0 — 2026-11-01
 
 First numbered version; it gathers everything built so far.
