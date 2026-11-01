@@ -84,7 +84,6 @@ All under `/api`, JSON in camelCase.
 | GET | `/cache` | Cache root, total size and size per project |
 | POST | `/models/{key}/download`, `/cancel`, `/remove` | Download a pinned model, cancel it, or delete its files (after stopping analysis workers) |
 | POST | `/cache/open`, `/cache/clear` | Open the cache folder / delete all project caches (refused while imports or renders run) |
-| POST | `/models/{key}/download`, `/models/{key}/cancel` | Explicit model download / cancel |
 | POST | `/desktop/selection` | Host only: issue single-use handles for natively selected files |
 | POST | `/native-import`, `/native-relink` | Import or relink (content hash checked) through a handle |
 | POST | `/import-path` | Browser mode: import a file under a media root |

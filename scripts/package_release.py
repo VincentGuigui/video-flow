@@ -49,6 +49,15 @@ def inputs_fingerprint() -> str:
     return digest.hexdigest()
 
 
+def copy_release_scripts() -> None:
+    """The menu shortcut script of this platform, beside the executable."""
+    name = (
+        "Add Video-Flow to Start Menu.bat" if sys.platform == "win32" else "add-video-flow-to-menu.sh"
+    )
+    target = RELEASE / name
+    shutil.copy2(ROOT / "scripts" / "release" / name, target)
+
+
 def sync_frontend() -> None:
     target = RELEASE / "_internal" / "frontend" / "dist"
     shutil.rmtree(target, ignore_errors=True)
@@ -100,6 +109,7 @@ def main() -> int:
     if "--full" not in sys.argv[1:] and current and executable.is_file():
         try:
             sync_frontend()
+            copy_release_scripts()
         except PermissionError:
             print("Cannot update the interface: close Video-Flow and package again.", file=sys.stderr)
             return 1
@@ -110,6 +120,7 @@ def main() -> int:
         return 0
     code = build()
     if code == 0:
+        copy_release_scripts()
         stamp.write_text(fingerprint + "\n", encoding="utf-8")
         print(
             f"Full build {time.monotonic() - started:.0f} s. PyInstaller reuses its dependency"
