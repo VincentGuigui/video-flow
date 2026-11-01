@@ -2,6 +2,10 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.7.0 — 2026-11-01
+
+- Properties panel: resizable width, half or tall height, pinned or floating (folds into a strip when the pointer leaves, opens again on hover).
+
 ## 0.6.0 — 2026-11-01
 
 - Right-click shows only the app's own menus; the browser menu (reload, copy address) is gone.

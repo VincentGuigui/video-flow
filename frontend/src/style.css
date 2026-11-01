@@ -191,6 +191,7 @@ button:active:not(:disabled) {
   flex: 1;
   display: flex;
   min-height: 0;
+  position: relative;
 }
 .media-library {
   width: 190px;
@@ -314,8 +315,9 @@ main {
 .preview-row {
   display: grid;
   grid-template-rows: minmax(0, 1fr);
-  grid-template-columns: minmax(300px, 1fr) 222px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
+  position: relative;
   min-height: 300px;
   height: 41%;
   max-height: 425px;
@@ -566,11 +568,82 @@ main {
   right: 0;
 }
 .inspector {
+  height: 100%;
+  overflow: auto;
+}
+.properties-dock {
   min-height: 0;
+  min-width: 0;
+  position: relative;
   background: #fbfcf7;
   border: 1px solid var(--line);
   border-radius: 8px;
-  overflow: auto;
+}
+.properties-dock.tall.pinned {
+  flex: none;
+  margin: 17px 22px 12px 0;
+}
+.properties-dock.floating {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+}
+.properties-dock.tall.floating {
+  top: 17px;
+  right: 22px;
+  bottom: 12px;
+}
+.properties-dock.floating.open {
+  box-shadow: 0 12px 34px rgba(20, 40, 28, 0.22);
+}
+.properties-dock.folded {
+  width: 26px;
+  opacity: 0.92;
+}
+.dock-strip {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  color: #4f7856;
+}
+.dock-strip span {
+  writing-mode: vertical-rl;
+  font-size: var(--legend-font-size);
+  letter-spacing: 0.04em;
+}
+.dock-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -5px;
+  width: 9px;
+  cursor: ew-resize;
+  z-index: 2;
+}
+.dock-resize:hover,
+.dock-resize:active {
+  background: linear-gradient(
+    to right,
+    transparent 3px,
+    #8fb27c 3px,
+    #8fb27c 5px,
+    transparent 5px
+  );
+}
+.dock-controls {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.dock-controls .icon-button {
+  color: #97a18e;
 }
 .inspector-tabs {
   height: 40px;
@@ -1725,6 +1798,13 @@ kbd {
     padding: 21px 27px 0;
     gap: 18px;
   }
+  .properties-dock.tall.pinned {
+    margin: 21px 27px 12px 0;
+  }
+  .properties-dock.tall.floating {
+    top: 21px;
+    right: 27px;
+  }
   .inspector-empty {
     padding-top: 65px;
   }
@@ -1741,12 +1821,16 @@ kbd {
     width: 150px;
     padding: 10px;
   }
-  .preview-row {
-    grid-template-columns: minmax(280px, 1fr) 185px;
-  }
   main {
     padding: 12px 12px 0;
     gap: 10px;
+  }
+  .properties-dock.tall.pinned {
+    margin: 12px 12px 12px 0;
+  }
+  .properties-dock.tall.floating {
+    top: 12px;
+    right: 12px;
   }
   .save-status {
     display: none;
@@ -1801,7 +1885,7 @@ kbd {
   .preview-row {
     grid-template-columns: minmax(280px, 1fr);
   }
-  .inspector {
+  .properties-dock {
     display: none;
   }
   .app-header {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Settings as SettingsIcon,
   Maximize2,
@@ -74,6 +74,8 @@ import { autoTrim, deleteRange, trimToRange } from "../range";
 import { ImportDialog } from "./Imports";
 import { MediaInfoDialog, MediaMenu } from "./MediaInfo";
 import { native, type NativeFile, type NativeSelection } from "../desktop";
+import { PropertiesDock } from "./PropertiesDock";
+import { loadLayout, storeLayout } from "../panel";
 
 const RESOLUTIONS = [
   [1920, 1080, "16:9 · Landscape"],
@@ -121,7 +123,8 @@ export function App() {
     [drag, setDrag] = useState(false),
     [output, setOutput] = useState(false),
     [outputMessage, setOutputMessage] = useState(""),
-    [exporting, setExporting] = useState(false);
+    [exporting, setExporting] = useState(false),
+    [panel, setPanel] = useState(loadLayout);
   const picker = useRef<HTMLInputElement>(null);
   const resolved = layout(document),
     rate = project ? fps(project.settings) : 30,
@@ -129,6 +132,12 @@ export function App() {
     showHome = home || state.closed;
   const selectedClip = document.clips.find((c) => c.id === selected),
     focused = resolved.clips.find((c) => c.id === focus);
+  useEffect(() => storeLayout(panel), [panel]);
+  const dock = (
+    <PropertiesDock layout={panel} onChange={setPanel}>
+      {(controls) => <Inspector clip={selectedClip} controls={controls} />}
+    </PropertiesDock>
+  );
   useEffect(() => {
     // The desktop window title follows the page title (desktop/host.py).
     window.document.title = project
@@ -558,7 +567,15 @@ export function App() {
           </button>
         </aside>
         <main>
-          <div className="preview-row">
+          <div
+            className={`preview-row ${panel.height === "half" && panel.pinned ? "with-panel" : ""}`}
+            style={{
+              gridTemplateColumns:
+                panel.height === "half" && panel.pinned
+                  ? `minmax(300px, 1fr) ${panel.width}px`
+                  : undefined,
+            }}
+          >
             <div className="preview-container">
               <Preview />
               <select
@@ -598,11 +615,12 @@ export function App() {
                 ))}
               </select>
             </div>
-            <Inspector clip={selectedClip} />
+            {panel.height === "half" && dock}
           </div>
           <Transport />
           <Flow />
         </main>
+        {panel.height === "tall" && dock}
       </div>
       <footer className="app-footer">
         <InterfaceZoom />
@@ -799,7 +817,13 @@ export function App() {
   );
 }
 
-function Inspector({ clip }: { clip: Clip | undefined }) {
+function Inspector({
+  clip,
+  controls,
+}: {
+  clip: Clip | undefined;
+  controls: ReactNode;
+}) {
   const selectedClips = useEditor((s) => s.selectedClips);
   const { project, document, save, busy } = useEditor();
   const tab = useEditor((s) => s.inspectorTab),
@@ -829,7 +853,7 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
       ? nextFitMode(clip, video, project.settings)
       : "fit";
   return (
-    <aside className="inspector">
+    <div className="inspector">
       <div className="inspector-tabs">
         {(clip && clip.kind !== "text"
           ? (["Clip", "Transcript", "Project"] as const)
@@ -843,6 +867,7 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
             {t}
           </button>
         ))}
+        {controls}
       </div>
       {tab === "Project" ? (
         <div className="inspector-content">
@@ -1115,6 +1140,6 @@ function Inspector({ clip }: { clip: Clip | undefined }) {
           <span>Double-click to focus & trim</span>
         </div>
       )}
-    </aside>
+    </div>
   );
 }
