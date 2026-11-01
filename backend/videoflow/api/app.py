@@ -70,7 +70,7 @@ class RenderSave(CamelModel):
 
 
 class ProjectAction(CamelModel):
-    kind: Literal["new", "open", "rename", "delete"]
+    kind: Literal["new", "open", "close", "rename", "delete"]
     id: str | None = None
     name: str = "Untitled"
 
@@ -117,6 +117,7 @@ def create_app(
     grants = SelectionGrants()
     trusted_assets = {a.id: a.dump() for a in bundle.project.assets}
     trusted_paths = {a.id: {a.path} for a in bundle.project.assets}
+    project_open = True  # False on the home page, after the project was closed
 
     def check_commands(commands: list[Command]) -> None:
         # The renderer cannot manufacture source paths through general project commands.
@@ -273,6 +274,7 @@ def create_app(
 
     @app.post("/api/projects/action")
     async def project_action(payload: ProjectAction) -> Any:
+        nonlocal project_open
         async with mutation_lock:
             if any(
                 j.state in ("queued", "running", "waiting-models") for j in imports.jobs.values()
@@ -283,8 +285,14 @@ def create_app(
                     raise HTTPException(409, "Finish or cancel renders before managing projects")
                 if payload.kind == "new":
                     await switch_project(await asyncio.to_thread(library.create, payload.name))
+                    project_open = True
                 elif payload.kind == "open":
                     await switch_project(await asyncio.to_thread(library.find, payload.id or ""))
+                    project_open = True
+                elif payload.kind == "close":
+                    # Home page: release workers, renders and file handles of the project.
+                    await switch_project(bundle)
+                    project_open = False
                 elif payload.kind == "rename":
                     target = (
                         bundle
@@ -293,8 +301,10 @@ def create_app(
                     )
                     library.rename(target, payload.name)
                 else:
-                    if payload.id == bundle.project.id:
+                    if payload.id == bundle.project.id and project_open:
                         await switch_project(await asyncio.to_thread(library.create, "Untitled"))
+                    elif payload.id == bundle.project.id:
+                        await switch_project(bundle)  # closed: just let go of its files
                     await asyncio.to_thread(library.delete, payload.id or "")
             except (ValueError, OSError, ProjectStoreError) as exc:
                 raise HTTPException(422, str(exc)) from exc

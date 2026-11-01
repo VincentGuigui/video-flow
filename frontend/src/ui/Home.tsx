@@ -42,10 +42,7 @@ export function Home({ onClose }: { onClose: () => void }) {
         });
         await load();
         onClose();
-      } else {
-        await load();
-        await refresh();
-      }
+      } else await refresh(); // the closed project stays closed
       setAction(null);
     } catch (e) {
       set({ error: String(e) });
@@ -60,10 +57,6 @@ export function Home({ onClose }: { onClose: () => void }) {
           <Film size={28} />
           <h1>Your projects</h1>
         </div>
-        <button className="button" onClick={onClose}>
-          <X size={16} />
-          Back to editor
-        </button>
       </div>
       <button
         className="primary"

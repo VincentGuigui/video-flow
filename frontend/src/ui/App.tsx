@@ -293,6 +293,36 @@ export function App() {
     window.addEventListener("keydown", keyboard);
     return () => window.removeEventListener("keydown", keyboard);
   }, [settings, home, importFiles, help, output]);
+  // The home page closes the project: the server releases its workers and files, and
+  // the editor unmounts its media. Opening or creating a project loads it again.
+  async function closeProject() {
+    await flushClipUpdates();
+    try {
+      await api("/projects/action", {
+        method: "POST",
+        body: JSON.stringify({ kind: "close" }),
+      });
+    } catch (e) {
+      set({ error: String(e) });
+      return;
+    }
+    set({
+      project: null,
+      document: { version: 1, clips: [] },
+      selected: null,
+      selectedClips: [],
+      selectedAssets: [],
+      focus: null,
+      frame: 0,
+      range: null,
+      rangeHandle: null,
+      compare: null,
+      playing: false,
+      history: [],
+      future: [],
+    });
+    setHome(true);
+  }
   function openImport() {
     if (native()) {
       if (window.videoFlowDesktop) window.videoFlowDesktop.pickFiles();
@@ -347,8 +377,7 @@ export function App() {
           aria-label="Video-Flow"
           onClick={(e) => {
             e.preventDefault();
-            set({ playing: false });
-            setHome(true);
+            void closeProject();
           }}
         >
           <span className="brand-mark">
