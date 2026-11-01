@@ -25,7 +25,7 @@ if ($Command -eq 'package') {
         # --inexact keeps the installed inference extras; desktop and PyInstaller are added.
         # package_release.py keeps models/, tools/, settings.json... beside the executable.
         uv run --project backend --inexact --extra desktop --group packaging `
-            python scripts/package_release.py
+            python scripts/package_release.py @Rest
         exit $LASTEXITCODE
     } finally {
         Pop-Location

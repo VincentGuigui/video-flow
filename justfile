@@ -23,5 +23,5 @@ build:
     cd frontend && npm run build
 
 # Frontend, then the one-folder desktop app in releases/Video-Flow
-package: build
-    uv run --project backend --inexact --extra desktop --group packaging python scripts/package_release.py
+package *args: build
+    uv run --project backend --inexact --extra desktop --group packaging python scripts/package_release.py {{args}}
