@@ -41,3 +41,6 @@ Thumbs.db
 # Application-local AI weights and preferences
 /models/
 /settings.json
+
+# Stray npm lockfile at the root (the frontend keeps its own)
+/package-lock.json
