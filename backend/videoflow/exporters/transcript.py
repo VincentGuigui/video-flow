@@ -50,13 +50,15 @@ def clip_words(
 ) -> list[EditWord]:
     start = frame_to_us(clip.timeline_start, resolved.rate)
     end = frame_to_us(clip.timeline_end, resolved.rate)
+    # Editor clips at another speed play `speed` source seconds per timeline second.
+    speed = float((clip.__pydantic_extra__ or {}).get("speed", 1))
     result = []
     for word in words:
         a, b = max(word.start_us, clip.source_in_us), min(word.end_us, clip.source_out_us)
         if b <= a or not word.text.strip():
             continue
-        mapped_start = max(start, min(end, start + a - clip.source_in_us))
-        mapped_end = max(start, min(end, start + b - clip.source_in_us))
+        mapped_start = max(start, min(end, start + round((a - clip.source_in_us) / speed)))
+        mapped_end = max(start, min(end, start + round((b - clip.source_in_us) / speed)))
         if mapped_end > mapped_start:
             result.append(EditWord(word.text.strip(), mapped_start, mapped_end, clip.item_id, end))
     return result

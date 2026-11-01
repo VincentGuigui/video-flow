@@ -124,3 +124,31 @@ def test_paper_edit_quotes_csv_and_escapes_markdown():
     markdown = export_markdown(resolve(project), project, transcripts)
     assert "Intro \\| présentation" in markdown
     assert "&lt;script&gt;" in markdown
+
+
+def test_srt_follows_clip_speed():
+    from videoflow.editor.models import EditorClip, EditorDocument
+    from videoflow.editor.resolve import resolve_editor
+    from videoflow.project.commands import SetEditor
+
+    project = ProjectBuilder(rate=Rational.of(25)).asset("a", 20 * S).build()
+    doc = EditorDocument(
+        clips=[
+            EditorClip(
+                id="v",
+                kind="audio",
+                asset_id="a",
+                name="a",
+                start=0,
+                source_in=0,
+                source_out=250,
+                speed=2,
+            )
+        ]
+    )
+    project, _ = SetEditor(document=doc).apply(project)
+    transcript = Transcript(words=[word("Bonjour.", 4, 5), word("Fin.", 8, 9)])
+    result = export_srt(resolve_editor(project, doc), project, {"a": transcript})
+    # Source 4–5 s and 8–9 s play at 2–2.5 s and 4–4.5 s.
+    assert "00:00:02,000 -->" in result
+    assert "00:00:04,000 -->" in result
