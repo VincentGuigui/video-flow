@@ -1386,8 +1386,9 @@ kbd {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: #11281bc2;
-  backdrop-filter: blur(5px);
+  /* No backdrop-filter: blurring the live editor under a scrolling dialog
+     corrupts compositing tiles in Qt WebEngine (flicker). */
+  background: #11281bd9;
   z-index: 100;
   display: flex;
   align-items: center;
