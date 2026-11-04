@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { type SettingsData } from "./Settings";
 import { ManageModels } from "./ManageModels";
+import { forgetAnalysis } from "./useAnalysis";
 import { api, useEditor } from "../store";
 import { type NativeFile } from "../desktop";
 
@@ -23,6 +24,7 @@ interface Job {
   cached: boolean;
   warning: string | null;
   analysisPath: string | null;
+  assetId?: string | null;
   inverses: Record<string, unknown>[];
 }
 interface Item {
@@ -137,6 +139,9 @@ export function ImportDialog({
                 : current.phase),
           });
           if (current.state === "done") {
+            // A new or replaced analysis: the cached one (tooltips, transcript) is stale.
+            const analysed = reanalyse?.assetId ?? current.assetId;
+            if (analysed) forgetAnalysis(analysed);
             await load();
             const state = useEditor.getState();
             if (current.inverses?.length)

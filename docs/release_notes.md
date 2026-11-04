@@ -2,6 +2,11 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.13.0 — 2026-11-04
+
+- Hovering a clip in the flow shows a one-line description of it, taken from its analysis; audio clips show the same text as their video.
+- Analysing a medium again now refreshes its transcript and tooltips at once.
+
 ## 0.12.0 — 2026-11-01
 
 - Faster start: the window opens at once with a loading screen while the local service starts; FFmpeg's capabilities are probed once per build instead of at every launch.

@@ -3,6 +3,25 @@ import { api } from "../store";
 import type { Analysis } from "../transcript";
 
 const cache = new Map<string, Promise<Analysis | null>>();
+const listeners = new Set<() => void>();
+
+// Drop the cached analysis of a source (it was analysed again) and reload it wherever it
+// is shown.
+export function forgetAnalysis(assetId: string) {
+  cache.delete(assetId);
+  listeners.forEach((listener) => listener());
+}
+
+// A counter that changes when an analysis is forgotten.
+function useStamp() {
+  const [stamp, setStamp] = useState(0);
+  useEffect(() => {
+    const bump = () => setStamp((s) => s + 1);
+    listeners.add(bump);
+    return () => void listeners.delete(bump);
+  }, []);
+  return stamp;
+}
 
 function load(assetId: string): Promise<Analysis | null> {
   if (!cache.has(assetId))
@@ -22,6 +41,7 @@ function load(assetId: string): Promise<Analysis | null> {
 // Analysis of one source; undefined while loading, null when there is none.
 export function useAnalysis(assetId: string | null) {
   const [analysis, setAnalysis] = useState<Analysis | null | undefined>();
+  const stamp = useStamp();
   useEffect(() => {
     setAnalysis(undefined);
     if (!assetId) return setAnalysis(null);
@@ -30,13 +50,14 @@ export function useAnalysis(assetId: string | null) {
     return () => {
       live = false;
     };
-  }, [assetId]);
+  }, [assetId, stamp]);
   return analysis;
 }
 
 // Analyses for several sources at once, keyed by asset id (missing ids → null).
 export function useAnalyses(assetIds: string[]) {
   const key = assetIds.join("|");
+  const stamp = useStamp();
   const [result, setResult] = useState<Record<string, Analysis | null>>({});
   useEffect(() => {
     let live = true;
@@ -49,6 +70,6 @@ export function useAnalyses(assetIds: string[]) {
     };
     // The joined key captures the id list.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [key, stamp]);
   return result;
 }

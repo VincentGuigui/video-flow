@@ -46,6 +46,8 @@ import { addTitle, type Title } from "../titles";
 import { useEditor } from "../store";
 import { cutKey, cuts, transitionAt, TRANSITION_LABELS } from "../transitions";
 import { keyframeOffsets } from "../keyframes";
+import { clipTip } from "../clipTip";
+import { useAnalyses } from "./useAnalysis";
 import { Waveform } from "./Waveform";
 
 export function Flow() {
@@ -65,6 +67,24 @@ export function Flow() {
   const base = useMemo(() => pack(doc), [doc]),
     resolved = useMemo(() => layout(doc), [doc]),
     rate = project ? fps(project.settings) : 30;
+  // Tooltips describe each clip with the analysis of its source (not for pictures).
+  const sources = useMemo(
+    () => [
+      ...new Set(
+        base.clips
+          .filter(
+            (c) => (c.kind === "video" || c.kind === "audio") && c.assetId,
+          )
+          .filter(
+            (c) =>
+              !project?.assets.find((a) => a.id === c.assetId)?.probe.still,
+          )
+          .map((c) => c.assetId!),
+      ),
+    ],
+    [base, project?.assets],
+  );
+  const analyses = useAnalyses(sources);
   const { scale: px, scroll: sharedScroll, set: setTimeline } = useTimeline();
   useTimelineWheel(scroll);
   useEffect(() => {
@@ -323,6 +343,7 @@ export function Flow() {
                 key={c.id}
                 data-testid={`clip-${kind}`}
                 data-clip-id={c.id}
+                title={clipTip(c, analyses[c.assetId ?? ""])}
                 className={`clip-card ${kind} ${isSelected ? "selected" : ""}`}
                 style={{
                   left: 56 + c.start * px,
