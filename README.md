@@ -109,3 +109,5 @@ Camtasia: Export → Camtasia project, or `uv run videoflow export BUNDLE --camt
 Editor interactions:
 
 - Double-click assembly clips to focus their edit
+
+- Show transcribed media topics after two seconds of hover

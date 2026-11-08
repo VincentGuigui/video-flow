@@ -2,6 +2,10 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.19.0 — 2026-11-08
+
+- Show transcribed media topics after two seconds of hover
+
 ## 0.18.0 — 2026-11-08
 
 - Double-click assembly clips to focus their edit

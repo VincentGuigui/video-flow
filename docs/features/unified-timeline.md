@@ -14,3 +14,5 @@ Validation includes linking different source offsets, paired splits, normal audi
 Current interaction details:
 
 - Double-click assembly clips to focus their edit
+
+- Show transcribed media topics after two seconds of hover

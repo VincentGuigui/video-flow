@@ -45,3 +45,5 @@ Snapshot of what is built and what comes next. Update it with every feature. His
 Additional built editor interactions:
 
 - Double-click assembly clips to focus their edit
+
+- Show transcribed media topics after two seconds of hover

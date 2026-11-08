@@ -73,6 +73,7 @@ import { useAnalysis } from "./useAnalysis";
 import { currentRange, currentWindow, togglePlay } from "../playback";
 import { autoTrim, deleteRange, trimToRange } from "../range";
 import { ImportDialog } from "./Imports";
+import { MediaTopics } from "./MediaTopics";
 import { MediaInfoDialog, MediaMenu } from "./MediaInfo";
 import {
   native,
@@ -579,7 +580,8 @@ export function App() {
                         ).slice(3)}
                   </span>
                 </div>
-                <strong title={asset.path}>
+                <MediaTopics assetId={asset.id} />
+                <strong>
                   {asset.path.split(/[\\/]/).at(-1)}
                 </strong>
                 <small>
