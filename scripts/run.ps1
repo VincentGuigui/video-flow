@@ -9,9 +9,8 @@ if (Test-Path $Ffmpeg) { $env:PATH = "$Ffmpeg$([IO.Path]::PathSeparator)$env:PAT
 Push-Location (Join-Path $Root 'backend')
 try {
     if ($CliArgs.Count -eq 0) { $CliArgs = @('desktop') }
-    $LocalCli = Join-Path $Root 'backend\.venv\Scripts\videoflow.exe'
-    if (Test-Path $LocalCli) { & $LocalCli @CliArgs }
-    else { uv run --extra desktop videoflow @CliArgs }
+    # Restore desktop runtimes if an exact uv sync removed optional extras.
+    uv run --inexact --extra desktop videoflow @CliArgs
     exit $LASTEXITCODE
 } finally {
     Pop-Location

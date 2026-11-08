@@ -6,6 +6,13 @@ import PySide6
 import sys
 
 root = Path(SPECPATH).parent
+# Missing hidden imports only warn in PyInstaller, producing a broken release.
+from importlib.util import find_spec
+required = ("torch", "transformers", "safetensors", "faster_whisper", "onnxruntime", "onnx_asr")
+missing = [name for name in required if find_spec(name) is None]
+if missing:
+    raise SystemExit("Missing desktop inference runtimes: " + ", ".join(missing)
+                     + ". Install the desktop extra and one accelerator extra before packaging.")
 a = Analysis(
     [str(root / "backend" / "videoflow" / "desktop_entry.py")],
     pathex=[str(root / "backend")],

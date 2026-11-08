@@ -74,7 +74,7 @@ jobs:
         working-directory: backend
         run: >
           uv sync --no-dev --group packaging --extra desktop
-          --extra ${{ matrix.accelerator }} --extra whisper
+          --extra ${{ matrix.accelerator }} --extra whisper --extra qwen
 
       - name: Package
         run: uv run --project backend --no-sync python scripts/package_release.py --full

@@ -12,7 +12,5 @@ cd "$ROOT/backend"
 if [ $# -eq 0 ]; then
   set -- desktop
 fi
-if [ -x "$ROOT/backend/.venv/bin/videoflow" ]; then
-  exec "$ROOT/backend/.venv/bin/videoflow" "$@"
-fi
-exec uv run --extra desktop videoflow "$@"
+# Restore desktop runtimes if an exact uv sync removed optional extras.
+exec uv run --inexact --extra desktop videoflow "$@"

@@ -36,8 +36,16 @@ class QwenSummary:
     def __init__(self) -> None:
         if model_state(MODEL_KEY) != "up-to-date":
             raise ValueError("Download Qwen in Settings before using it")
-        import torch
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+        try:
+            import torch
+            from transformers import AutoModelForCausalLM, AutoTokenizer
+        except ModuleNotFoundError as exc:
+            raise RuntimeError(
+                "Qwen runtime is incomplete. Run the Video-Flow installer or run script "
+                "to restore desktop dependencies; packaged apps must be rebuilt with "
+                "the desktop extra. You can select the deterministic summary engine "
+                "in Settings in the meantime. Downloaded models can be kept."
+            ) from exc
 
         spec = load_manifest().get(MODEL_KEY)
         folder = (

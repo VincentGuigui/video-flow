@@ -197,3 +197,22 @@ def test_model_sizes_disk_usage_and_removal(local_root, monkeypatch):
         assert entry["state"] == "missing" and entry["disk"] == 0 and not folder.exists()
         assert not store.exists()
         assert client.post("/api/models/unknown/remove").status_code == 422
+
+
+def test_qwen_missing_runtime_explains_repair_without_loading_models(monkeypatch):
+    import builtins
+
+    from videoflow.engines import summary
+
+    original_import = builtins.__import__
+
+    def without_torch(name, *args, **kwargs):
+        if name == "torch":
+            raise ModuleNotFoundError("No module named 'torch'", name="torch")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(summary, "model_state", lambda key: "up-to-date")
+    monkeypatch.setattr(builtins, "__import__", without_torch)
+    with pytest.raises(RuntimeError, match="Qwen runtime is incomplete.*deterministic") as error:
+        summary.QwenSummary()
+    assert isinstance(error.value.__cause__, ModuleNotFoundError)

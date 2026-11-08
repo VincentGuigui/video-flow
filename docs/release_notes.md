@@ -2,6 +2,11 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.14.0 — 2026-11-08
+
+- Fix Qwen analysis failing with a missing PyTorch module: desktop installation includes Qwen and Whisper runtimes, and the run scripts restore desktop dependencies removed by a later environment sync.
+- Release builds include Qwen and refuse to package missing inference runtimes. Model downloads remain explicit; existing weights are reused.
+
 ## 0.13.0 — 2026-11-04
 
 - Hovering a clip in the flow shows a one-line description of it, taken from its analysis; audio clips show the same text as their video.

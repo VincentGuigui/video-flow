@@ -13,3 +13,9 @@ This revision supplements [interactive editor](interactive-editor.md) and [deskt
 - Offer deterministic or local Qwen summaries/keywords, Parakeet/Whisper ASR, speech device preference and import/export defaults. Choosing Qwen reveals its model and requests an explicit download when absent. Preferences persist in application-local settings.json.
 
 Validation covers rotation and resolution round trips, exact render timing and layers, all three backgrounds, project copies and scoped deletion, model states and consent/cancellation. Native Qt smoke covers playback, focus/split/undo, zoom, home, blurred preview, MP4 and project copying. Platform qualification gates from [desktop shell](../architecture/desktop-shell.md) remain in force.
+
+## Desktop inference dependencies
+
+The `desktop` extra installs Qwen's PyTorch, Transformers and safetensors runtimes and the faster-whisper runtime. Install one accelerator extra for ONNX speech, VAD and similarity inference as well. These are Python dependencies, separate from model weights in `models/`; installing them never downloads model weights. The run scripts restore desktop dependencies with `uv run --inexact --extra desktop`, preserving installed accelerator packages. Release CI explicitly installs Qwen, and the desktop build fails immediately if an inference runtime is missing instead of publishing an executable with missing hidden imports.
+
+If Qwen's runtime is incomplete in a manually managed environment, analysis reports how to restore dependencies or use deterministic summaries. Existing models need no redownload. A source install can be repaired with `uv sync --extra desktop --extra cpu` in `backend/` (replace `cpu` with the chosen accelerator). The app must be restarted after repairing dependencies.

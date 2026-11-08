@@ -35,7 +35,7 @@ Bundled font: Inter 4.0 Regular and Bold (`assets/fonts/`, SIL Open Font License
 
 ## Optional extras
 
-`desktop`: PySide6 6.12 (including Qt WebEngine and Shiboken), LGPL-3.0/GPL/commercial terms by component; hosts React and supplies native dialogs, file drops, WebChannel and application lifecycle. Installed by the normal installer. The tested Windows x64 wheel lacks H.264 decoding; generated VP9/Opus playback proxies are selected through runtime codec detection. See [desktop runtime notices](desktop-runtime.md).
+`desktop`: PySide6 6.12 (including Qt WebEngine and Shiboken), LGPL-3.0/GPL/commercial terms by component; hosts React and supplies native dialogs, file drops, WebChannel and application lifecycle. Installed by the normal installer; includes the `qwen` and `whisper` extras below (runtimes only, no model weights). The tested Windows x64 wheel lacks H.264 decoding; generated VP9/Opus playback proxies are selected through runtime codec detection. See [desktop runtime notices](desktop-runtime.md).
 
 The `packaging` dependency group adds PyInstaller 6.22 (GPL-2.0 with the bootloader exception) for one-folder builds; it is not required at runtime. Frontend dependencies are recorded in `frontend/package.json` and `package-lock.json`: React 19, Zustand 5, Lucide, Vite 8, TypeScript 6, Vitest and Prettier (MIT licences; see each package's notices).
 
@@ -68,7 +68,15 @@ Combinable with any of the above:
 |---|---|---|---|
 | `whisper` | faster-whisper (CTranslate2) | MIT | CPU/CUDA alternative ASR engine, no NPU path |
 
-Example: `uv sync --extra openvino --extra whisper`.
+`qwen` (included by `desktop`):
+
+| Package | Locked version | Licence | Purpose |
+|---|---|---|---|
+| torch | 2.14.1 | BSD-3-Clause | Local Qwen tensor inference |
+| transformers | 4.57.6 | Apache-2.0 | Qwen model and tokenizer loading, without remote code |
+| safetensors | 0.8.0 | Apache-2.0 | Local model weight loading |
+
+Example: `uv sync --extra desktop --extra openvino`. The desktop extra includes both selectable Qwen and Whisper runtimes; selecting an engine never downloads weights automatically.
 
 ## Accelerator matrix (NPU, then GPU, then CPU)
 
@@ -106,7 +114,7 @@ Each model is pinned to a Hugging Face commit. Gated repositories and licences o
 |---|---|---|---|---|
 | `silero-vad` | onnx-community/silero-vad | MIT | 2 MB | VAD (S3) |
 | `parakeet-tdt-0.6b-v3-int8` | istupakov/parakeet-tdt-0.6b-v3-onnx | CC-BY-4.0 (credit NVIDIA Parakeet TDT 0.6B v3) | 670 MB | ASR (S4), default |
-| `qwen2.5-0.5b-instruct` | Qwen/Qwen2.5-0.5B-Instruct | Apache-2.0 | ~1 GB | Optional CPU summaries/keywords (`qwen` extra) |
+| `qwen2.5-0.5b-instruct` | Qwen/Qwen2.5-0.5B-Instruct | Apache-2.0 | ~1 GB | Optional CPU summaries/keywords (`qwen` extra, included by `desktop`) |
 | `faster-whisper-tiny` | Systran/faster-whisper-tiny | MIT | 75 MB | ASR alternative (`whisper` extra), smoke tier |
 | `paraphrase-multilingual-minilm-l12-v2` | sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 | Apache-2.0 | 118 MB (uint8) | Sentence similarity for retake grouping (only text embedder; see [retake grouping](../features/retake-grouping.md)) |
 | `dinov2-small` | Xenova/dinov2-small (export of facebook/dinov2-small) | Apache-2.0 | 24 MB (int8) | Visual embeddings (S7), optional; pipeline only, hidden in Settings |

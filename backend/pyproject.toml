@@ -1,6 +1,6 @@
 [project]
 name = "videoflow"
-version = "0.13.0"
+version = "0.14.0"
 description = "Local-first assembly tool for footage shot with many retakes"
 requires-python = ">=3.13,<3.14"
 license = { text = "MIT" }
@@ -57,6 +57,7 @@ qnn = [
 whisper = ["faster-whisper>=1.1"]
 qwen = ["torch>=2.6", "transformers>=4.45,<5", "safetensors>=0.4"]
 desktop = [
+    "videoflow[qwen,whisper]",
     "pyside6>=6.8,<7",
 ]
 
