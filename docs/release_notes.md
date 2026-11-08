@@ -2,6 +2,10 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.32.0 — 2026-11-08
+
+- Align range guides across the merged timeline workspace
+
 ## 0.31.0 — 2026-11-08
 
 - Preserve transcript corrections when source folders are read-only

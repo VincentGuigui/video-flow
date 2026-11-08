@@ -68,10 +68,8 @@ import { removeClips, withoutAssets, zoneItems } from "../zones";
 import { TitleControls } from "./TitleControls";
 import { EffectsTab } from "./EffectsTab";
 import { AnimationTab } from "./AnimationTab";
-import { stackedTakes } from "../compare";
-import { useAnalysis } from "./useAnalysis";
 import { currentRange, currentWindow, togglePlay } from "../playback";
-import { removeRange, autoTrim, deleteRange, trimToRange } from "../range";
+import { removeRange } from "../range";
 import { ImportDialog } from "./Imports";
 import { MediaTopics } from "./MediaTopics";
 import { MediaInfoDialog, MediaMenu } from "./MediaInfo";
@@ -850,25 +848,11 @@ function Inspector({
   const tab = useEditor((s) => s.inspectorTab),
     setTab = (inspectorTab: typeof tab) =>
       useEditor.getState().set({ inspectorTab });
-  const analysis = useAnalysis(clip?.assetId ?? null);
   const rate = project ? fps(project.settings) : 30;
   const candidates = clip ? linkCandidates(pack(document), clip.id) : [];
   const asset = project?.assets.find((a) => a.id === clip?.assetId);
   const video = asset?.probe.video;
   const restorable = clip ? canRestoreAudio(document, clip.id, asset) : false;
-  const takes = clip ? stackedTakes(document, clip.id) : [];
-  const rangeTrim = clip
-    ? trimToRange(document, clip.id, currentRange())
-    : null;
-  const rangeDelete = clip
-    ? deleteRange(document, clip.id, currentRange())
-    : null;
-  const padding = project?.settings.clipPadding as
-    { beforeUs: number; afterUs: number } | undefined;
-  const silenceTrim =
-    clip && analysis?.words
-      ? autoTrim(document, clip.id, analysis.words, rate, padding)
-      : null;
   const fitMode =
     clip && video && project
       ? nextFitMode(clip, video, project.settings)

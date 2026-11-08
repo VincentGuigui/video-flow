@@ -11,7 +11,7 @@ This revision supersedes conflicting editing details in [interactive editor](int
 
 Validation includes linking different source offsets, paired splits, normal audio trimming with retained time, persistence/export of retained silence, rapid property updates during asynchronous saves, shared pointer-centered zoom, and edge snapping with modifiers. The real Qt smoke check covers the unified axis, collapsed source properties, live numeric input, detach/relink and standard audio handles, followed by MP4 rendering and project copying.
 
-Current interaction details:
+## Current interaction details
 
 - Double-click assembly clips to focus their edit
 
@@ -40,3 +40,7 @@ Current interaction details:
 - Render a held-edge dissolve when source handles are exhausted
 
 - Preserve transcript corrections when source folders are read-only
+
+Current interaction details:
+
+- Align range guides across the merged timeline workspace

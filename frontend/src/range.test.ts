@@ -7,6 +7,7 @@ import {
   type Document,
 } from "./model";
 import {
+  removeRange,
   autoTrim,
   deleteRange,
   defaultRange,
@@ -128,4 +129,15 @@ describe("delete range", () => {
     expect(deleteRange(doc(), "v", { start: 0, end: 100 })).toBeNull();
     expect(deleteRange(doc(), "v", { start: 150, end: 160 })).toBeNull();
   });
+});
+
+
+it("lifts only selected linked media and ripples only when requested",()=>{
+  const lifted=removeRange(doc(),"v",{start:25,end:75},false);
+  expect(layout(lifted).total).toBe(200);
+  expect(lifted.clips.find(c=>c.id==="next")!.start).toBe(100);
+  expect(lifted.clips.some(c=>c.kind==="gap"&&c.start===25)).toBe(true);
+  const rippled=removeRange(doc(),"v",{start:25,end:75},true);
+  expect(layout(rippled).total).toBe(150);
+  expect(rippled.clips.find(c=>c.id==="next")!.start).toBe(50);
 });

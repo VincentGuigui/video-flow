@@ -132,7 +132,7 @@ export function Flow() {
   const takes = selectedClip ? stackedTakes(document,selectedClip.id) : [];
   const selectedAnalysis = analyses[selectedClip?.assetId ?? ""];
   const rangeTrim = selectedClip ? trimToRange(document,selectedClip.id,currentRange()) : null;
-  const silenceTrim = selectedClip && selectedAnalysis?.words ? autoTrim(document,selectedClip.id,selectedAnalysis.words,rate) : null;
+  const silenceTrim = selectedClip && selectedAnalysis?.words ? autoTrim(document,selectedClip.id,selectedAnalysis.words,rate,project?.settings.clipPadding as {beforeUs:number;afterUs:number}|undefined) : null;
   const analysis = selectedAnalysis;
   const width = Math.max(
     viewport.width,

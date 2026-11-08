@@ -17,31 +17,6 @@ Snapshot of what is built and what comes next. Update it with every feature. His
 - **Finishing:** Effects tab with transition cards (opened from cut markers in the flow and transition bands in the timeline) and effect cards with Add effect; cross dissolve and dips, edge fades, speed, keyframed transforms (position, size, rotation, crop, opacity), mute ranges, ducking under speech, titles and lower thirds. See [transitions](features/transitions.md), [clip effects](features/clip-effects.md), [keyframes](features/keyframes.md).
 - **Output:** MP4 render with hardware encoders when available and loudness normalisation; OTIO, OTIOZ, EDL, SRT, paper edit and Camtasia 2023.4+ exports. See [render and export](architecture/render-export.md), [Camtasia export](features/camtasia-export.md).
 
-## Next
-
-- Confirm the Camtasia export in Camtasia itself (opening, fades, linked audio, titles).
-- Measure retake grouping and transcription accuracy on real rushes, and tune thresholds.
-- Qualify NPU execution providers (OpenVINO, QNN, VitisAI) and GPU encoders on target Windows and Linux machines; Windows ARM64 qualification gate.
-- Release packaging and installer hardening for the desktop build.
-
-## Later
-
-- FCPXML and FCP7 XML export; OTIO re-import; interoperability checks in Resolve, Premiere and Final Cut Pro.
-- Sync groups (multicam) and replacing a take's audio with another take's audio.
-- Comping (ranges from several takes of one beat) and script-guided grouping.
-- Extended transition catalog (wipes, slides) and subtitle burn-in.
-- B-roll suggestions, vertical reframing, YouTube chapters from topics.
-- French interface.
-
-## Open risks
-
-| Risk | Mitigation |
-|------|------------|
-| Grouping is less accurate on non-speech footage | Manual stacking and moving; visual features from the analysis pipeline |
-| Phone footage quirks (VFR, HDR, rotation) | Proxies for preview, normalisation and tone mapping in the render |
-| Camtasia format changes between versions | Template-driven writer: a project saved by the user's version provides the structures |
-| Scope creep towards a full editor | Handoff to other editors through OTIO and Camtasia for advanced finishing |
-
 Additional built editor interactions:
 
 - Double-click assembly clips to focus their edit
@@ -71,3 +46,31 @@ Additional built editor interactions:
 - Render a held-edge dissolve when source handles are exhausted
 
 - Preserve transcript corrections when source folders are read-only
+
+
+## Next
+
+- Confirm the Camtasia export in Camtasia itself (opening, fades, linked audio, titles).
+- Measure retake grouping and transcription accuracy on real rushes, and tune thresholds.
+- Qualify NPU execution providers (OpenVINO, QNN, VitisAI) and GPU encoders on target Windows and Linux machines; Windows ARM64 qualification gate.
+- Release packaging and installer hardening for the desktop build.
+
+## Later
+
+- FCPXML and FCP7 XML export; OTIO re-import; interoperability checks in Resolve, Premiere and Final Cut Pro.
+- Sync groups (multicam) and replacing a take's audio with another take's audio.
+- Comping (ranges from several takes of one beat) and script-guided grouping.
+- Extended transition catalog (wipes, slides) and subtitle burn-in.
+- B-roll suggestions, vertical reframing, YouTube chapters from topics.
+- French interface.
+
+## Open risks
+
+| Risk | Mitigation |
+|------|------------|
+| Grouping is less accurate on non-speech footage | Manual stacking and moving; visual features from the analysis pipeline |
+| Phone footage quirks (VFR, HDR, rotation) | Proxies for preview, normalisation and tone mapping in the render |
+| Camtasia format changes between versions | Template-driven writer: a project saved by the user's version provides the structures |
+| Scope creep towards a full editor | Handoff to other editors through OTIO and Camtasia for advanced finishing |
+
+- Align range guides across the merged timeline workspace

@@ -106,7 +106,7 @@ Camtasia: Export → Camtasia project, or `uv run videoflow export BUNDLE --camt
 - [Dependencies and accelerator matrix](docs/reference/dependencies.md)
 - [Agent guidelines](AGENTS.md): conventions for contributors and coding agents
 
-Editor interactions:
+## Editor interactions
 
 - Double-click assembly clips to focus their edit
 
@@ -135,3 +135,7 @@ Editor interactions:
 - Render a held-edge dissolve when source handles are exhausted
 
 - Preserve transcript corrections when source folders are read-only
+
+Editor interactions:
+
+- Align range guides across the merged timeline workspace

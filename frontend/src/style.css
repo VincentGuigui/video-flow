@@ -3008,3 +3008,6 @@ button.timecode:hover {
 .timeline-workspace .overview-content {height:42px;}
 .flow-range {position:absolute;top:0;bottom:0;z-index:8;background:#e5b95515;border-left:1px solid #cca14c;border-right:1px solid #cca14c;pointer-events:none;}
 .flow-cursor {position:absolute;top:0;bottom:0;z-index:9;border-left:1px solid #f38b35;pointer-events:none;}
+
+.timeline-workspace .overview-scroll {margin:0;height:42px;flex-shrink:0;}
+.timeline-workspace .flow-toolbar,.timeline-workspace .clip-actions {flex-wrap:wrap;}
