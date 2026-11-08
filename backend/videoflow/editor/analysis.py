@@ -169,3 +169,42 @@ class Transcriber:
         ranges = self.vad.speech_ranges(audio, 16000)
         result: Transcript = self.asr.transcribe(audio, 16000, language=language, ranges=ranges)
         return result
+
+
+def correct_word(
+    source: Path, digest: str, bundle: Bundle, index: int, text: str, expected: str
+) -> AnalysisFile:
+    analysis = load_analysis(source, digest, bundle)
+    if analysis is None or index >= len(analysis.words):
+        raise ValueError("Transcript word not found")
+    if analysis.words[index].text != expected:
+        raise ValueError("Transcript changed; reload before correcting this word")
+    analysis.words[index].text = text.strip()
+    for topic in analysis.topics:
+        for sentence in topic.sentences:
+            sentence.text = " ".join(
+                w.text
+                for w in analysis.words
+                if w.start_us >= sentence.start_us and w.end_us <= sentence.end_us
+            )
+    if analysis.summary_engine == "deterministic":
+        analysis.summary = extractive_summary(analysis.words)
+    raw = (json.dumps(analysis.dump(), ensure_ascii=False, indent=2) + "\n").encode()
+    cache = cached_path(bundle, digest)
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    save_atomic(cache, raw)
+    for target in (sidecar_path(source), Path(str(source) + ".json")):
+        if target.exists():
+            try:
+                previous = AnalysisFile.model_validate_json(target.read_bytes())
+                compatible = previous.version == 1 and previous.source_hash in (None, digest)
+            except (ValueError, OSError):
+                continue
+            if not compatible:
+                continue
+        try:
+            save_atomic(target, raw)
+            break
+        except OSError:
+            continue
+    return analysis

@@ -113,3 +113,5 @@ Editor interactions:
 - Show transcribed media topics after two seconds of hover
 
 - Map transcript text selections onto the timeline range
+
+- Correct transcript words in place and persist analysis JSON

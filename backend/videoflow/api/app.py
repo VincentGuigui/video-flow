@@ -29,6 +29,7 @@ from videoflow.desktop.grants import SelectionGrants
 from videoflow.editor.analysis import (
     AnalysisFile,
     cached_path,
+    correct_word,
     load_analysis,
     sidecar_path,
 )
@@ -63,6 +64,12 @@ class Patch(CamelModel):
 class PathImport(CamelModel):
     path: str
     analyse: bool = True
+
+
+class WordCorrection(CamelModel):
+    index: int = Field(ge=0)
+    text: str = Field(min_length=1, max_length=200)
+    expected: str
 
 
 class OutputRequest(CamelModel):
@@ -778,6 +785,31 @@ def create_app(
             except (ValueError, OSError) as exc:
                 raise HTTPException(422, str(exc)) from exc
         return FileResponse(path)  # Starlette handles byte-range requests (206/416).
+
+    @app.put("/api/analysis/{asset_id}/word")
+    async def edit_word(asset_id: str, payload: WordCorrection) -> Any:
+        async with mutation_lock:
+            asset = known_asset(asset_id)
+            if not payload.text.strip():
+                raise HTTPException(422, "A word cannot be empty")
+            if any(
+                j.state in ("running", "queued", "waiting-models") for j in imports.jobs.values()
+            ):
+                raise HTTPException(409, "Finish analysis before correcting words")
+            try:
+                return (
+                    await asyncio.to_thread(
+                        correct_word,
+                        Path(asset.path),
+                        asset.content_hash,
+                        bundle,
+                        payload.index,
+                        payload.text,
+                        payload.expected,
+                    )
+                ).dump()
+            except ValueError as exc:
+                raise HTTPException(409, str(exc)) from exc
 
     @app.get("/api/analysis/{asset_id}")
     async def analysis(asset_id: str) -> Any:

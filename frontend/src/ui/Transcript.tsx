@@ -1,22 +1,26 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { fps, timecode, type Clip } from "../model";
-import { useEditor } from "../store";
+import { api, useEditor } from "../store";
 import {
   assemblyFrame,
   assemblyRange,
   sourceFrame,
   type Word,
 } from "../transcript";
-import { useAnalysis } from "./useAnalysis";
+import { forgetAnalysis, useAnalysis } from "./useAnalysis";
 
 export function Transcript({ clip }: { clip: Clip }) {
   const { project, document, set } = useEditor();
   const rate = project ? fps(project.settings) : 30;
   const analysis = useAnalysis(clip.assetId);
   const [open, setOpen] = useState<number | null>(null);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [correction, setCorrection] = useState("");
+  const [saving, setSaving] = useState(false);
   const [anchor, setAnchor] = useState<Word | null>(null);
   useEffect(() => {
+    setEditing(null);
     setOpen(null);
     setAnchor(null);
   }, [clip.id]);
@@ -46,6 +50,14 @@ export function Transcript({ clip }: { clip: Clip }) {
     }
   }
 
+  async function saveWord() {
+    if (!analysis?.words || editing === null || !clip.assetId || saving) return;
+    setSaving(true);
+    try {
+      await api(`/analysis/${clip.assetId}/word`, {method:"PUT",body:JSON.stringify({index:editing,text:correction,expected:analysis.words[editing].text})});
+      forgetAnalysis(clip.assetId); setEditing(null);
+    } catch(e) { set({error:String(e)}); } finally { setSaving(false); }
+  }
   function Time({ us }: { us: number }) {
     const frame = assemblyFrame(document, clip.id, us, rate);
     return frame === null ? (
@@ -134,13 +146,16 @@ export function Transcript({ clip }: { clip: Clip }) {
                             <span>
                               {spoken.length
                                 ? spoken.map((w, j) => (
-                                    <span
+                                    editing === words.indexOf(w) ? <input key={j} aria-label="Correct transcript word" autoFocus value={correction} disabled={saving}
+                                      onChange={e=>setCorrection(e.target.value)} onBlur={()=>void saveWord()}
+                                      onKeyDown={e=>{if(e.key==="Enter") void saveWord();if(e.key==="Escape") {e.preventDefault();e.stopPropagation();setEditing(null);}}} /> : <span
                                       key={j}
                                       data-word-start={w.startUs}
                                       data-word-end={w.endUs}
                                       style={{userSelect:"text"}}
                                       className={`word ${anchor === w ? "anchor" : ""}`}
                                       title="Click: set the range to this word. Shift+click: extend it."
+                                      onDoubleClick={e=>{e.stopPropagation();setEditing(words.indexOf(w));setCorrection(w.text);}}
                                       onClick={(e) => pickWord(w, e.shiftKey)}
                                     >
                                       {w.text}{" "}
