@@ -2,6 +2,10 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.33.0 — 2026-11-08
+
+- Automated GitHub releases validate versions, build Windows/Linux ZIPs and checksums, then create the version tag and publish the exact built commit.
+
 ## 0.32.0 — 2026-11-08
 
 - Align range guides across the merged timeline workspace

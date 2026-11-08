@@ -1,6 +1,3 @@
-# Builds the desktop app for Windows and Linux and publishes a GitHub release.
-# No tests run here. Triggered by pushing a tag v<version> (it must match backend/pyproject.toml)
-# or manually (Actions > Release > Run workflow), which tags the commit v<version>.
 name: Release
 
 on:
@@ -9,53 +6,73 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
+  prepare:
+    name: Validate release metadata
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+      tag: ${{ steps.metadata.outputs.tag }}
+      name: ${{ steps.metadata.outputs.name }}
+      sha: ${{ steps.metadata.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Validate versions and notes
+        id: metadata
+        run: python scripts/release_artifacts.py metadata
+      - name: Reject an existing tag for a different commit
+        env:
+          RELEASE_TAG: ${{ steps.metadata.outputs.tag }}
+          RELEASE_SHA: ${{ steps.metadata.outputs.sha }}
+        run: |
+          if git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"; then
+            test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$RELEASE_SHA" || {
+              echo "::error::This version tag already identifies another commit. Bump the app version."
+              exit 1
+            }
+          fi
+
   build:
     name: Build ${{ matrix.platform }}
+    needs: prepare
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         include:
-          # DirectML runs on any DirectX 12 GPU and falls back to the CPU.
           - os: windows-latest
             platform: windows-x64
             accelerator: directml
-            archive: zip
           - os: ubuntu-22.04
             platform: linux-x64
             accelerator: cpu
-            archive: tar.gz
     runs-on: ${{ matrix.os }}
     defaults:
       run:
         shell: bash
-    outputs:
-      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: App version
-        id: version
-        run: |
-          version=$(grep -m1 '^version' backend/pyproject.toml | cut -d'"' -f2)
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "$GITHUB_REF_NAME" != "v$version" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match the app version $version"
-            exit 1
-          fi
-
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.13"
-
       - name: Qt libraries (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -63,71 +80,90 @@ jobs:
           sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libxkbcommon-x11-0 \
             libfontconfig1 libdbus-1-3 libnss3 libxcomposite1 libxdamage1 libxrandr2 \
             libxtst6 libasound2
-
       - name: Build the interface
         working-directory: frontend
         run: |
           npm ci
           npm run build
-
-      - name: Install the backend
+      - name: Install the backend (Windows)
+        if: runner.os == 'Windows'
         working-directory: backend
         run: >
-          uv sync --no-dev --group packaging --extra desktop
+          uv sync --locked --no-dev --group packaging --extra desktop
           --extra ${{ matrix.accelerator }} --extra whisper --extra qwen
-
+      - name: Install the backend with CPU PyTorch (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          read -r -a excluded <<< "$(uv run --no-project --python 3.13 python -c 'import tomllib; from pathlib import Path; d=tomllib.loads(Path("backend/uv.lock").read_text()); print(" ".join(p["name"] for p in d["package"] if p["name"] == "torch" or p["name"] == "triton" or p["name"].startswith(("nvidia-", "cuda-"))))')"
+          skip=()
+          for package in "${excluded[@]}"; do skip+=(--no-install-package "$package"); done
+          uv sync --project backend --locked --no-dev --group packaging --extra desktop --extra cpu --extra whisper --extra qwen "${skip[@]}"
+          torch_version=$(uv run --no-project --python 3.13 python -c 'import tomllib; from pathlib import Path; d=tomllib.loads(Path("backend/uv.lock").read_text()); print(next(p["version"] for p in d["package"] if p["name"] == "torch"))')
+          uv pip install --python backend/.venv/bin/python --no-deps --index https://download.pytorch.org/whl/cpu "torch==$torch_version"
+      - name: Restore DirectML after Whisper's CPU runtime dependency
+        if: runner.os == 'Windows'
+        run: |
+          uv pip uninstall --python backend/.venv/Scripts/python.exe onnxruntime
+          uv pip install --python backend/.venv/Scripts/python.exe --no-deps --reinstall-package onnxruntime-directml \
+            "onnxruntime-directml==$(uv run --project backend --no-sync python -c 'import importlib.metadata as m; print(m.version("onnxruntime-directml"))')"
+          uv run --project backend --no-sync python -c 'import onnxruntime as o; assert "DmlExecutionProvider" in o.get_available_providers()'
       - name: Package
         run: uv run --project backend --no-sync python scripts/package_release.py --full
-
-      - name: Archive
-        id: archive
-        run: |
-          name="Video-Flow-${{ steps.version.outputs.version }}-${{ matrix.platform }}"
-          cd releases
-          if [ "${{ matrix.archive }}" = "zip" ]; then
-            7z a -tzip "../$name.zip" Video-Flow > /dev/null
-          else
-            tar czf "../$name.tar.gz" Video-Flow
-          fi
-
+      - name: Archive and checksum
+        env:
+          RELEASE_PLATFORM: ${{ matrix.platform }}
+        run: uv run --project backend --no-sync python scripts/release_artifacts.py archive --platform "$RELEASE_PLATFORM"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}
-          path: Video-Flow-*.${{ matrix.archive }}
+          path: |
+            Video-Flow-*.zip
+            Video-Flow-*.zip.sha256
           if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
 
   release:
-    name: Publish the release
-    needs: build
+    name: Tag and publish release
+    needs: [prepare, build]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
-
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
       - uses: actions/download-artifact@v4
         with:
           path: dist
           merge-multiple: true
-
-      - name: Release notes of this version
+      - name: Verify both artifacts and prepare release notes
+        run: python scripts/release_artifacts.py verify
+      - name: Create version tag after successful builds
         env:
-          VERSION: ${{ needs.build.outputs.version }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          RELEASE_SHA: ${{ needs.prepare.outputs.sha }}
         run: |
-          awk -v v="$VERSION" '
-            $0 ~ "^## " v "( |$)" { keep = 1; next }
-            keep && /^## / { exit }
-            keep { print }
-          ' docs/release_notes.md > notes.md
-          {
-            echo
-            echo "FFmpeg 6.1 or newer is required: at first start the app offers to download it into tools/ffmpeg/ next to the executable; a build there or on PATH is used as well."
-            echo "AI models are downloaded from the app (Settings > Manage AI models)."
-          } >> notes.md
-          cat notes.md
-
+          git fetch --tags origin
+          if git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"; then
+            test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$RELEASE_SHA"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "$RELEASE_TAG" "$RELEASE_SHA" -m "Video-Flow ${RELEASE_TAG#v}"
+            git push origin "refs/tags/$RELEASE_TAG"
+          fi
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ needs.build.outputs.version }}
-          target_commitish: ${{ github.sha }}
-          name: Video-Flow ${{ needs.build.outputs.version }}
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          target_commitish: ${{ needs.prepare.outputs.sha }}
+          name: ${{ needs.prepare.outputs.name }}
           body_path: notes.md
-          files: dist/*
+          fail_on_unmatched_files: true
+          files: |
+            dist/Video-Flow-*.zip
+            dist/Video-Flow-*.zip.sha256

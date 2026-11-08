@@ -139,3 +139,7 @@ Camtasia: Export → Camtasia project, or `uv run videoflow export BUNDLE --camt
 Editor interactions:
 
 - Align range guides across the merged timeline workspace
+
+## Automated releases
+
+Use GitHub **Actions → Release → Run workflow** to build Windows/Linux ZIPs, tag the built commit and publish a versioned release with SHA-256 checksums. See [automated releases](docs/features/github-releases.md).

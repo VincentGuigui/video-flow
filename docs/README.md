@@ -15,6 +15,7 @@ Start with the [project README](../README.md) for what Video-Flow does and how t
 
 | Document | Content |
 |----------|---------|
+| [Automated releases](features/github-releases.md) | GitHub builds, version tags, ZIP artifacts and release checksums |
 | [Interactive editor](features/interactive-editor.md) | Wireframe-driven editor, linked and independent media, empty clips, trim modes, keyboard, transforms, analysis sidecars |
 | [Editor refinements](features/editor-refinements.md) | Project home, save / save as, backgrounds, MP4 export, local AI model settings and initial runtime component setup |
 | [Unified timeline](features/unified-timeline.md) | One timeline axis, linking separate clips, audio trimming with retained time, live properties |
