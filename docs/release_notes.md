@@ -2,6 +2,10 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.27.0 — 2026-11-08
+
+- Move range trimming and silence trimming into the flow toolbar
+
 ## 0.26.0 — 2026-11-08
 
 - Delete or ripple the selected range before falling back to whole clips

@@ -41,7 +41,7 @@ import {
   type Clip,
   type Document,
 } from "../model";
-import { removeRange } from "../range";
+import { autoTrim, trimToRange, removeRange } from "../range";
 import { currentRange } from "../playback";
 import { useTimeline, useTimelineWheel } from "../timeline";
 import { addTitle, type Title } from "../titles";
@@ -128,6 +128,10 @@ export function Flow() {
     48 + (layers - 1 - c.layer) * 112 >= viewport.top - 180 &&
     48 + (layers - 1 - c.layer) * 112 <= viewport.top + viewport.height + 180;
   const selectedClip = base.clips.find((c) => c.id === selected);
+  const selectedAnalysis = analyses[selectedClip?.assetId ?? ""];
+  const rangeTrim = selectedClip ? trimToRange(document,selectedClip.id,currentRange()) : null;
+  const silenceTrim = selectedClip && selectedAnalysis?.words ? autoTrim(document,selectedClip.id,selectedAnalysis.words,rate) : null;
+  const analysis = selectedAnalysis;
   const width = Math.max(
     viewport.width,
     112 +
@@ -472,6 +476,33 @@ export function Flow() {
           <span className="count-badge">{pairs.length} clips</span>
         </div>
         <div className="clip-actions">
+<button
+                className="button trim-range-action"
+                disabled={busy || !rangeTrim}
+                title="Keep only the part of the clip inside the timeline range; later clips move earlier"
+                onClick={() => {
+                  if (!rangeTrim) return;
+                  apply(rangeTrim);
+                  useEditor.getState().set({ range: null, rangeHandle: null });
+                }}
+              >
+                <Scissors size={14} />
+                Trim clip to range
+              </button>
+<button
+                className="button auto-trim-action"
+                disabled={busy || !silenceTrim}
+                title={
+                  analysis?.words?.length
+                    ? "Remove silence before the first and after the last word"
+                    : "Needs a transcript (import with analysis)"
+                }
+                onClick={() => silenceTrim && apply(silenceTrim)}
+              >
+                <Scissors size={14} />
+                Auto-trim silence
+              </button>
+
           <button
             disabled={!selectedClip || busy}
             onClick={() =>

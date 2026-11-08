@@ -61,3 +61,5 @@ Additional built editor interactions:
 - Merge timeline and clip flow with continuous cursor and range guides
 
 - Delete or ripple the selected range before falling back to whole clips
+
+- Move range trimming and silence trimming into the flow toolbar

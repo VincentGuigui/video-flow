@@ -1172,19 +1172,7 @@ function Inspector({
           {clip.kind !== "gap" && (
             <div className="inspector-section trim-actions">
               <span className="overline">TRIM</span>
-              <button
-                className="button trim-range-action"
-                disabled={busy || !rangeTrim}
-                title="Keep only the part of the clip inside the timeline range; later clips move earlier"
-                onClick={() => {
-                  if (!rangeTrim) return;
-                  void save(rangeTrim);
-                  useEditor.getState().set({ range: null, rangeHandle: null });
-                }}
-              >
-                <Scissors size={14} />
-                Trim clip to range
-              </button>
+              
               <button
                 className="button delete-range-action"
                 disabled={busy || !rangeDelete}
@@ -1198,19 +1186,7 @@ function Inspector({
                 <Scissors size={14} />
                 Delete range
               </button>
-              <button
-                className="button auto-trim-action"
-                disabled={busy || !silenceTrim}
-                title={
-                  analysis?.words?.length
-                    ? "Remove silence before the first and after the last word"
-                    : "Needs a transcript (import with analysis)"
-                }
-                onClick={() => silenceTrim && void save(silenceTrim)}
-              >
-                <Scissors size={14} />
-                Auto-trim silence
-              </button>
+              
             </div>
           )}
           {clip.kind !== "gap" && (
