@@ -23,6 +23,7 @@ from fastapi.responses import (
 )
 from pydantic import Field
 
+from videoflow import __version__
 from videoflow.core.base import CamelModel
 from videoflow.desktop.grants import SelectionGrants
 from videoflow.editor.analysis import (
@@ -392,6 +393,7 @@ def create_app(
         return {
             "project": p.dump(),
             "editor": editable_document(p).dump(),
+            "appVersion": __version__,
             "mediaRoots": [str(p) for p in roots],
             "desktop": desktop_secret is not None,
             "open": project_open,

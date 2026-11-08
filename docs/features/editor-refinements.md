@@ -14,6 +14,10 @@ This revision supplements [interactive editor](interactive-editor.md) and [deskt
 
 Validation covers rotation and resolution round trips, exact render timing and layers, all three backgrounds, project copies and scoped deletion, model states and consent/cancellation. Native Qt smoke covers playback, focus/split/undo, zoom, home, blurred preview, MP4 and project copying. Platform qualification gates from [desktop shell](../architecture/desktop-shell.md) remain in force.
 
+## Application version
+
+The status bar displays the running backend version returned as `appVersion` by `/api/project`, including on the home screen. It does not use the project's last-saving version or a hard-coded frontend label.
+
 ## Desktop inference dependencies
 
 The `desktop` extra installs Qwen's PyTorch, Transformers and safetensors runtimes. Whisper remains an optional extra. Install one accelerator extra for ONNX speech, VAD and similarity inference as well. These are Python dependencies, separate from model weights in `models/`; installing them never downloads model weights. Existing source environments launch directly into the app so missing inference dependencies can be installed on request in component setup. Release CI explicitly installs Qwen, and the desktop build fails immediately if an inference runtime is missing instead of publishing an executable with missing hidden imports.

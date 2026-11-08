@@ -24,6 +24,7 @@ export async function api<T>(
   return response.json();
 }
 interface State {
+  appVersion: string | null;
   project: Project | null;
   document: Document;
   selected: string | null;
@@ -64,6 +65,7 @@ interface State {
   set: (values: Partial<State>) => void;
 }
 interface Result {
+  appVersion?: string;
   project: Project;
   editor: Document;
   inverses: Command[];
@@ -72,6 +74,7 @@ interface Result {
   open?: boolean;
 }
 export const useEditor = create<State>((set, get) => ({
+  appVersion: null,
   project: null,
   document: { version: 1, clips: [] },
   selected: null,
@@ -111,6 +114,7 @@ export const useEditor = create<State>((set, get) => ({
   load: async () => {
     try {
       const r = await api<Result>("/project");
+      set({ appVersion: r.appVersion ?? null });
       if (r.open === false) {
         set({
           closed: true,

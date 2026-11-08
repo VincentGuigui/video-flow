@@ -680,7 +680,8 @@ export function App() {
           {resolved.total
             ? `${timecode(resolved.total, rate)} assembled`
             : "Ready when you are."}
-          <span className="footer-dot">·</span>Video-Flow 0.1
+          <span className="footer-dot">·</span>Video-Flow
+          {state.appVersion ? ` ${state.appVersion}` : ""}
         </span>
       </footer>
       {drag && (

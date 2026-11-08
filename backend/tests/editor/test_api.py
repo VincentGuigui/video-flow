@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
+from videoflow import __version__
 from videoflow.api.app import create_app
 from videoflow.editor.analysis import AnalysisFile, cached_path, load_analysis, store_analysis
 from videoflow.editor.resolve import document_for
@@ -72,6 +73,7 @@ def await_job(client, job_id):
 def test_save_copy_home_and_scoped_projects(client, app_bundle, tmp_path):
     _, original = app_bundle
     identifier = original.project.id
+    assert client.get("/api/project").json()["appVersion"] == __version__
     response = client.post("/api/project/save", json={"baseRevision": 0, "name": "First"})
     assert response.status_code == 200, response.text
     assert client.get("/api/project").json()["project"]["name"] == "First"
@@ -385,6 +387,7 @@ def test_cache_lists_sizes_opens_root_and_clears(client, app_bundle, monkeypatch
 def test_close_and_rename_release_and_move_the_open_project(client, app_bundle, tmp_path):
     _, original = app_bundle
     identifier = original.project.id
+    assert client.get("/api/project").json()["appVersion"] == __version__
     revision = client.get("/api/project").json()["project"]["revision"]
     response = client.post("/api/project/save", json={"baseRevision": revision, "name": "Cut A"})
     assert response.status_code == 200, response.text

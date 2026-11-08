@@ -2,6 +2,10 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.16.0 — 2026-11-08
+
+- The status bar displays the running backend application version instead of a hard-coded label.
+
 ## 0.15.0 — 2026-11-08
 
 - Initial component setup detects missing inference dependencies even when model files exist, and offers explicit installation, progress and cancellation in source desktop builds.
