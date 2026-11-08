@@ -16,3 +16,5 @@ Current interaction details:
 - Double-click assembly clips to focus their edit
 
 - Show transcribed media topics after two seconds of hover
+
+- Map transcript text selections onto the timeline range

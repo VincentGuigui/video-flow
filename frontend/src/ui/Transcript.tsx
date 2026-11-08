@@ -26,6 +26,14 @@ export function Transcript({ clip }: { clip: Clip }) {
     const range = assemblyRange(document, clip.id, startUs, endUs, rate);
     if (range) set({ range, rangeHandle: null, playing: false });
   }
+  function selectText(root: HTMLElement) {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !selection.rangeCount) return;
+    const selected = selection.getRangeAt(0);
+    const nodes = [...root.querySelectorAll<HTMLElement>("[data-word-start]")]
+      .filter(node => selected.intersectsNode(node));
+    if (nodes.length) select(Number(nodes[0].dataset.wordStart), Number(nodes.at(-1)!.dataset.wordEnd));
+  }
   function pickWord(word: Word, extend: boolean) {
     if (extend && anchor) {
       select(
@@ -75,7 +83,9 @@ export function Transcript({ clip }: { clip: Clip }) {
   const topics = analysis.topics ?? [],
     words = analysis.words ?? [];
   return (
-    <div className="inspector-content transcript-panel">
+    <div className="inspector-content transcript-panel" style={{userSelect:"text"}}
+      onMouseUp={e => { const root=e.currentTarget; setTimeout(() => selectText(root), 0); }}
+      onKeyUp={e => selectText(e.currentTarget)}>
       <span className="overline">SUMMARY</span>
       <p className="transcript-summary">
         {analysis.summary || "No speech detected."}
@@ -126,6 +136,9 @@ export function Transcript({ clip }: { clip: Clip }) {
                                 ? spoken.map((w, j) => (
                                     <span
                                       key={j}
+                                      data-word-start={w.startUs}
+                                      data-word-end={w.endUs}
+                                      style={{userSelect:"text"}}
                                       className={`word ${anchor === w ? "anchor" : ""}`}
                                       title="Click: set the range to this word. Shift+click: extend it."
                                       onClick={(e) => pickWord(w, e.shiftKey)}
