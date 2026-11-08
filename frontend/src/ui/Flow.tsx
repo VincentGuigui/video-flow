@@ -41,6 +41,7 @@ import {
   type Clip,
   type Document,
 } from "../model";
+import { currentRange } from "../playback";
 import { useTimeline, useTimelineWheel } from "../timeline";
 import { addTitle, type Title } from "../titles";
 import { useEditor } from "../store";
@@ -211,6 +212,8 @@ export function Flow() {
             if (e.target === e.currentTarget) set({ selected: null });
           }}
         >
+          <div className="flow-range" style={{left:56+currentRange().start*px,width:Math.max(1,(currentRange().end-currentRange().start)*px)}} />
+          <div className="flow-cursor" style={{left:56+frame*px}} />
           {Array.from({ length: layers }, (_, i) => (
             <div
               key={i}

@@ -635,8 +635,7 @@ export function App() {
             </div>
             {panel.height === "half" && dock}
           </div>
-          <Transport />
-          <Flow />
+          <section className="timeline-workspace"><Transport /><Flow /></section>
         </main>
         {panel.height === "tall" && dock}
       </div>

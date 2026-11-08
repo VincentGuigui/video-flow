@@ -57,3 +57,5 @@ Additional built editor interactions:
 - Place playback controls above the video preview
 
 - Place clip actions and clip count below the flow
+
+- Merge timeline and clip flow with continuous cursor and range guides

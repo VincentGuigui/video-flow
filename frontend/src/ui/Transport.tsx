@@ -44,8 +44,7 @@ import {
 export function Transport() {
   const { project, document, frame, focus, rangeHandle, set } =
     useEditor();
-  const zone = useEditor((s) => s.zone),
-    selectedClips = useEditor((s) => s.selectedClips);
+  const zone = useEditor((s) => s.zone);
   const range = currentRange();
   const root = useRef<HTMLDivElement>(null);
   const { scale, scroll, width, set: setTimeline } = useTimeline();
@@ -213,6 +212,12 @@ export function Transport() {
         ref={root}
         onScroll={(e) => setTimeline({ scroll: e.currentTarget.scrollLeft })}
         onPointerDown={scrub}
+        onDoubleClick={e=>{
+          const node=root.current;if(!node)return;
+          const at=(e.clientX-node.getBoundingClientRect().left+node.scrollLeft-origin)/scale;
+          const clip=[...resolved.clips].filter(c=>c.kind!=="gap"&&c.start<=at&&c.start+duration(c)>at).sort((a,b)=>b.layer-a.layer)[0];
+          if(clip)set({selected:clip.id,focus:clip.id,frame:Math.floor(at),playing:false});
+        }}
         data-testid="timeline"
       >
         <div
@@ -230,27 +235,6 @@ export function Transport() {
                 {timecode(t * rate, rate).slice(3, 8)}
               </span>
             ))}
-          </div>
-          <div className="overview-track">
-            {resolved.clips
-              .filter((c) => c.kind !== "audio" || !c.linkId)
-              .map((c) => (
-                <div
-                  key={c.id}
-                  onDoubleClick={(e) => {
-                    e.stopPropagation();
-                    set({ selected: c.id, focus: c.id, frame: c.start, playing: false });
-                  }}
-                  title={c.name}
-                  className={`overview-clip ${c.kind} ${selectedClips.includes(c.id) ? "selected" : ""}`}
-                  style={{
-                    left: origin + c.start * scale,
-                    width: Math.max(1, duration(c) * scale - 2),
-                    height: Math.max(7, 28 - c.layer * 4),
-                    bottom: c.layer * 4,
-                  }}
-                />
-              ))}
           </div>
           {activeTransitions(document, sourceFramesFor(project)).map((a) => (
             <div
