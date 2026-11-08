@@ -1,3 +1,3 @@
 """Video-Flow: local-first assembly tool for footage shot with many retakes."""
 
-__version__ = "0.14.0"
+__version__ = "0.15.0"

@@ -52,6 +52,7 @@ import {
 import { api, updateClip, useEditor, flushClipUpdates } from "../store";
 import { Settings, type SettingsData } from "./Settings";
 import { ManageModels } from "./ManageModels";
+import type { ComponentState } from "./RuntimeSetup";
 import { FfmpegSetup, type FfmpegState } from "./FfmpegSetup";
 import { InterfaceZoom } from "./InterfaceZoom";
 import { RenderPanel } from "./RenderPanel";
@@ -152,6 +153,12 @@ export function App() {
   }, [project?.name]);
   useEffect(() => {
     void load().then(reportReady);
+    void api<ComponentState>("/components")
+      .then((data) => {
+        if (data.components.some((component) => !component.available))
+          setModelPrompt(true);
+      })
+      .catch((e) => set({ error: String(e) }));
     // FFmpeg first: without it nothing can be imported or rendered.
     void api<FfmpegState>("/ffmpeg")
       .then((data) => setFfmpegPrompt(!data.available))
@@ -160,7 +167,9 @@ export function App() {
       .then((data) => {
         if (
           data.preferences.analyseImports &&
-          data.models.some((m) => m.required && m.state !== "up-to-date")
+          data.models.some(
+            (m) => m.required && (m.state !== "up-to-date" || m.runtimeMissing.length > 0),
+          )
         ) {
           setModelPrompt(true);
         }

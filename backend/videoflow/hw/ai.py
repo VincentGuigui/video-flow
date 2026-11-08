@@ -10,6 +10,7 @@ import platform
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import StrEnum
+from functools import cache
 from pathlib import Path
 from typing import Any, Literal
 
@@ -184,6 +185,8 @@ def make_session(
     attempts: list[SessionAttempt] = []
     for choice in candidates:
         try:
+            if choice.provider == "CUDAExecutionProvider":
+                preload_cuda()
             opts = sess_options if sess_options is not None else ort.SessionOptions()
             sess = ort.InferenceSession(
                 str(model_path), sess_options=opts, providers=[choice.as_ort_provider()]
@@ -203,6 +206,48 @@ def make_session(
         return ModelSession(sess, choice, attempts)
     detail = "; ".join(f"{a.choice.label}: {a.error}" for a in attempts) or "no provider available"
     raise NoProviderError(f"no working provider for {model_path}: {detail}")
+
+
+# Identity(float[1] x -> y), ONNX IR 9 / opset 13. A tiny provider probe,
+# independent of model downloads or the optional ONNX model-authoring package.
+PROBE_MODEL = bytes.fromhex(
+    "08093a3b0a100a017812017922084964656e74697479120570726f6265"
+    "5a0f0a0178120a0a08080112040a020801620f0a0179120a0a08080112040a0208014202100d"
+)
+
+
+@cache
+def preload_cuda() -> None:
+    ort = _import_ort()
+    if ort is not None and hasattr(ort, "preload_dlls"):
+        # Locate compatible NVIDIA/PyTorch runtime libraries without editing PATH.
+        ort.preload_dlls()
+
+
+@cache
+def cuda_status() -> dict[str, Any] | None:
+    ort = _import_ort()
+    if ort is None or "CUDAExecutionProvider" not in ort.get_available_providers():
+        return None
+    try:
+        import numpy as np
+
+        preload_cuda()
+        options = ort.SessionOptions()
+        options.log_severity_level = 3
+        session = ort.InferenceSession(
+            PROBE_MODEL, sess_options=options, providers=["CUDAExecutionProvider"]
+        )
+        if session.get_providers()[0] != "CUDAExecutionProvider":
+            raise RuntimeError("CUDA could not initialize; ONNX Runtime fell back to CPU")
+        session.run(None, {"x": np.zeros(1, dtype=np.float32)})
+        return {"available": True, "detail": "CUDA initialized and ran successfully"}
+    except Exception as exc:
+        return {
+            "available": False,
+            "detail": f"{exc}. Install matching CUDA/cuDNN libraries and a supported NVIDIA driver "
+            "(on Windows, also the Microsoft Visual C++ runtime). CPU remains available.",
+        }
 
 
 def describe_ai() -> dict[str, object]:

@@ -2,6 +2,7 @@
 
 import asyncio
 import hashlib
+import importlib.metadata
 import os
 import secrets
 import shutil
@@ -35,6 +36,7 @@ from videoflow.editor.models import Title
 from videoflow.editor.playback import PlaybackProxies
 from videoflow.editor.resolve import editable_document
 from videoflow.editor.titles import title_png
+from videoflow.engines.components import Components
 from videoflow.engines.downloads import ModelDownloads, fetch_download_sizes
 from videoflow.exporters.service import export_project
 from videoflow.media import ffmpeg, ffmpeg_install
@@ -127,6 +129,7 @@ def create_app(
         library.add(bundle)
     preferences = load_preferences()
     downloads = ModelDownloads()
+    components = Components(native=desktop_secret is not None)
     imports = Imports(bundle, preferences=preferences, require_models=True)
     renders = Renders(bundle)
     playbacks = PlaybackProxies(bundle)
@@ -161,6 +164,7 @@ def create_app(
         await imports.close()
         await renders.close()
         await downloads.close()
+        await components.close()
 
     app = FastAPI(title="Video-Flow local editor", lifespan=lifespan)
     app.state.imports = imports
@@ -195,6 +199,34 @@ def create_app(
             "preferences": preferences.dump(),
             **await asyncio.to_thread(downloads.status, preferences),
         }
+
+    @app.get("/api/components")
+    async def component_status() -> Any:
+        return await asyncio.to_thread(components.status, preferences)
+
+    @app.post("/api/components/{component}/install")
+    async def component_install(component: str) -> Any:
+        if renders.active or any(
+            j.state in ("running", "queued", "waiting-models") for j in imports.jobs.values()
+        ):
+            raise HTTPException(409, "Finish or cancel imports and renders before installing")
+        try:
+            return components.start(component)
+        except (ValueError, importlib.metadata.PackageNotFoundError) as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @app.post("/api/components/cancel")
+    async def component_cancel() -> Any:
+        await components.close()
+        return {"cancelled": True}
+
+    def require_components_idle() -> None:
+        if components.task is not None and not components.task.done():
+            raise HTTPException(
+                409, "Wait for component installation to finish before importing or rendering"
+            )
+        if components.job and components.job.get("restartRequired"):
+            raise HTTPException(409, "Restart Video-Flow after component installation")
 
     ffmpeg_job: dict[str, Any] = {}
     ffmpeg_cancel = threading.Event()
@@ -522,6 +554,7 @@ def create_app(
 
     @app.post("/api/render")
     async def render_video(payload: RenderRequest) -> Any:
+        require_components_idle()
         async with mutation_lock:
             if payload.base_revision != bundle.project.revision:
                 raise HTTPException(409, "The project changed; reload before rendering")
@@ -584,6 +617,7 @@ def create_app(
 
     @app.post("/api/import-path")
     async def import_path(payload: PathImport) -> dict[str, Any]:
+        require_components_idle()
         path = await asyncio.to_thread(Path(payload.path).resolve)
         if not any(path.is_relative_to(root) for root in roots):
             raise HTTPException(403, "Path is outside the configured media roots")
@@ -621,6 +655,7 @@ def create_app(
 
     @app.post("/api/native-import")
     async def native_import(payload: NativeImport) -> Any:
+        require_components_idle()
         try:
             path = grants.consume(payload.handle)
         except ValueError as exc:
@@ -808,6 +843,7 @@ def create_app(
     @app.post("/api/assets/{asset_id}/analyse")
     async def reanalyse_asset(asset_id: str) -> Any:
         """Analyse a source again, replacing its analysis JSON (import job progress)."""
+        require_components_idle()
         asset = known_asset(asset_id)
         source = Path(asset.path)
         if not await asyncio.to_thread(source.is_file):

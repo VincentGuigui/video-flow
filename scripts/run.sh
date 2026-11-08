@@ -12,5 +12,8 @@ cd "$ROOT/backend"
 if [ $# -eq 0 ]; then
   set -- desktop
 fi
-# Restore desktop runtimes if an exact uv sync removed optional extras.
+# Existing environments show missing inference dependencies in component setup.
+if [ -x "$ROOT/backend/.venv/bin/videoflow" ]; then
+  exec "$ROOT/backend/.venv/bin/videoflow" "$@"
+fi
 exec uv run --inexact --extra desktop videoflow "$@"

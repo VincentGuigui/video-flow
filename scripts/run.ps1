@@ -9,8 +9,10 @@ if (Test-Path $Ffmpeg) { $env:PATH = "$Ffmpeg$([IO.Path]::PathSeparator)$env:PAT
 Push-Location (Join-Path $Root 'backend')
 try {
     if ($CliArgs.Count -eq 0) { $CliArgs = @('desktop') }
-    # Restore desktop runtimes if an exact uv sync removed optional extras.
-    uv run --inexact --extra desktop videoflow @CliArgs
+    # Existing environments show missing inference dependencies in component setup.
+    $LocalCli = Join-Path $Root 'backend\.venv\Scripts\videoflow.exe'
+    if (Test-Path $LocalCli) { & $LocalCli @CliArgs }
+    else { uv run --inexact --extra desktop videoflow @CliArgs }
     exit $LASTEXITCODE
 } finally {
     Pop-Location

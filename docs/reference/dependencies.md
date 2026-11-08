@@ -35,7 +35,7 @@ Bundled font: Inter 4.0 Regular and Bold (`assets/fonts/`, SIL Open Font License
 
 ## Optional extras
 
-`desktop`: PySide6 6.12 (including Qt WebEngine and Shiboken), LGPL-3.0/GPL/commercial terms by component; hosts React and supplies native dialogs, file drops, WebChannel and application lifecycle. Installed by the normal installer; includes the `qwen` and `whisper` extras below (runtimes only, no model weights). The tested Windows x64 wheel lacks H.264 decoding; generated VP9/Opus playback proxies are selected through runtime codec detection. See [desktop runtime notices](desktop-runtime.md).
+`desktop`: PySide6 6.12 (including Qt WebEngine and Shiboken), LGPL-3.0/GPL/commercial terms by component; hosts React and supplies native dialogs, file drops, WebChannel and application lifecycle. Installed by the normal installer; includes the `qwen` extra below (runtimes only, no model weights). The tested Windows x64 wheel lacks H.264 decoding; generated VP9/Opus playback proxies are selected through runtime codec detection. See [desktop runtime notices](desktop-runtime.md).
 
 The `packaging` dependency group adds PyInstaller 6.22 (GPL-2.0 with the bootloader exception) for one-folder builds; it is not required at runtime. Frontend dependencies are recorded in `frontend/package.json` and `package-lock.json`: React 19, Zustand 5, Lucide, Vite 8, TypeScript 6, Vitest and Prettier (MIT licences; see each package's notices).
 
@@ -76,7 +76,7 @@ Combinable with any of the above:
 | transformers | 4.57.6 | Apache-2.0 | Qwen model and tokenizer loading, without remote code |
 | safetensors | 0.8.0 | Apache-2.0 | Local model weight loading |
 
-Example: `uv sync --extra desktop --extra openvino`. The desktop extra includes both selectable Qwen and Whisper runtimes; selecting an engine never downloads weights automatically.
+Example: `uv sync --extra desktop --extra openvino`. The desktop extra includes the Qwen runtime; Whisper is optional. selecting an engine never downloads weights automatically.
 
 ## Accelerator matrix (NPU, then GPU, then CPU)
 
@@ -118,3 +118,7 @@ Each model is pinned to a Hugging Face commit. Gated repositories and licences o
 | `faster-whisper-tiny` | Systran/faster-whisper-tiny | MIT | 75 MB | ASR alternative (`whisper` extra), smoke tier |
 | `paraphrase-multilingual-minilm-l12-v2` | sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 | Apache-2.0 | 118 MB (uint8) | Sentence similarity for retake grouping (only text embedder; see [retake grouping](../features/retake-grouping.md)) |
 | `dinov2-small` | Xenova/dinov2-small (export of facebook/dinov2-small) | Apache-2.0 | 24 MB (int8) | Visual embeddings (S7), optional; pipeline only, hidden in Settings |
+
+### Optional CUDA library repair
+
+On request in component setup, a source desktop build installs the installed `onnxruntime-gpu` version's `[cuda,cudnn]` extras, following the runtime package's compatibility constraints. ONNX Runtime 1.31 uses CUDA 13 / cuDNN 9. The resolved NVIDIA packages here are nvidia-cublas 13.10.0.20, nvidia-cuda-nvrtc and nvidia-cuda-runtime 13.5.37, nvidia-cudnn-cu13 9.28.1.4, nvidia-cufft 12.5.0.14, nvidia-curand 10.4.5.25 and nvidia-nvjitlink 13.5.37; NVIDIA proprietary software licences apply (see each distribution's licence). They supply the CUDA/cuDNN native runtime libraries, not model weights or a GPU driver. They are an optional repair, not baseline dependencies. The startup check validates provider creation and inference, rather than trusting the advertised provider list. See [ONNX Runtime CUDA requirements and DLL preloading](https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html).

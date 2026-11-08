@@ -3,6 +3,7 @@ import { Download, Trash2, X } from "lucide-react";
 import { api, useEditor } from "../store";
 import { formatSize } from "./CacheSettings";
 import type { SettingsData } from "./Settings";
+import { RuntimeSetup } from "./RuntimeSetup";
 
 type Model = SettingsData["models"][number];
 
@@ -84,18 +85,20 @@ export function ManageModels({
         aria-label="Manage AI models"
       >
         <div className="modal-heading">
-          <h2>Manage AI models</h2>
+          <h2>{requested ? "Install components" : "Manage AI models"}</h2>
           <button aria-label="Close AI models" onClick={onClose}>
             <X size={20} />
           </button>
         </div>
         {requested && (
           <p className="settings-notice">
-            Local analysis needs model files. Download them below, or close this
-            window to continue editing without analysis. Downloads only start
+            Local analysis needs runtime dependencies and model files. Install
+            them below, or close this window to continue editing without analysis. Downloads only start
             when you ask.
           </p>
         )}
+        <RuntimeSetup />
+        <h3>AI model files</h3>
         <p className="muted">
           Models folder: <code>{data?.directory}</code>
         </p>
@@ -156,8 +159,7 @@ export function ManageModels({
                   {model.runtimeMissing.length > 0 && (
                     <p className="error">
                       Runtime components missing:{" "}
-                      {model.runtimeMissing.join(", ")}. Install the matching
-                      application inference extra.
+                      {model.runtimeMissing.join(", ")}. Use Runtime components above to install or repair them.
                     </p>
                   )}
                   {active && (

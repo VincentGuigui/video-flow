@@ -1996,7 +1996,7 @@ wheels = [
 
 [[package]]
 name = "videoflow"
-version = "0.14.0"
+version = "0.15.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
@@ -2033,7 +2033,6 @@ cuda = [
     { name = "tokenizers" },
 ]
 desktop = [
-    { name = "faster-whisper" },
     { name = "pyside6" },
     { name = "safetensors" },
     { name = "torch" },
@@ -2145,7 +2144,7 @@ requires-dist = [
     { name = "videoflow", extras = ["ml"], marker = "extra == 'openvino'" },
     { name = "videoflow", extras = ["ml"], marker = "extra == 'qnn'" },
     { name = "videoflow", extras = ["ml"], marker = "extra == 'smoke'" },
-    { name = "videoflow", extras = ["qwen", "whisper"], marker = "extra == 'desktop'" },
+    { name = "videoflow", extras = ["qwen"], marker = "extra == 'desktop'" },
 ]
 provides-extras = ["ml", "smoke", "cpu", "openvino", "directml", "cuda", "qnn", "whisper", "qwen", "desktop"]
 

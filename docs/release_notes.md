@@ -2,6 +2,12 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.15.0 — 2026-11-08
+
+- Initial component setup detects missing inference dependencies even when model files exist, and offers explicit installation, progress and cancellation in source desktop builds.
+- CUDA readiness is checked with actual inference; missing GPU libraries can be installed, or CPU use selected. CUDA libraries are preloaded before model sessions. Incomplete frozen builds report that the release needs reinstalling.
+- Keep Whisper optional in desktop installs so its CPU ONNX dependency does not overwrite an installed GPU runtime.
+
 ## 0.14.0 — 2026-11-08
 
 - Fix Qwen analysis failing with a missing PyTorch module: desktop installation includes Qwen and Whisper runtimes, and the run scripts restore desktop dependencies removed by a later environment sync.

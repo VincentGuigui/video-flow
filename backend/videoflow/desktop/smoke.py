@@ -100,10 +100,10 @@ def main(argv: list[str] | None = None) -> int:
         try:
             state = json.loads(raw)
             if state.get("settingsOpen"):
-                js("document.querySelector('[aria-label=\"Close settings\"]')?.click()")
+                js("document.querySelector('.settings-backdrop [aria-label^=Close]')?.click()")
                 return
             if phase == "loading" and state["ready"]:
-                js("document.querySelector('[aria-label=\"Close settings\"]')?.click()")
+                js("document.querySelector('.settings-backdrop [aria-label^=Close]')?.click()")
                 report["codecs"] = state["codecs"]
                 report["checks"].append("Trusted native bridge connected")
                 mime = QMimeData()
@@ -244,7 +244,7 @@ def main(argv: list[str] | None = None) -> int:
                 and state["videoClips"] == 1
             ):
                 report["checks"].append("Reload preserved original references and edit")
-                js("document.querySelector('[aria-label=\"Close settings\"]')?.click()")
+                js("document.querySelector('.settings-backdrop [aria-label^=Close]')?.click()")
                 if args.features:
                     if not state["previewFits"]:
                         raise ValueError("Preview canvas overflows its available viewport")
@@ -320,7 +320,7 @@ def main(argv: list[str] | None = None) -> int:
         pending = True
         window.page.runJavaScript(
             """JSON.stringify({
-          settingsOpen:!!document.querySelector('[aria-label="Close settings"]'),
+          settingsOpen:!!document.querySelector('.settings-backdrop [aria-label^=Close]'),
           saving:!!document.querySelector('.save-status.saving'),
           ready: !!window.videoFlowDesktop && !!document.querySelector('.flow-panel'),
           codecs: {mp4:document.createElement('video').canPlayType(

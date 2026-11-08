@@ -163,7 +163,7 @@ class Imports:
                             ):
                                 job.state, job.phase = (
                                     "waiting-models",
-                                    "Download missing models in Settings, or cancel import",
+                                    "Install missing components in Settings, or cancel import",
                                 )
                                 job.models_needed = needed
                                 await asyncio.sleep(0.35)

@@ -106,8 +106,23 @@ def model_state(key: str) -> str:
     return "missing"
 
 
+def runtime_modules(key: str) -> tuple[str, ...]:
+    if key == "qwen2.5-0.5b-instruct":
+        return ("torch", "transformers", "safetensors")
+    if key == "faster-whisper-tiny":
+        return ("faster_whisper", "ctranslate2", "av")
+    if key == "parakeet-tdt-0.6b-v3-int8":
+        return ("onnxruntime", "onnx_asr")
+    return ("onnxruntime",)
+
+
 def missing_models(preferences: Preferences) -> list[str]:
-    return [key for key in required_models(preferences) if model_state(key) != "up-to-date"]
+    return [
+        key
+        for key in required_models(preferences)
+        if model_state(key) != "up-to-date"
+        or any(importlib.util.find_spec(m) is None for m in runtime_modules(key))
+    ]
 
 
 class Downloader:
@@ -118,7 +133,7 @@ class Downloader:
         spec = load_manifest().get(key)
         count = len(spec.files)
         for index, name in enumerate(spec.files):
-            report_progress(index / count, f"{name} · file {index + 1}/{count}")
+            report_progress(index / count, f"{name} Â· file {index + 1}/{count}")
 
             hf_hub_download(
                 spec.repo,
@@ -144,11 +159,7 @@ class ModelDownloads:
         for key, spec in load_manifest().models.items():
             if not spec.in_editor:
                 continue
-            modules = (
-                ("torch", "transformers")
-                if spec.purpose == "summary"
-                else (("faster_whisper",) if key == "faster-whisper-tiny" else ("onnxruntime",))
-            )
+            modules = runtime_modules(key)
             models.append(
                 {
                     "id": key,
