@@ -34,3 +34,5 @@ Current interaction details:
 - Move range trimming and silence trimming into the flow toolbar
 
 - Remove the redundant Delete range action from clip properties
+
+- Show Compare takes in the flow toolbar for parallel takes

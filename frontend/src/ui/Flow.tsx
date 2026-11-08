@@ -1,3 +1,4 @@
+import { stackedTakes } from "../compare";
 import {
   useEffect,
   useMemo,
@@ -128,6 +129,7 @@ export function Flow() {
     48 + (layers - 1 - c.layer) * 112 >= viewport.top - 180 &&
     48 + (layers - 1 - c.layer) * 112 <= viewport.top + viewport.height + 180;
   const selectedClip = base.clips.find((c) => c.id === selected);
+  const takes = selectedClip ? stackedTakes(document,selectedClip.id) : [];
   const selectedAnalysis = analyses[selectedClip?.assetId ?? ""];
   const rangeTrim = selectedClip ? trimToRange(document,selectedClip.id,currentRange()) : null;
   const silenceTrim = selectedClip && selectedAnalysis?.words ? autoTrim(document,selectedClip.id,selectedAnalysis.words,rate) : null;
@@ -476,6 +478,18 @@ export function Flow() {
           <span className="count-badge">{pairs.length} clips</span>
         </div>
         <div className="clip-actions">
+          {takes.length > 1 && (
+            <button
+              className="button compare-action"
+              onClick={() =>
+                useEditor.getState().set({ compare: selectedClip!.id, playing: false })
+              }
+            >
+              <Layers size={14} />
+              Compare takes ({takes.length})
+            </button>
+          )}
+
 <button
                 className="button trim-range-action"
                 disabled={busy || !rangeTrim}

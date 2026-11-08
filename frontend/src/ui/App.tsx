@@ -1158,17 +1158,7 @@ function Inspector({
               Restore original audio
             </button>
           )}
-          {takes.length > 1 && (
-            <button
-              className="button compare-action"
-              onClick={() =>
-                useEditor.getState().set({ compare: clip.id, playing: false })
-              }
-            >
-              <Layers size={14} />
-              Compare takes ({takes.length})
-            </button>
-          )}
+
 
           {clip.kind !== "gap" && (
             <button
