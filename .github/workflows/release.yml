@@ -142,7 +142,13 @@ jobs:
           path: dist
           merge-multiple: true
       - name: Verify both artifacts and prepare release notes
-        run: python scripts/release_artifacts.py verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Notes gather every version since the newest published release.
+          released=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1000 \
+            --exclude-drafts --exclude-pre-releases --json tagName --jq '.[].tagName')
+          python scripts/release_artifacts.py verify --released $released
       - name: Create version tag after successful builds
         env:
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}

@@ -1,6 +1,6 @@
 # Video-Flow documentation
 
-Start with the [project README](../README.md) for what Video-Flow does and how to install and run it. The [roadmap](roadmap.md) lists what is built and what comes next; the [release notes](release_notes.md) list major changes per version.
+Start with the [project README](../README.md) for what Video-Flow does and how to install and run it. The [roadmap](roadmap.md) lists what is built and what comes next; the [release notes](release_notes.md) list the changes per version (FEATURE, IMPROVEMENT, FIX, DEV), from which GitHub release texts are built.
 
 | Folder | Content |
 |--------|---------|
@@ -15,7 +15,7 @@ Start with the [project README](../README.md) for what Video-Flow does and how t
 
 | Document | Content |
 |----------|---------|
-| [Automated releases](features/github-releases.md) | GitHub builds, version tags, ZIP artifacts and release checksums |
+| [Automated releases](features/github-releases.md) | GitHub builds, version tags, ZIP artifacts, checksums and the release-notes template |
 | [Interactive editor](features/interactive-editor.md) | Wireframe-driven editor, linked and independent media, empty clips, trim modes, keyboard, transforms, analysis sidecars |
 | [Editor refinements](features/editor-refinements.md) | Project home, save / save as, backgrounds, MP4 export, local AI model settings and initial runtime component setup |
 | [Unified timeline](features/unified-timeline.md) | One timeline axis, linking separate clips, audio trimming with retained time, live properties |
@@ -48,6 +48,6 @@ Start with the [project README](../README.md) for what Video-Flow does and how t
 
 ## Writing rules
 
-- A new feature gets a document in `features/` (or a section in the closest one) and a row above; `README.md`, the [roadmap](roadmap.md) and, for a major change, the [release notes](release_notes.md) are updated in the same change.
+- A new feature gets a document in `features/` (or a section in the closest one) and a row above; `README.md`, the [roadmap](roadmap.md) and the [release notes](release_notes.md) (one `- TYPE: text` line per change) are updated in the same change.
 - A replaced or removed behaviour is amended everywhere in `docs/`, so no document describes something that no longer exists. Decision records are history and are not rewritten.
 - Architecture documents describe the system as built; keep them in step with the code when a change affects them.

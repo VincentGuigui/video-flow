@@ -1,153 +1,163 @@
 # Release notes
 
-Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
+Changes per version, newest first, written for users. The GitHub release of a version gathers the entries of every version since the previous GitHub release ([automated releases](features/github-releases.md)).
+
+Format (checked by the release workflow, `scripts/release_artifacts.py`):
+
+- One section per version: `## <version> — <date>`, the version set in `backend/pyproject.toml`.
+- One line per change: `- <TYPE>: <short, explicit sentence for users>`, with `<TYPE>` one of:
+  - `FEATURE`: something new the user can do;
+  - `IMPROVEMENT`: something existing that works better;
+  - `FIX`: a bug fixed;
+  - `DEV`: infrastructure or technical work only (left out of GitHub release notes).
+
+## 0.34.0 — 2026-11-08
+
+- DEV: GitHub release notes follow a fixed template and gather the changes of every version since the previous release.
 
 ## 0.33.0 — 2026-11-08
 
-- Automated GitHub releases validate versions, build Windows/Linux ZIPs and checksums, then create the version tag and publish the exact built commit.
+- DEV: Releases are built for Windows and Linux, checked, tagged and published by a GitHub workflow.
+- FIX: Release builds no longer fail on a broken frontend dependency list.
 
 ## 0.32.0 — 2026-11-08
 
-- Align range guides across the merged timeline workspace
+- IMPROVEMENT: Range guides line up across the merged timeline and flow.
 
 ## 0.31.0 — 2026-11-08
 
-- Preserve transcript corrections when source folders are read-only
+- FIX: Transcript corrections are kept when the media folder is read-only.
 
 ## 0.30.0 — 2026-11-08
 
-- Render a held-edge dissolve when source handles are exhausted
+- IMPROVEMENT: A dissolve holds the edge frame when a clip has no more media beyond the cut.
 
 ## 0.29.0 — 2026-11-08
 
-- Show Compare takes in the flow toolbar for parallel takes
+- IMPROVEMENT: Compare takes is in the flow toolbar when takes are stacked.
 
 ## 0.28.0 — 2026-11-08
 
-- Remove the redundant Delete range action from clip properties
+- IMPROVEMENT: The duplicate Delete range button is gone from clip properties.
 
 ## 0.27.0 — 2026-11-08
 
-- Move range trimming and silence trimming into the flow toolbar
+- IMPROVEMENT: Trim to range and auto-trim silence are in the flow toolbar.
 
 ## 0.26.0 — 2026-11-08
 
-- Delete or ripple the selected range before falling back to whole clips
+- IMPROVEMENT: Delete and Backspace remove the selected range first, then whole clips.
 
 ## 0.25.0 — 2026-11-08
 
-- Merge timeline and clip flow with continuous cursor and range guides
+- FEATURE: Timeline and clip flow are merged, with one cursor and range across both.
 
 ## 0.24.0 — 2026-11-08
 
-- Place clip actions and clip count below the flow
+- IMPROVEMENT: Clip actions and the clip count sit below the flow.
 
 ## 0.23.0 — 2026-11-08
 
-- Place playback controls above the video preview
+- IMPROVEMENT: Playback controls sit above the video preview.
 
 ## 0.22.0 — 2026-11-08
 
-- Set output resolution from Project properties
+- IMPROVEMENT: Output resolution is set in Project properties.
 
 ## 0.21.0 — 2026-11-08
 
-- Correct transcript words in place and persist analysis JSON
+- FEATURE: Transcription can be edited word by word, and the corrections are saved.
 
 ## 0.20.0 — 2026-11-08
 
-- Map transcript text selections onto the timeline range
+- FEATURE: Selecting text in the transcript selects the matching range on the timeline.
 
 ## 0.19.0 — 2026-11-08
 
-- Show transcribed media topics after two seconds of hover
+- FEATURE: Hovering a medium for two seconds shows its topics.
 
 ## 0.18.0 — 2026-11-08
 
-- Double-click assembly clips to focus their edit
+- IMPROVEMENT: Double-clicking a clip in the timeline focuses its edit.
 
 ## 0.17.0 — 2026-11-08
 
-- Fix CUDA failing when a desktop release is moved to a fresh directory: CUDA builds now include compatible NVIDIA runtime libraries and preload the bundled directory.
-- Packaging rejects missing or incompatible CUDA libraries and retains NVIDIA licence metadata. A component diagnostic validates actual GPU inference without models or development paths.
+- FIX: GPU (CUDA) analysis keeps working after moving the app to another folder.
+- DEV: Packaging refuses missing or incompatible CUDA libraries and keeps their licences.
 
 ## 0.16.0 — 2026-11-08
 
-- The status bar displays the running backend application version instead of a hard-coded label.
+- FIX: The status bar shows the real app version.
 
 ## 0.15.0 — 2026-11-08
 
-- Initial component setup detects missing inference dependencies even when model files exist, and offers explicit installation, progress and cancellation in source desktop builds.
-- CUDA readiness is checked with actual inference; missing GPU libraries can be installed, or CPU use selected. CUDA libraries are preloaded before model sessions. Incomplete frozen builds report that the release needs reinstalling.
-- Keep Whisper optional in desktop installs so its CPU ONNX dependency does not overwrite an installed GPU runtime.
+- FEATURE: The setup window finds missing AI components and offers to install them, or to use the CPU.
+- IMPROVEMENT: GPU readiness is checked with a real test before analysis.
+- FIX: Installing Whisper no longer replaces the GPU runtime.
 
 ## 0.14.0 — 2026-11-08
 
-- Fix Qwen analysis failing with a missing PyTorch module: desktop installation includes Qwen and Whisper runtimes, and the run scripts restore desktop dependencies removed by a later environment sync.
-- Release builds include Qwen and refuse to package missing inference runtimes. Model downloads remain explicit; existing weights are reused.
+- FIX: Qwen summaries no longer fail with a missing PyTorch module.
+- DEV: Release builds include the Qwen and Whisper runtimes and refuse to package without them.
 
 ## 0.13.0 — 2026-11-04
 
-- Hovering a clip in the flow shows a one-line description of it, taken from its analysis; audio clips show the same text as their video.
-- Analysing a medium again now refreshes its transcript and tooltips at once.
+- FEATURE: Hovering a clip in the flow shows a one-line description; audio clips show the same text as their video.
+- FIX: Analysing a medium again refreshes its transcript and tooltips at once.
 
 ## 0.12.0 — 2026-11-01
 
-- Faster start: the window opens at once with a loading screen while the local service starts; FFmpeg's capabilities are probed once per build instead of at every launch.
-- The log records how long each step of the start took.
-- Fix: the desktop app no longer crashes at start on Linux (file drops are watched on the editor only).
+- IMPROVEMENT: The window opens at once with a loading screen, and FFmpeg is no longer probed at every start.
+- FIX: The desktop app no longer crashes at start on Linux.
+- DEV: The log records how long each step of the start takes.
 
 ## 0.11.0 — 2026-11-01
 
-- Keyframed transforms: animate a video clip's position, size, rotation, crop and opacity from the Animation tab (K adds a keyframe), with smooth or linear interpolation; keyframes are diamonds on the timeline (move, delete). Rendered, and exported to Camtasia.
-- Zoom & pan is replaced by keyframes; zooms of earlier projects are ignored (no migration).
+- FEATURE: Keyframes animate a video clip's position, size, rotation, crop and opacity (Animation tab, K).
+- IMPROVEMENT: Keyframes replace zoom & pan; zooms of earlier projects are ignored.
 
 ## 0.10.0 — 2026-11-01
 
-- Freeze frame (F, or Freeze in the flow toolbar): inserts a 3 s still of the frame at the cursor, splitting the clip and its audio around it; exported as Camtasia image clips, OTIO freeze effects and EDL M2 freezes.
+- FEATURE: Freeze frame (F) inserts a 3 s still of the frame at the cursor.
 
 ## 0.9.0 — 2026-11-01
 
-- Still images (PNG, JPEG, WebP, BMP, TIFF) in the media library; each becomes a 3 s image clip that trims freely, takes transitions, fades and zoom, renders and exports (Camtasia image clips).
+- FEATURE: Still images can be imported and used as clips (3 s by default, any length).
 
 ## 0.8.0 — 2026-11-01
 
-- Effects tab in clip properties: transition cards with picture tiles, and one card per clip effect with Add effect and remove.
-- Cut markers in the clip flow and transition bands in the timeline open the transition of that cut.
+- FEATURE: Add clip effects and transitions from the Effects tab, or by clicking a cut in the flow.
 
 ## 0.7.0 — 2026-11-01
 
-- Properties panel: resizable width, half or tall height, pinned or floating (folds into a strip when the pointer leaves, opens again on hover).
+- IMPROVEMENT: The properties panel can be resized, made tall, or unpinned to float over the editor.
 
 ## 0.6.0 — 2026-11-01
 
-- Right-click shows only the app's own menus; the browser menu (reload, copy address) is gone.
+- IMPROVEMENT: Right-click shows only the app's own menus.
 
 ## 0.5.0 — 2026-11-01
 
-- FFmpeg window: when no FFmpeg 6.1+ is found, the app offers at start (and from Settings) to download a pinned, checksum-verified build into `tools/ffmpeg/`, with its licence files, only on the user's consent.
-- The install scripts ask before downloading FFmpeg (`--yes` / `-Yes` to accept), always verify its checksum and keep its licence files; the Linux build moved to a working URL.
+- FEATURE: FFmpeg download is proposed when the app starts (and in Settings), only with your consent.
+- IMPROVEMENT: The install scripts ask before downloading FFmpeg and always verify it.
 
 ## 0.4.0 — 2026-11-01
 
-- GitHub releases for Windows and Linux, built by a workflow from a version tag.
-- Re-analysing a medium stacks its clip over the retake it matches.
-- SRT and paper edit leave out words said inside mute ranges; the paper edit shows the transcript of editor clips again.
+- DEV: GitHub releases for Windows and Linux are built by a workflow.
+- IMPROVEMENT: Analysing a medium again stacks it over the retake it matches.
+- FIX: SRT and paper edit leave out words said inside muted ranges.
 
 ## 0.3.0 — 2026-11-01
 
-- Manage AI models window (from Settings, at first start and when an import needs a model): exact download size before downloading (from the Hub metadata, cached), size on disk, download, update, cancel and remove per model.
-- `Add Video-Flow to Start Menu.bat` (Windows) / `add-video-flow-to-menu.sh` (Linux) next to the packaged executable.
+- FEATURE: AI model downloads are proposed when the app starts (and in Settings), with sizes, update and remove.
+- FEATURE: A script next to the app adds Video-Flow to the Start menu (Windows) or the applications menu (Linux).
 
 ## 0.2.0 — 2026-11-01
 
-First numbered version; it gathers everything built so far.
-
-- Desktop editor (PySide6 / Qt WebEngine) with native imports that reference originals in place, project home, save and save as.
-- Local analysis: transcription (Parakeet TDT or Whisper), summary, keywords and topic sections; models downloaded on request, NPU → GPU → CPU.
-- Retakes stacked on import by sentence similarity; compare takes side by side and pick one.
-- Editing: layered clip flow, linked video/audio, split, lift, ripple delete, trim modes, undo/redo, timeline range, transcript-driven trimming, auto-trim silence, workspace zones with select all and delete.
-- Finishing: transitions (dissolve, dips), fades, speed, zoom & pan, mute ranges, ducking under speech, titles and lower thirds.
-- Projects live in the working folder as `<name>.video-flow`, with media referenced relative to it; recent projects per user on the home page (open, rename, remove from list, delete to the trash); Open accepts only valid project folders; caches kept outside projects and managed in Settings (obsolete in-project caches of older projects are removed on open).
-- Project media context menu: Info and Analyse again.
-- Output: MP4 render with loudness normalisation; OTIO, OTIOZ, EDL, SRT, paper edit and Camtasia 2023.4+ exports.
+- FEATURE: Desktop editor that imports media in place, with a project home, save and save as.
+- FEATURE: Local transcription, summary and topics; AI runs on the NPU, then the GPU, then the CPU.
+- FEATURE: Retakes are stacked on import and can be compared side by side.
+- FEATURE: Editing with a layered clip flow, linked audio and video, split, trim, undo, range and transcript-driven trimming.
+- FEATURE: Fades, speed, mute ranges, ducking under speech, titles and lower thirds.
+- FEATURE: Projects live next to your media and can be moved with them.
+- FEATURE: MP4 render, and exports to OTIO, EDL, SRT, paper edit and Camtasia.

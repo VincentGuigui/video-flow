@@ -102,7 +102,7 @@ Camtasia: Export → Camtasia project, or `uv run videoflow export BUNDLE --camt
 
 - [Documentation index](docs/README.md): product, features, architecture, decisions, reference
 - [Roadmap](docs/roadmap.md): what is built and what comes next
-- [Release notes](docs/release_notes.md): major changes per version
+- [Release notes](docs/release_notes.md): changes per version, the source of GitHub release texts
 - [Dependencies and accelerator matrix](docs/reference/dependencies.md)
 - [Agent guidelines](AGENTS.md): conventions for contributors and coding agents
 
@@ -142,4 +142,4 @@ Editor interactions:
 
 ## Automated releases
 
-Use GitHub **Actions → Release → Run workflow** to build Windows/Linux ZIPs, tag the built commit and publish a versioned release with SHA-256 checksums. See [automated releases](docs/features/github-releases.md).
+Use GitHub **Actions → Release → Run workflow** to build Windows/Linux ZIPs, tag the built commit and publish a versioned release with SHA-256 checksums; its text lists the changes since the previous release, from `docs/release_notes.md`. See [automated releases](docs/features/github-releases.md).

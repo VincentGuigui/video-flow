@@ -2,6 +2,27 @@
 
 Open **Actions → Release → Run workflow**, select the branch containing the desired app version, and run it. The workflow builds Windows x64 (DirectML with CPU fallback) and Linux x64 (CPU) from the same commit. It reads the version from backend/pyproject.toml and checks backend/videoflow/__init__.py, frontend/package.json and the npm lock, and requires matching release notes. It does not invent or increment versions.
 
+## Release notes
+
+The release text follows the fixed template `.github/release-notes-template.md`:
+
+```markdown
+# How to install
+
+* Extract the complete Video-Flow zip to a folder before running.
+
+
+# What's new ?
+
+{whats_new}
+```
+
+`{whats_new}` is filled from `docs/release_notes.md` with the entries of **every version since the previous GitHub release** up to the released version: first `FEATURE`, then `IMPROVEMENT`, then `FIX` entries (newest version first within each type), one `* ` line each, without their type. `DEV` entries are technical and left out; a release with only `DEV` entries says “Maintenance release: no visible change.” The previous release is the newest published (non-draft, non-prerelease) GitHub release older than the version, read with `gh release list`; re-running the release of a version gives the same text. Without any earlier release, every version up to it is listed.
+
+`docs/release_notes.md` has one section per version, `## <version> — <date>`, with one line per change: `- <TYPE>: <short sentence for users>`, `TYPE` being `FEATURE`, `IMPROVEMENT`, `FIX` or `DEV` (the change types of conventional changelogs). The workflow refuses to build when a line does not follow this, or when the version has no section. Code: `scripts/release_artifacts.py` (`parse_notes`, `release_notes`), tested by `backend/tests/core/test_release_artifacts.py`.
+
+## Publication
+
 After both builds succeed, it verifies their checksums, creates the annotated tag `v<version>` at the built commit, then publishes **Video-Flow <version>**. For version 0.33.0 the assets are:
 
 - `Video-Flow-0.33.0-windows-x64.zip`
