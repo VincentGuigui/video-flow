@@ -5,7 +5,7 @@ This revision implements CMP-01 to CMP-04 ([functional spec](../product/function
 ## Takes
 
 - The takes of a selected clip are the video clips on any lane that overlap its assembly time, enabled or not, ordered by lane. A selected audio clip stands for its linked video.
-- Clip properties show **Compare takes (N)** when there are at least two takes.
+- The toolbar below the clip flow shows **Compare takes (N)** when there are at least two takes.
 
 ## Compare view
 

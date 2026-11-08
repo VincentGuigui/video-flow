@@ -24,3 +24,5 @@ The sidecar JSON ([interactive editor](interactive-editor.md)) gains `topics` an
 - Media without analysis shows a hint to import it again with analysis.
 
 Validation: backend tests cover sentence splitting, two-subject segmentation with timecodes, single-subject stability, title length and LLM fallback, summary length and topics derived for old sidecars. Frontend tests cover source-to-assembly mapping with trims, disabled clips and range clamping. A browser check on a served project confirmed topics, expansion, range selection and cursor seeks.
+
+Text can be selected normally in expanded transcript lines; the selected words set the timeline range. Double-click a word to correct it inline, then press Enter or leave the input to save (Escape cancels). Corrections preserve word timecodes and update sentence text. They are saved atomically to analysis JSON and the project cache; read-only source folders use the newer cached correction. Concurrent stale word edits are rejected. Original media bytes remain unchanged.

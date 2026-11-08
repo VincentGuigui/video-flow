@@ -15,7 +15,7 @@ This revision implements TR-01, TR-02, TR-04, TR-06 (shortening only) and TR-07 
 | Cross dissolve | The left clip continues `after` frames past the cut and the right clip starts `before` frames early (`before` = ⌊T/2⌋, `after` = T − `before`), fading in over the left. | Crossfade over the overlap. | Uses source media beyond the cut. |
 | Dip to black / white | The whole picture fades to the colour over `before` frames and back over `after` frames. | Left audio fades out over `before`, right fades in over `after`. | None. |
 
-When the source has too few frames beyond the cut, or a clip is shorter than its half, the transition is **shortened** (TR-06) and a warning is shown in the transition card (Effects tab) and in the render log. Changing alignment is not offered.
+When the source has too few frames beyond the cut, or a clip is shorter than its half, the transition is **shortened** (TR-06) and a warning is shown in the transition card (Effects tab) and in the render log. When no usable overlap remains (zero or one frame), the outgoing last frame is held while the incoming picture fades in after the cut. This preserves assembly duration and provides a visible dissolve on full-length imports. Padded frames receive normalized timestamps in FFmpeg.
 
 ## UI
 
