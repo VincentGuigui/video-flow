@@ -1169,26 +1169,7 @@ function Inspector({
               Compare takes ({takes.length})
             </button>
           )}
-          {clip.kind !== "gap" && (
-            <div className="inspector-section trim-actions">
-              <span className="overline">TRIM</span>
-              
-              <button
-                className="button delete-range-action"
-                disabled={busy || !rangeDelete}
-                title="Cut the part of the clip inside the timeline range; later clips move earlier"
-                onClick={() => {
-                  if (!rangeDelete) return;
-                  void save(rangeDelete);
-                  useEditor.getState().set({ range: null, rangeHandle: null });
-                }}
-              >
-                <Scissors size={14} />
-                Delete range
-              </button>
-              
-            </div>
-          )}
+
           {clip.kind !== "gap" && (
             <button
               className="button effects-link"

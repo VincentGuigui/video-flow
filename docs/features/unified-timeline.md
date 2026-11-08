@@ -32,3 +32,5 @@ Current interaction details:
 - Delete or ripple the selected range before falling back to whole clips
 
 - Move range trimming and silence trimming into the flow toolbar
+
+- Remove the redundant Delete range action from clip properties
