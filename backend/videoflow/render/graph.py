@@ -318,7 +318,8 @@ def compile_graph(
                     f"[{index}:v:0]fps={fps}:round=near,"
                     f"trim=start_frame={clip.source_in}:end_frame={clip.source_out},"
                     f"{_retime(clip.speed, fps)}tpad=stop_mode=clone:stop={clip.duration},"
-                    f"trim=end_frame={clip.duration},{tone}setsar=1,format=rgba"
+                    f"trim=end_frame={clip.duration},settb=AVTB,"
+                    f"setpts=N*{rate.den}/{rate.num}/TB,{tone}setsar=1,format=rgba"
                 )
             fade_in = plan.video_fade_in.get(clip.id, 0)
             fade_out = plan.video_fade_out.get(clip.id, 0)

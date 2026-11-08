@@ -92,6 +92,8 @@ export function activeTransitions(
       before = Math.min(half, duration(left!));
       after = Math.min(t.duration - half, duration(right!));
     }
+    if (t.type === "dissolve" && before + after <= 1)
+      after = Math.min(t.duration, duration(right!));
     before = Math.max(0, before);
     after = Math.max(0, after);
     if (before + after)

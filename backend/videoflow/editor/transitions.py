@@ -85,6 +85,8 @@ def active_transitions(
         else:
             before = min(half, left.duration)
             after = min(t.duration - half, right.duration)
+        if t.type == "dissolve" and before + after <= 1:
+            after = min(t.duration, right.duration)
         before, after = max(0, before), max(0, after)
         if before + after:
             active.append(ActiveTransition(t, right.start, before, after))

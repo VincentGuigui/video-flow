@@ -256,3 +256,42 @@ async def test_mute_and_duck_ranges_shape_the_rendered_audio(edit, tmp_path):
     loud, muted, ducked = rms(0.1, 0.9), rms(1.1, 1.9), rms(2.1, 2.9)
     assert muted < loud * 0.01
     assert 0.07 < ducked / loud < 0.14  # -20 dB = 0.1
+
+
+async def test_full_length_dissolve(edit, tmp_path):
+    red, blue = edit.project.assets
+    rate = edit.project.settings.frame_rate
+    length = round(red.probe.duration_us * rate.num / rate.den / 1_000_000)
+    doc = EditorDocument(
+        clips=[
+            EditorClip(
+                id="red",
+                kind="video",
+                asset_id=red.id,
+                name="Red",
+                start=0,
+                source_in=0,
+                source_out=length,
+                transform=Transform(width=160, height=90),
+            ),
+            EditorClip(
+                id="blue",
+                kind="video",
+                asset_id=blue.id,
+                name="Blue",
+                start=length,
+                source_in=0,
+                source_out=length,
+                transform=Transform(width=160, height=90),
+            ),
+        ],
+        transitions=[
+            EditorTransition(id="t", left_id="red", right_id="blue", type="dissolve", duration=10)
+        ],
+    )
+    project, _ = SetEditor(document=doc).apply(edit.project)
+    edit.save(project)
+    output = await render_project(edit.project, edit, hw="cpu", normalize=False)
+    middle = (await pixels(output.path, length + 5, tmp_path)).reshape(-1, 3).mean(axis=0)
+    assert 80 < middle[0] < 180 and 80 < middle[2] < 180
+    assert (await ffmpeg.probe(output.path)).video.nb_frames == length * 2

@@ -131,3 +131,5 @@ Editor interactions:
 - Remove the redundant Delete range action from clip properties
 
 - Show Compare takes in the flow toolbar for parallel takes
+
+- Render a held-edge dissolve when source handles are exhausted
