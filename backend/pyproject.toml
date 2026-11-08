@@ -1,6 +1,6 @@
 [project]
 name = "videoflow"
-version = "0.22.0"
+version = "0.23.0"
 description = "Local-first assembly tool for footage shot with many retakes"
 requires-python = ">=3.13,<3.14"
 license = { text = "MIT" }

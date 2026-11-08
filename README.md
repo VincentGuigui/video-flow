@@ -117,3 +117,5 @@ Editor interactions:
 - Correct transcript words in place and persist analysis JSON
 
 - Set output resolution from Project properties
+
+- Place playback controls above the video preview

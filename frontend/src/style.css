@@ -2998,3 +2998,6 @@ button.timecode:hover {
 .animation-fields .number-field small {
   color: #97a18e;
 }
+
+.preview-panel > .panel-title { justify-content: center; }
+.preview-panel .transport-buttons { flex-wrap: wrap; justify-content: center; padding: 0; border: 0; }

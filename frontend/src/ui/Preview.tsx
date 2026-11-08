@@ -1,3 +1,4 @@
+import { PlaybackControls } from "./Transport";
 import {
   useEffect,
   useRef,
@@ -427,7 +428,7 @@ export function Preview() {
       onPointerDownCapture={() => useEditor.getState().set({ zone: "editor" })}
     >
       <div className="panel-title">
-        <span>Preview & editor</span>
+        <PlaybackControls />
         <span className="muted">
           {visible.some((c) => c.kind === "video" || c.kind === "text")
             ? "Composite view"
