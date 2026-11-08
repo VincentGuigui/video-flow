@@ -70,15 +70,21 @@ def cached_path(bundle: Bundle, digest: str) -> Path:
 
 def load_analysis(source: Path, digest: str, bundle: Bundle) -> AnalysisFile | None:
     result = read_sidecar(source, digest)
-    if result is not None:
-        return result
     path = cached_path(bundle, digest)
+    if result is not None:
+        source_times = [
+            p.stat().st_mtime_ns
+            for p in (sidecar_path(source), Path(str(source) + ".json"))
+            if p.exists()
+        ]
+        if not path.exists() or path.stat().st_mtime_ns <= max(source_times, default=0):
+            return result
     if path.is_file():
         with contextlib.suppress(ValueError, OSError):
             analysis = AnalysisFile.model_validate_json(path.read_bytes())
             if analysis.source_hash == digest and analysis.version == 1:
                 return with_topics(analysis)
-    return None
+    return result
 
 
 def store_analysis(
@@ -179,6 +185,7 @@ def correct_word(
         raise ValueError("Transcript word not found")
     if analysis.words[index].text != expected:
         raise ValueError("Transcript changed; reload before correcting this word")
+    analysis.source_hash = digest
     analysis.words[index].text = text.strip()
     for topic in analysis.topics:
         for sentence in topic.sentences:

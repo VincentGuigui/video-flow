@@ -133,3 +133,5 @@ Editor interactions:
 - Show Compare takes in the flow toolbar for parallel takes
 
 - Render a held-edge dissolve when source handles are exhausted
+
+- Preserve transcript corrections when source folders are read-only
