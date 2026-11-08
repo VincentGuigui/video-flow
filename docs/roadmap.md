@@ -59,3 +59,5 @@ Additional built editor interactions:
 - Place clip actions and clip count below the flow
 
 - Merge timeline and clip flow with continuous cursor and range guides
+
+- Delete or ripple the selected range before falling back to whole clips

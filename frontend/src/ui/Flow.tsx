@@ -41,6 +41,7 @@ import {
   type Clip,
   type Document,
 } from "../model";
+import { removeRange } from "../range";
 import { currentRange } from "../playback";
 import { useTimeline, useTimelineWheel } from "../timeline";
 import { addTitle, type Title } from "../titles";
@@ -498,18 +499,18 @@ export function Flow() {
             disabled={!selectedClip || busy}
             onClick={() =>
               selectedClip &&
-              apply(remove(pack(document), selectedClip.id, false))
+              apply(state.range ? removeRange(document,selectedClip.id,state.range,false) : remove(pack(document), selectedClip.id, false))
             }
-            title="Lift: replace with empty clip (Delete)"
+            title="Delete selection or clip, preserving time (Delete)"
           >
             <Trash2 size={14} />
-            Lift
+            Delete
           </button>
           <button
             disabled={!selectedClip || busy}
             onClick={() =>
               selectedClip &&
-              apply(remove(pack(document), selectedClip.id, true))
+              apply(state.range ? removeRange(document,selectedClip.id,state.range,true) : remove(pack(document), selectedClip.id, true))
             }
             title="Ripple delete (Backspace)"
           >

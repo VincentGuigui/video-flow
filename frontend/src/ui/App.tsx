@@ -71,7 +71,7 @@ import { AnimationTab } from "./AnimationTab";
 import { stackedTakes } from "../compare";
 import { useAnalysis } from "./useAnalysis";
 import { currentRange, currentWindow, togglePlay } from "../playback";
-import { autoTrim, deleteRange, trimToRange } from "../range";
+import { removeRange, autoTrim, deleteRange, trimToRange } from "../range";
 import { ImportDialog } from "./Imports";
 import { MediaTopics } from "./MediaTopics";
 import { MediaInfoDialog, MediaMenu } from "./MediaInfo";
@@ -351,7 +351,7 @@ export function App() {
           s.set({ selectedAssets: [], selected: null, focus: null });
         } else if (clipIds.length) {
           e.preventDefault();
-          void s.save(removeClips(s.document, clipIds, e.key === "Backspace"));
+          void s.save(s.range && s.selected ? removeRange(s.document,s.selected,s.range,e.key === "Backspace") : removeClips(s.document, clipIds, e.key === "Backspace"));
           s.set({ selected: null, focus: null, playing: false });
         }
       }
@@ -743,7 +743,7 @@ export function App() {
               ["Freeze frame at cursor", "F"],
               ["Keyframe at cursor (selected clip)", "K"],
               ["Remove the selected keyframe", "Delete (timeline)"],
-              ["Lift · preserve time", "Delete"],
+              ["Delete · preserve time", "Delete"],
               ["Ripple delete", "Backspace"],
               ["Select all in the clicked zone", "Ctrl + A"],
               ["Remove selected media and its clips", "Delete (media)"],
