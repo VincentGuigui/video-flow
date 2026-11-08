@@ -194,82 +194,6 @@ export function Flow() {
       className={`flow-panel ${zone === "flow" ? "zone-active" : ""}`}
       onPointerDownCapture={() => useEditor.getState().set({ zone: "flow" })}
     >
-      <div className="flow-toolbar">
-        <div className="flow-heading">
-          <strong>Clip flow</strong>
-          <span className="count-badge">{pairs.length} clips</span>
-        </div>
-        <div className="clip-actions">
-          <button
-            disabled={!selectedClip || busy}
-            onClick={() =>
-              selectedClip &&
-              apply(split(pack(document), selectedClip.id, frame))
-            }
-            title="Split at cursor (S)"
-          >
-            <Scissors size={14} />
-            Split
-          </button>
-          <button
-            disabled={!freeze || busy}
-            onClick={() => {
-              if (!freeze) return;
-              apply(freeze.doc);
-              set({ selected: freeze.id });
-            }}
-            title="Freeze frame (F): insert a 3 s still of the frame at the cursor"
-          >
-            <Snowflake size={14} />
-            Freeze
-          </button>
-          <button
-            disabled={!selectedClip || busy}
-            onClick={() =>
-              selectedClip &&
-              apply(remove(pack(document), selectedClip.id, false))
-            }
-            title="Lift: replace with empty clip (Delete)"
-          >
-            <Trash2 size={14} />
-            Lift
-          </button>
-          <button
-            disabled={!selectedClip || busy}
-            onClick={() =>
-              selectedClip &&
-              apply(remove(pack(document), selectedClip.id, true))
-            }
-            title="Ripple delete (Backspace)"
-          >
-            <ChevronsLeft size={14} />
-            Ripple
-          </button>
-          {(["title", "lower_third"] as Title["style"][]).map((style) => (
-            <button
-              key={style}
-              disabled={busy || !project}
-              onClick={() => {
-                const added = addTitle(pack(document), style, frame, rate);
-                apply(added.doc);
-                set({ selected: added.id });
-              }}
-              title={
-                style === "title"
-                  ? "Add a title at the cursor, over the picture"
-                  : "Add a lower third (name and role) at the cursor"
-              }
-            >
-              {style === "title" ? (
-                <Type size={14} />
-              ) : (
-                <PanelBottom size={14} />
-              )}
-              {style === "title" ? "Title" : "Lower third"}
-            </button>
-          ))}
-        </div>
-      </div>
       <div
         className={`flow-scroll ${dragging ? "dragging" : ""}`}
         ref={scroll}
@@ -537,6 +461,82 @@ export function Flow() {
           Double-click a clip to edit <i />
           Ctrl + wheel to zoom <i /> Shift + wheel to scroll
         </span>
+      </div>
+      <div className="flow-toolbar">
+        <div className="flow-heading">
+          <strong>Clip flow</strong>
+          <span className="count-badge">{pairs.length} clips</span>
+        </div>
+        <div className="clip-actions">
+          <button
+            disabled={!selectedClip || busy}
+            onClick={() =>
+              selectedClip &&
+              apply(split(pack(document), selectedClip.id, frame))
+            }
+            title="Split at cursor (S)"
+          >
+            <Scissors size={14} />
+            Split
+          </button>
+          <button
+            disabled={!freeze || busy}
+            onClick={() => {
+              if (!freeze) return;
+              apply(freeze.doc);
+              set({ selected: freeze.id });
+            }}
+            title="Freeze frame (F): insert a 3 s still of the frame at the cursor"
+          >
+            <Snowflake size={14} />
+            Freeze
+          </button>
+          <button
+            disabled={!selectedClip || busy}
+            onClick={() =>
+              selectedClip &&
+              apply(remove(pack(document), selectedClip.id, false))
+            }
+            title="Lift: replace with empty clip (Delete)"
+          >
+            <Trash2 size={14} />
+            Lift
+          </button>
+          <button
+            disabled={!selectedClip || busy}
+            onClick={() =>
+              selectedClip &&
+              apply(remove(pack(document), selectedClip.id, true))
+            }
+            title="Ripple delete (Backspace)"
+          >
+            <ChevronsLeft size={14} />
+            Ripple
+          </button>
+          {(["title", "lower_third"] as Title["style"][]).map((style) => (
+            <button
+              key={style}
+              disabled={busy || !project}
+              onClick={() => {
+                const added = addTitle(pack(document), style, frame, rate);
+                apply(added.doc);
+                set({ selected: added.id });
+              }}
+              title={
+                style === "title"
+                  ? "Add a title at the cursor, over the picture"
+                  : "Add a lower third (name and role) at the cursor"
+              }
+            >
+              {style === "title" ? (
+                <Type size={14} />
+              ) : (
+                <PanelBottom size={14} />
+              )}
+              {style === "title" ? "Title" : "Lower third"}
+            </button>
+          ))}
+        </div>
       </div>
     </section>
   );

@@ -2,6 +2,10 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.24.0 — 2026-11-08
+
+- Place clip actions and clip count below the flow
+
 ## 0.23.0 — 2026-11-08
 
 - Place playback controls above the video preview

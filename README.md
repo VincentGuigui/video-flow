@@ -119,3 +119,5 @@ Editor interactions:
 - Set output resolution from Project properties
 
 - Place playback controls above the video preview
+
+- Place clip actions and clip count below the flow
