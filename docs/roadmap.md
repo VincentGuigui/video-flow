@@ -51,3 +51,5 @@ Additional built editor interactions:
 - Map transcript text selections onto the timeline range
 
 - Correct transcript words in place and persist analysis JSON
+
+- Set output resolution from Project properties

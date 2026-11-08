@@ -631,42 +631,7 @@ export function App() {
           >
             <div className="preview-container">
               <Preview />
-              <select
-                className="resolution-menu"
-                aria-label="Output resolution"
-                value={
-                  project
-                    ? `${project.settings.width}x${project.settings.height}`
-                    : ""
-                }
-                onChange={(e) => {
-                  if (!project) return;
-                  const [width, height] = e.target.value.split("x").map(Number);
-                  void save(resize(document, project.settings, width, height), {
-                    ...project.settings,
-                    width,
-                    height,
-                  });
-                }}
-              >
-                {project &&
-                  !RESOLUTIONS.some(
-                    ([w, h]) =>
-                      w === project.settings.width &&
-                      h === project.settings.height,
-                  ) && (
-                    <option
-                      value={`${project.settings.width}x${project.settings.height}`}
-                    >
-                      {project.settings.width} × {project.settings.height}
-                    </option>
-                  )}
-                {RESOLUTIONS.map(([w, h, label]) => (
-                  <option value={`${w}x${h}`} key={`${w}x${h}`}>
-                    {w} × {h} · {label}
-                  </option>
-                ))}
-              </select>
+
             </div>
             {panel.height === "half" && dock}
           </div>
@@ -940,6 +905,42 @@ function Inspector({
       </div>
       {tab === "Project" ? (
         <div className="inspector-content">
+              <select
+                className="project-resolution"
+                aria-label="Output resolution"
+                value={
+                  project
+                    ? `${project.settings.width}x${project.settings.height}`
+                    : ""
+                }
+                onChange={(e) => {
+                  if (!project) return;
+                  const [width, height] = e.target.value.split("x").map(Number);
+                  void save(resize(document, project.settings, width, height), {
+                    ...project.settings,
+                    width,
+                    height,
+                  });
+                }}
+              >
+                {project &&
+                  !RESOLUTIONS.some(
+                    ([w, h]) =>
+                      w === project.settings.width &&
+                      h === project.settings.height,
+                  ) && (
+                    <option
+                      value={`${project.settings.width}x${project.settings.height}`}
+                    >
+                      {project.settings.width} × {project.settings.height}
+                    </option>
+                  )}
+                {RESOLUTIONS.map(([w, h, label]) => (
+                  <option value={`${w}x${h}`} key={`${w}x${h}`}>
+                    {w} × {h} · {label}
+                  </option>
+                ))}
+              </select>
           <span className="overline">OUTPUT</span>
           <h3>
             {project?.settings.width} × {project?.settings.height}
