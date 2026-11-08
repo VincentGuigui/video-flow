@@ -10,3 +10,7 @@ This revision supersedes conflicting editing details in [interactive editor](int
 - Scale and crop handles snap visible picture edges to the top, left, bottom and right viewport edges. Respect ratio locking, Shift stretching and Alt symmetry, and display guides at the actual snapped edges.
 
 Validation includes linking different source offsets, paired splits, normal audio trimming with retained time, persistence/export of retained silence, rapid property updates during asynchronous saves, shared pointer-centered zoom, and edge snapping with modifiers. The real Qt smoke check covers the unified axis, collapsed source properties, live numeric input, detach/relink and standard audio handles, followed by MP4 rendering and project copying.
+
+Current interaction details:
+
+- Double-click assembly clips to focus their edit

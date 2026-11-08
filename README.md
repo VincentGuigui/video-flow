@@ -105,3 +105,7 @@ Camtasia: Export → Camtasia project, or `uv run videoflow export BUNDLE --camt
 - [Release notes](docs/release_notes.md): major changes per version
 - [Dependencies and accelerator matrix](docs/reference/dependencies.md)
 - [Agent guidelines](AGENTS.md): conventions for contributors and coding agents
+
+Editor interactions:
+
+- Double-click assembly clips to focus their edit

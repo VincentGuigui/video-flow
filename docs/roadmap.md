@@ -41,3 +41,7 @@ Snapshot of what is built and what comes next. Update it with every feature. His
 | Phone footage quirks (VFR, HDR, rotation) | Proxies for preview, normalisation and tone mapping in the render |
 | Camtasia format changes between versions | Template-driven writer: a project saved by the user's version provides the structures |
 | Scope creep towards a full editor | Handoff to other editors through OTIO and Camtasia for advanced finishing |
+
+Additional built editor interactions:
+
+- Double-click assembly clips to focus their edit

@@ -237,6 +237,10 @@ export function Transport() {
               .map((c) => (
                 <div
                   key={c.id}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    set({ selected: c.id, focus: c.id, frame: c.start, playing: false });
+                  }}
                   title={c.name}
                   className={`overview-clip ${c.kind} ${selectedClips.includes(c.id) ? "selected" : ""}`}
                   style={{
