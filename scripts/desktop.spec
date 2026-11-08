@@ -6,6 +6,12 @@ import PySide6
 import sys
 
 root = Path(SPECPATH).parent
+sys.path.insert(0, str(root / "backend"))
+from videoflow.desktop.cuda_bundle import cuda_distributions, cuda_binaries
+cuda_packages = cuda_distributions()
+cuda_libraries = cuda_binaries(cuda_packages)
+cuda_metadata = [entry for name in cuda_packages for entry in copy_metadata(name)]
+
 # Missing hidden imports only warn in PyInstaller, producing a broken release.
 from importlib.util import find_spec
 required = ("torch", "transformers", "safetensors", "onnxruntime", "onnx_asr")
@@ -16,7 +22,7 @@ if missing:
 a = Analysis(
     [str(root / "backend" / "videoflow" / "desktop_entry.py")],
     pathex=[str(root / "backend")],
-    binaries=[],
+    binaries=cuda_libraries,
     datas=[
         (str(root / "backend" / "videoflow" / "engines" / "manifest.toml"), "videoflow/engines"),
         (str(root / "assets" / "fonts"), "assets/fonts"),
@@ -24,7 +30,7 @@ a = Analysis(
         (str(root / "docs" / "reference" / "desktop-runtime.md"), "notices"),
     ] + collect_data_files("opentimelineio") + copy_metadata("opentimelineio")
       # onnx_asr reads its own version with importlib.metadata on import.
-      + copy_metadata("onnx-asr"),
+      + copy_metadata("onnx-asr") + cuda_metadata,
     hiddenimports=["videoflow.editor.analysis", "videoflow.engines.asr.parakeet_onnx",
                    "videoflow.engines.vad.silero_onnx", "videoflow.engines.downloads",
                    "videoflow.engines.summary", "transformers.models.qwen2.modeling_qwen2",

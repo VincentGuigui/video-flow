@@ -4,7 +4,7 @@ Snapshot of what is built and what comes next. Update it with every feature. His
 
 ## Built
 
-- **Desktop app:** status bar reports the running application version; PySide6 / Qt WebEngine window hosting the React editor; native file and folder dialogs and drops; only the app's own context menus; window shown at once with a loading screen, startup timeline in the log; originals referenced in place, relink when offline. See [desktop shell](architecture/desktop-shell.md).
+- **Desktop app:** status bar reports the running application version; CUDA releases bundle compatible native libraries; PySide6 / Qt WebEngine window hosting the React editor; native file and folder dialogs and drops; only the app's own context menus; window shown at once with a loading screen, startup timeline in the log; originals referenced in place, relink when offline. See [desktop shell](architecture/desktop-shell.md).
 - **Clip tooltip:** hovering a clip in the flow shows its one-line description from the analysis (audio: the same as its video). See [clip tooltip](features/clip-tooltip.md).
 - **Properties panel:** resizable, half or tall height, pinned or floating (folds into a strip when the pointer leaves). See [properties panel](features/properties-panel.md).
 - **FFmpeg setup:** FFmpeg window at start and in Settings; download of a pinned, checksum-verified build into `tools/ffmpeg/` only on the user's consent, also in the install scripts. See [FFmpeg setup](features/ffmpeg-setup.md).

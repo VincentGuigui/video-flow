@@ -6,7 +6,9 @@ onnxruntime and openvino are imported lazily and optionally: the core works with
 from __future__ import annotations
 
 import importlib
+import os
 import platform
+import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -216,12 +218,22 @@ PROBE_MODEL = bytes.fromhex(
 )
 
 
+_CUDA_DLL_DIRECTORIES: list[Any] = []
+
+
 @cache
 def preload_cuda() -> None:
     ort = _import_ort()
     if ort is not None and hasattr(ort, "preload_dlls"):
         # Locate compatible NVIDIA/PyTorch runtime libraries without editing PATH.
-        ort.preload_dlls()
+        bundled = Path(getattr(sys, "_MEIPASS", "")) / "cuda"
+        if getattr(sys, "frozen", False) and bundled.is_dir():
+            if sys.platform == "win32":
+                # Keep handles alive: cuDNN loads additional engines on demand.
+                _CUDA_DLL_DIRECTORIES.append(os.add_dll_directory(str(bundled)))
+            ort.preload_dlls(directory=str(bundled))
+        else:
+            ort.preload_dlls()
 
 
 @cache

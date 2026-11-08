@@ -2,6 +2,11 @@
 
 Major changes per version, newest first. Every delivered change set bumps the minor version; the major version changes for breaking changes. The version is set in `backend/pyproject.toml`, `backend/videoflow/__init__.py` and `frontend/package.json`, and recorded in each saved `project.json` (`app.version`).
 
+## 0.17.0 — 2026-11-08
+
+- Fix CUDA failing when a desktop release is moved to a fresh directory: CUDA builds now include compatible NVIDIA runtime libraries and preload the bundled directory.
+- Packaging rejects missing or incompatible CUDA libraries and retains NVIDIA licence metadata. A component diagnostic validates actual GPU inference without models or development paths.
+
 ## 0.16.0 — 2026-11-08
 
 - The status bar displays the running backend application version instead of a hard-coded label.

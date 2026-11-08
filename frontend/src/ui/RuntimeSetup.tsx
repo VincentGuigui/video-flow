@@ -103,7 +103,9 @@ export function RuntimeSetup() {
               ) : (
                 <p>
                   {data.packaged
-                    ? "Reinstall a complete Video-Flow release to repair bundled dependencies."
+                    ? component.id === "cuda"
+                      ? "Use a complete CUDA release and a compatible NVIDIA driver, or choose CPU."
+                      : "Reinstall a complete Video-Flow release to repair bundled dependencies."
                     : "Run the Video-Flow installer to restore these components."}
                 </p>
               )}

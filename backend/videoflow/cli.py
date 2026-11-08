@@ -202,3 +202,19 @@ def export_command(
     report = json.loads(paths[-1].read_text(encoding="utf-8"))
     for warning in report["warnings"]:
         typer.echo(f"Warning: {warning}", err=True)
+
+
+@app.command("components-check", hidden=True)
+def components_check(output: Path) -> None:
+    """Validate the packaged inference runtime without models or a desktop window."""
+    from videoflow.hw.ai import available_providers, cuda_status
+
+    cuda = cuda_status()
+    output.write_text(
+        json.dumps(
+            {"version": __version__, "providers": available_providers(), "cuda": cuda}, indent=2
+        ),
+        encoding="utf-8",
+    )
+    if cuda is not None and not cuda["available"]:
+        raise typer.Exit(1)
