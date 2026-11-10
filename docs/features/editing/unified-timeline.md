@@ -1,46 +1,51 @@
-# Unified timeline and focused editing — 2026-10-26
+# Timeline and clip flow
 
-This revision supersedes conflicting editing details in [interactive editor](interactive-editor.md) and [editor refinements](editor-refinements.md); the native desktop architecture in [desktop shell](../../architecture/desktop-shell.md) remains authoritative.
+The bottom of the window holds the edit: one ruler with the cursor and the range, and below it the clips on numbered lanes. Timeline and clip flow share the same time axis, zoom and scroll, and the cursor and range guides run across both.
 
-- The assembly timeline is the only ruler and cursor. Its zoom/fit controls sit at the right of its header. The flow is a clip-lane editor driven by the same scale and horizontal scroll, with no independent ruler, cursor, zoom control or focus banner. Double-clicking a clip fits the assembly range to that clip plus up to two seconds of context. Back to full edit [Esc] appears beside Clip timeline. The scrub hint sits beside the Space hint; the flow footer retains interaction hints without Video/Audio/Enabled legends.
-- Remove the Linked audio text and broken-chain decoration from clip cards. The existing full-chain detach control remains available.
-- Properties offers Link audio / Link video for separate clips sharing assembly start and duration. Source offsets may differ. Linking preserves each source offset; linked movement, splitting and trimming remain paired. Incompatible ranges cannot be silently retimed by linking. Detach remains available in properties.
-- Audio has one standard handle per edge. Trimming adjusts media bounds and retains the previously occupied assembly span without inserting a fake silence clip or shifting later clips. Retained time is stored as validated heldRange metadata on the clip and resolves to black/silence when no active media covers it. Disabling/removing that clip removes its retained span; lift preserves the occupied span with an authored gap. Source bounds still apply to both members of linked pairs.
-- Remove Independent clip / Linked video + audio labels. Collapse Source range by default. Transform X/Y/width/height inputs update the preview during typing; persistence coalesces changes and retains edits entered while a save is in flight. Save, Save as, export and undo flush pending property changes. Scale to fit / Scale to fill moves to the bottom of the Transform block.
-- Scale and crop handles snap visible picture edges to the top, left, bottom and right viewport edges. Respect ratio locking, Shift stretching and Alt symmetry, and display guides at the actual snapped edges.
+## Clips and lanes
 
-Validation includes linking different source offsets, paired splits, normal audio trimming with retained time, persistence/export of retained silence, rapid property updates during asynchronous saves, shared pointer-centered zoom, and edge snapping with modifiers. The real Qt smoke check covers the unified axis, collapsed source properties, live numeric input, detach/relink and standard audio handles, followed by MP4 rendering and project copying.
+- A **video** clip and its **audio** sit together, the audio just below; they are *linked* and move, split and trim together. The chain button between them detaches them ([audio tracks](audio-tracks.md)).
+- Lanes stack: the highest lane is on top in the picture. Retakes of the same sentences are stacked on parallel lanes when imported ([retake grouping](../import-analysis/retake-grouping.md)), so you can [compare them](compare-takes.md) and keep one.
+- The box on each clip enables or disables it. Only enabled clips play, render and export. Several stacked takes may be enabled at the same time.
+- The edit has no unwanted holes: time that no clip covers is closed up. An **empty clip** keeps its time on purpose (black and silence).
+- Text clips (titles, lower thirds), image clips and freeze frames sit on video lanes ([clip effects](../finishing/clip-effects.md), [still images](../import-analysis/still-images.md)).
+- Hovering a clip shows a one-line description ([clip tooltip](clip-tooltip.md)).
 
-## Current interaction details
+## Moving and zooming
 
-- Double-click assembly clips to focus their edit
+Drag a clip to move it in time or to another lane; green guides show when its edges line up with other clips. **Ctrl + wheel** zooms around the pointer, **Shift + wheel** scrolls, and the buttons at the right of the timeline header zoom and fit the edit.
 
-- Show transcribed media topics after two seconds of hover
+## Focusing a clip
 
-- Map transcript text selections onto the timeline range
+Double-click a clip (in the flow or on the timeline) to focus it: the timeline shows that clip with up to two seconds before and after, playback and navigation stay within it, and the preview shows its handles. **Back to full edit** (or **Esc**, or a double-click on an empty part of the flow) returns to the whole edit.
 
-- Correct transcript words in place and persist analysis JSON
+## Cutting and removing
 
-- Set output resolution from Project properties
+The toolbar below the flow shows the number of clips and the clip actions:
 
-- Place playback controls above the video preview
+- **Split** (S) cuts the selected clip (and its linked audio) at the cursor.
+- **Freeze** (F) inserts a still of the frame at the cursor ([still images](../import-analysis/still-images.md#freeze-frame)).
+- **Delete** (Delete) removes the selected range, or the selected clip when there is no range, and keeps its time as an empty clip.
+- **Ripple** (Backspace) removes it and moves later clips earlier.
+- **Trim clip to range**, **Auto-trim silence** ([range and trim](range-and-trim.md)), **Compare takes** ([compare takes](compare-takes.md)), **Title** and **Lower third** ([clip effects](../finishing/clip-effects.md)).
 
-- Place clip actions and clip count below the flow
+Undo and redo work on whole gestures, linked clips included.
 
-- Merge timeline and clip flow with continuous cursor and range guides
+## Trimming
 
-- Delete or ripple the selected range before falling back to whole clips
+A selected video clip has two pairs of handles at each edge:
 
-- Move range trimming and silence trimming into the flow toolbar
+- the **top** handles *ripple*: the clip gets longer or shorter and later clips move;
+- the **bottom** handles *keep the total time*: the time freed or taken is given to, or taken from, the neighbouring empty time. Extending past that empty time moves later clips.
 
-- Remove the redundant Delete range action from clip properties
+A clip can only be extended as far as its media goes (still clips have no limit). Neighbouring empty clips merge into one.
 
-- Show Compare takes in the flow toolbar for parallel takes
+An audio clip has one handle per edge. Trimming it keeps the place it occupied: the freed time stays in the edit as silence instead of moving later clips. Disabling or removing the clip gives that time back; Delete keeps it as an empty clip.
 
-- Render a held-edge dissolve when source handles are exhausted
+## Linking separate clips
 
-- Preserve transcript corrections when source folders are read-only
+A video clip and an audio clip that start at the same time and have the same length can be linked from the Clip tab (**Link audio** / **Link video**); each keeps its own source offset. After that they move, split and trim together. **Detach audio & video** separates them again.
 
-Current interaction details:
+## Technical notes
 
-- Align range guides across the merged timeline workspace
+Clip positions and lengths are integer frames of the project rate. Retained audio time is stored on the clip as `heldRange` and rendered as black and silence when nothing else covers it; `layout()` (backend `editor/models.py`, mirrored in `frontend/src/model.ts`) closes up uncovered time ([data model](../../architecture/data-model.md)). Property fields update the preview while typing; their saves are grouped, and Save, Save as, Export and undo flush pending changes first.

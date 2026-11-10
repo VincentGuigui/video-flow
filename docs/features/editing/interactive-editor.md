@@ -1,39 +1,67 @@
-# Interactive editor revision — 2026-10-25
+# Editor workspace
 
-This document supersedes conflicting UI, clip, import and editing rules of the original specification ([functional spec](../../product/functional-spec.md), [architecture](../../architecture/overview.md), [review and plan](../../decisions/0002-review-and-plan.md)). The supplied wireframe is the reference: preview/editor above a transport timeline, with a branching clip flow below. No cloud hosting is required.
+The editor is one window with five areas:
 
-The accepted [desktop-shell revision](../../architecture/desktop-shell.md) supersedes this document's original browser-first launch and upload/copy behavior. Editing interactions below remain unchanged.
+| Area | Where | What it is for |
+|------|-------|----------------|
+| **Header** | Top | The logo (back to the project home), save state, Settings, undo/redo, **Import media**, **Save**, **Export** |
+| **Project media** | Left | The imported media of the project ([project media](../import-analysis/media-library.md)) |
+| **Preview & editor** | Centre, top | Plays the edit and lets you place, scale and crop the selected clip |
+| **Properties** | Right | Settings of the selected clip or of the project ([properties panel](properties-panel.md)) |
+| **Timeline and clip flow** | Bottom | The edit itself: the ruler, the cursor and the clips on their lanes ([timeline and clip flow](unified-timeline.md)) |
 
-## Workspace
+The status bar at the bottom shows the length of the edit, the interface zoom and the running Video-Flow version.
 
-1. Preview and spatial editor: composite enabled video layers, highest layer on top; play enabled audio layers together. Select a clip for scale, crop and position handles. Shift breaks the aspect ratio; Alt moves opposite edges symmetrically. Position snaps to canvas center and sides (cropped picture bounds). Right-click opens only the app's own menus, never the browser menu (reload, copy address). Output menu lists landscape, portrait and square resolutions with ratios. Resolution changes preserve proportions and center the old canvas inside the new one using a uniform fit factor, including all clip positions, dimensions and crops.
-2. Transport timeline: draggable cursor, beginning, −10 s, −1 s, −1 frame, play/pause, +1 frame, +1 s, +10 s, end. Ctrl+wheel zooms around the pointer's time, retaining that point under the pointer. Horizontal scrolling supports long edits. Frame arithmetic uses the project's rational rate.
-3. Interactive clip flow: as many source clips and parallel alternatives/layers as needed, scrollable in both directions. Video is above its linked audio; a chain button detaches them. Linked partners move, split and trim together. Independent clips move and edit independently. Per-clip enable boxes control output; alternatives are ordinary layers and may be enabled simultaneously.
+## Playing the edit
 
-Uncovered time is compacted from the assembly. Authored empty clips are the exception and explicitly retain their duration (black/silence). Disabling an entire uncovered section removes its time; disabling one layer over another does not.
+The playback controls sit above the preview: beginning, back 10 s, 1 s and one frame, play/pause, forward one frame, 1 s and 10 s, end. **Space** plays the timeline range ([range and trim](range-and-trim.md)). Drag the cursor on the ruler to scrub.
 
-## Keyboard and focused editing
+The preview shows every enabled video clip at the cursor, the highest lane on top, and plays every enabled audio clip together.
 
-Space toggles playback at the cursor. Left/right step one frame; Shift steps one second; Ctrl steps ten seconds; Ctrl+Shift or Home/End goes to timeline bounds. Editable text inputs retain their normal keyboard behavior. Escape and double-clicking flow background leave clip focus. Double-click a clip to focus its range with two seconds of context on either side, clamped at project bounds; playback/navigation use that focused range until Escape.
+## Placing a picture
 
-Split at the cursor produces two independent segments; each segment retains its own linked video/audio pair when split while linked. Delete lifts selected content, replacing its occupied range with an explicit empty clip. Backspace removes it and ripples later clips left. Top trim handles ripple the assembly; bottom handles preserve total time by adding/extending neighboring empty clips. Extending requires available source frames (still clips have no limit, see [still images](../import-analysis/still-images.md)). Both trim modes move linked partners together. Undo/redo operate on whole gestures, including linked changes.
+Double-click a clip to focus it (see [timeline and clip flow](unified-timeline.md#focusing-a-clip)); the preview then shows handles around its picture:
 
-On extension, bottom handles consume adjacent empty time first. Extending beyond that empty time is permitted up to the source boundary and ripples the remaining extension, including at the beginning/end of the assembly. Neighboring empty clips merge rather than accumulating separate placeholder blocks.
+- **Scale** mode: drag inside the picture to move it, drag a handle to resize it. The aspect ratio is kept; hold **Shift** to stretch, **Alt** to move opposite edges together.
+- **Crop** mode: drag a handle to crop that edge.
+- Edges snap to the centre and the sides of the frame, and guides show where.
+- **Background** sets what fills the frame around the picture: transparent (the lanes below, or black), a colour, or the picture itself blurred to fill the frame.
+- In the Clip tab, X, Y, Width and Height can be typed (the preview follows as you type), and **Scale to fit / Scale to fill** fits the whole picture in the frame or fills the frame with it.
 
-## Import and analysis
+Animated position, size, rotation, crop and opacity are set with [keyframes](../finishing/keyframes.md).
 
-Files dropped on the flow (or picked with Import) open an analyse/skip choice. Process batch files sequentially; display filename, per-file progress and overall file number/count. Cancel one file or the batch, including subprocess/ML work. Failed files do not stop later imports. Successfully imported files remain after batch cancellation.
+## Output resolution
 
-Use `<source stem>.json` beside the source, containing a version, source fingerprint, timecoded words (integer microseconds), summary, keywords and topic sections (see [transcript panel](../import-analysis/transcript-panel.md)). Read compatible existing analysis before loading models. Native drops and the native file picker reference the original file by path, without uploading or copying its contents into the bundle. Check the sidecar next to that original source, generating it there when analysis is requested and absent; read-only locations use the bundle-cache fallback specified in [desktop shell](../../architecture/desktop-shell.md). The app never overwrites incompatible/unrelated JSON. Sidecar publication is atomic. Summaries/keywords use a local deterministic text fallback; transcription uses the existing real ASR engine. No pretend transcripts on failure.
+The **Project** tab of the properties sets the output resolution: landscape, portrait and square formats with their ratio. Changing it keeps every picture's proportions and centres the old frame in the new one; going back to the previous format restores the clips' original size.
 
-Use sentence similarity (see [retake grouping](../import-analysis/retake-grouping.md)) to place matching clips at the same assembly position on different layers; otherwise append. Grouping is a suggestion the user can change. Silent files remain importable; they have empty transcripts. AI model downloads may be necessary on the first analysed import and are shown as an analysis phase.
+## Keyboard
 
-## Data and implementation contract
+| Action | Keys |
+|--------|------|
+| Play the range / pause | Space |
+| One frame · one second · ten seconds | ← / → · Shift + ← / → · Ctrl + ← / → |
+| Beginning / end | Home / End, or Ctrl + Shift + ← / → |
+| Leave clip focus | Esc |
+| Split at the cursor | S |
+| Freeze frame at the cursor | F |
+| Keyframe at the cursor | K |
+| Delete, keeping the time | Delete |
+| Ripple delete | Backspace |
+| Select all in the zone last clicked | Ctrl + A |
+| Undo / redo | Ctrl + Z / Ctrl + Shift + Z |
+| Zoom the timeline around the pointer | Ctrl + wheel |
+| Scroll the timeline | Shift + wheel |
 
-The existing schema-v1 project supports an optional, versioned `editor` extension (unknown fields already round-trip). Once present it is authoritative for the interactive edit and resolved timeline; legacy beats remain readable. Each editor clip has an opaque id, asset id or explicit gap kind, source in/out frames at the project rate, assembly start frame, layer, enable state, optional link id, gain, and a video transform in output pixels. Only explicit gaps may have no asset. Validate source bounds, link pairs, unique ids, and finite transforms. Snapshot semantic `SetEditor` commands use the existing revision/inverse/history mechanism; the client owns session undo/redo.
+**?** (or **Keyboard shortcuts** at the bottom of Project media) shows the list. Keys typed in a text field act on the field only.
 
-The backend resolves this extension into the common resolved timeline so existing exports see the actual edit. OTIO uses separate tracks for overlapping layers and gaps for empty clips. EDL remains a V1-only handoff; layered output and transform limitations must be reported. The local API serves only the selected project media/proxies, authenticates per launch and validates Host/Origin. Native selections receive scoped file-import grants; optional browser typed-path imports remain restricted to configured roots. The React/Vite interface runs inside a PySide6/Qt WebEngine desktop window; normal launch opens that window rather than a browser tab. See [desktop shell](../../architecture/desktop-shell.md) for host/API boundaries and lifecycle. No external service is needed for editing or analysis.
+## Interface zoom and menus
 
-## Acceptance
+The minus / percentage / plus controls in the status bar zoom the whole interface (click the percentage to go back to 100 %); they do not change the timeline zoom. Right-click shows only the app's own menus.
 
-Automated checks cover linked split/move/trim, source bounds, lift versus ripple delete, no implicit gaps, layer/enable resolution, resolution-fit transforms, cursor-anchored zoom and keyboard stepping; API checks cover revision conflicts, auth, sidecar reuse, sequential/cancellable imports and range serving. A desktop smoke test in Qt WebEngine uses generated local media to verify native path import without copying, preview, focus, split, undo and reload persistence; browser tests remain supplementary. Real ASR accuracy and real-editor export interoperability remain separate target-machine validations.
+## Saving
+
+Every change is saved at once. **Save** names an untitled project; its arrow offers **Save as**. See [projects](../getting-started/projects.md) for where projects live.
+
+## Technical notes
+
+The edit is the `editor` document of `project.json` ([data model](../../architecture/data-model.md)); every change is one `SetEditor` command and one undo step. The window is a PySide6 / Qt WebEngine host around the React interface, talking to a local, authenticated API ([desktop shell](../../architecture/desktop-shell.md)). Frame arithmetic uses the project's rational frame rate.

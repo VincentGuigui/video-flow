@@ -1,4 +1,4 @@
-# Projects and working folders — 2026-11-01
+# Projects and working folders
 
 ## Where projects live
 

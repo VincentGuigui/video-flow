@@ -1,6 +1,6 @@
-# Timeline range, transcript trimming and auto-trim — 2026-10-26
+# Timeline range, transcript trimming and auto-trim
 
-This revision supplements [interactive editor](interactive-editor.md), [unified timeline](unified-timeline.md) and [transcript panel](../import-analysis/transcript-panel.md).
+The timeline range marks a part of the edit to play, trim or remove; it can be set from the ruler or from the transcript ([transcript panel](../import-analysis/transcript-panel.md)).
 
 ## Range selector
 

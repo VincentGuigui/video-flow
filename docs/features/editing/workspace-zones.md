@@ -1,6 +1,6 @@
-# Workspace zones, selection and cache — 2026-11-01
+# Workspace zones, selection and cache
 
-This revision supplements [interactive editor](interactive-editor.md) and [editor refinements](editor-refinements.md).
+The [editor workspace](interactive-editor.md) has zones; keyboard selection and deletion act on the zone you clicked last.
 
 ## Zones
 

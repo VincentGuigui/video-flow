@@ -1,6 +1,6 @@
-# Retake grouping with sentence similarity — 2026-10-28
+# Retake grouping with sentence similarity
 
-This revision replaces the transcript/keyword similarity of [interactive editor](../editing/interactive-editor.md) ("Import and analysis") used to place a new clip over an earlier take.
+When an analysed file is imported ([importing media](importing.md)), Video-Flow looks for an earlier clip in which the same sentences are said, and stacks the new clip over it.
 
 ## Model choice
 

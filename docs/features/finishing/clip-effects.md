@@ -1,4 +1,4 @@
-# Clip effects — 2026-10-28
+# Clip effects
 
 Features from the backlog in [Camtasia findings](../../decisions/0003-camtasia-findings.md), one section each. They apply to the editor, preview, MP4 render and Camtasia export.
 

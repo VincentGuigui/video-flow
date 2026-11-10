@@ -15,7 +15,7 @@ flowchart LR
 
 ## 1. Render graph
 
-`render/graph.py` `compile_graph(project, preset, titles_dir)` turns the document into one video graph and one independent audio graph (input indices are local to each). `render_document` takes the editor document, or converts a legacy authored edit when it has no transitions or fades (otherwise it refuses), then checks every clip against its asset. Disabled clips are left out and uncovered time is closed up (`layout` in `editor/models.py`); empty clips and retained audio time ([unified timeline](../features/editing/unified-timeline.md)) keep their span as black and silence.
+`render/graph.py` `compile_graph(project, preset, titles_dir)` turns the document into one video graph and one independent audio graph (input indices are local to each). `render_document` takes the editor document, or converts a legacy authored edit when it has no transitions or fades (otherwise it refuses), then checks every clip against its asset. Disabled clips are left out and uncovered time is closed up (`layout` in `editor/models.py`); empty clips and retained audio time ([timeline and clip flow](../features/editing/unified-timeline.md#trimming)) keep their span as black and silence.
 
 ### Video
 
@@ -27,7 +27,7 @@ flowchart LR
   3. `tpad=stop_mode=clone` and `trim` to the exact clip length (guards against a short last frame).
   4. HDR (HLG or PQ probe): `zscale` to linear, `tonemap=hable`, back to BT.709 SDR; a warning names the clip.
   5. `setsar=1,format=rgba`, then alpha `fade` in/out for dissolves and edge fades.
-  6. Background (from [editor refinements](../features/editing/editor-refinements.md)): `color` (a colour plate with the same alpha fades), `blur` (the same frames `split`, scaled to cover the frame with 8 % overscan, cropped, `gblur`), or `transparent` (none).
+  6. Background (from [editor workspace](../features/editing/interactive-editor.md)): `color` (a colour plate with the same alpha fades), `blur` (the same frames `split`, scaled to cover the frame with 8 % overscan, cropped, `gblur`), or `transparent` (none).
   7. Picture: `scale` to the transform size, `crop` for the crop insets, then `overlay` at the transform position. A clip with keyframes, a rotation or an opacity below 1 is drawn per frame instead: crop (`crop`, or `perspective` when it animates), a transparent border, `perspective` onto the rotated box corners (piecewise expressions from `editor/keyframes.py`), `colorchannelmixer` for opacity, then `overlay` of the full frame ([keyframed transforms](../features/finishing/keyframes.md)).
 - **Placement:** each layer is shifted with `setpts=PTS+start/rate` and overlaid with `eof_action=pass:repeatlast=0` and an `enable` window on **timestamps** with half-frame margins (`gte(t,…)*lt(t,…)`), never frame counters.
 - **Text clips:** the title picture (Pillow, bundled Inter; `editor/titles.py`) is an image input `loop`ed for the clip's frames, alpha-faded and overlaid in its window. Pictures are keyed by a hash of the title and output size and drawn by `write_titles` into `cache/titles/` before FFmpeg runs, so no `drawtext` is needed.

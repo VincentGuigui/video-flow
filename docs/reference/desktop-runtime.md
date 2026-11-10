@@ -62,6 +62,17 @@ The expanded native check (`--features`) additionally exercises real Qt zoom, th
 
 The editor now uses one shared assembly time axis. The flow has no separate ruler or cursor. Select an unlinked clip and use Link audio / Link video in properties to choose an opposite-kind clip with matching assembly start and duration; source offsets may differ. Audio edge trims retain time without adding clip placeholders. Native `desktop-check --features` also verifies this behavior and live transform input.
 
+## Inference dependencies
+
+These are Python packages, separate from model weights in `models/`: installing them never downloads weights, and existing weights need no new download.
+
+- The `desktop` extra installs Qwen's PyTorch, Transformers and safetensors runtimes. Whisper is an optional extra. One accelerator extra (`cpu`, `openvino`, `cuda`, `directml`, `qnn`) provides the ONNX runtime for speech, VAD and similarity.
+- A source install is repaired with `uv sync --extra desktop --extra cpu` in `backend/` (replace `cpu` with the chosen accelerator), then a restart. When Qwen's runtime is incomplete, analysis says how to restore it or to use deterministic summaries.
+- The **Install components** window ([AI models and components](../features/getting-started/ai-models.md)) checks the selected runtimes as well as the weights. In a source desktop build it installs missing packages into its Python environment with uv (progress, cancellation, errors, restart notice); browser diagnostic mode cannot install packages; a frozen build includes its runtimes and, if one is missing, asks for a reinstall instead of running a package manager.
+- When CUDA is advertised, startup preloads the matching NVIDIA libraries and runs a tiny ONNX session; a silent CPU fallback is reported as unavailable acceleration. **Install CUDA libraries** installs the CUDA/cuDNN extras of the installed ONNX GPU version; **Use CPU** saves the speech device preference. NVIDIA drivers and, on Windows, the MSVC runtime are system prerequisites. Checks are cached for the process: restart after installing.
+- Whisper's CPU ONNX dependency can replace a GPU or DirectML wheel: the in-app Whisper repair installs its engine, CTranslate2 and AV packages without replacing the existing ONNX provider.
+- Release CI installs Qwen explicitly, and the desktop build fails when an inference runtime is missing instead of publishing an executable with missing hidden imports.
+
 ## CUDA release libraries
 
 When the build environment's ONNX Runtime advertises CUDA, `scripts/desktop.spec` collects the installed GPU wheel's `[cuda,cudnn]` NVIDIA requirements recursively through `desktop/cuda_bundle.py`. It validates installed versions, bundles their native DLLs/shared libraries in `_internal/cuda/`, and retains their distribution metadata and licence notices. If dependencies are missing, packaging stops: install `onnxruntime-gpu[cuda,cudnn]` at the same version as the selected GPU wheel before rebuilding. This is separate from model weights and does not download models. CPU/DirectML release builds skip CUDA library collection.

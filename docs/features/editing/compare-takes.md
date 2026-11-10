@@ -1,6 +1,6 @@
-# Compare takes — 2026-10-26
+# Compare takes
 
-This revision implements CMP-01 to CMP-04 ([functional spec](../../product/functional-spec.md) §4.4) for the [interactive editor](interactive-editor.md). Beats from [functional spec](../../product/functional-spec.md)–[data model](../../architecture/data-model.md) are not used: retakes are the clips that import stacks on parallel lanes ([interactive editor](interactive-editor.md), "Import and analysis").
+Retakes of the same sentences are stacked on parallel lanes when imported ([retake grouping](../import-analysis/retake-grouping.md)). Compare takes plays them side by side so you can keep the best one. (This covers CMP-01 to CMP-04 of the [functional spec](../../product/functional-spec.md); its beats are not used.)
 
 ## Takes
 

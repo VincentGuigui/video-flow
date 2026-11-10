@@ -1,4 +1,4 @@
-# Project media: context menu, info and re-analysis — 2026-11-01
+# Project media: context menu, info and re-analysis
 
 Right-clicking a medium in Project media selects it and opens a menu with **Analysis…** and **Info**.
 

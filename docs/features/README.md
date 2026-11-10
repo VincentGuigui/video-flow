@@ -28,13 +28,13 @@ Typical session: create a project in the folder of the day's rushes, drop 40 cli
 |------|----------------|
 | [Projects](getting-started/projects.md) | Projects as `<name>.video-flow` folders next to the media, the home page, recent projects, rename, delete |
 | [FFmpeg setup](getting-started/ffmpeg-setup.md) | Where FFmpeg is found, and its download (with your consent) from the app or the install scripts |
-
-AI models are downloaded on request from Settings → Manage AI models ([editor refinements](editing/editor-refinements.md)).
+| [AI models and components](getting-started/ai-models.md) | Downloading and removing models, installing components, GPU or CPU, analysis settings |
 
 ## 2. Import and analysis
 
 | Page | What it covers |
 |------|----------------|
+| [Importing media](import-analysis/importing.md) | Adding files, analyse or import only, progress and cancel, analysis files |
 | [Project media](import-analysis/media-library.md) | The media list, Info and Analyse again |
 | [Still images and freeze frames](import-analysis/still-images.md) | Pictures as clips of any length, and freezing the frame at the cursor |
 | [Transcript panel](import-analysis/transcript-panel.md) | Summary, topics and words of a clip; editing words; selecting a range from the text |
@@ -44,15 +44,14 @@ AI models are downloaded on request from Settings → Manage AI models ([editor 
 
 | Page | What it covers |
 |------|----------------|
-| [Interactive editor](editing/interactive-editor.md) | The workspace: preview, timeline and clip flow, linked audio and video, trim modes, keyboard |
-| [Unified timeline](editing/unified-timeline.md) | One cursor and ruler for timeline and flow, linking clips, audio trims |
+| [Editor workspace](editing/interactive-editor.md) | The areas of the window, playback, placing and cropping a picture, output resolution, keyboard, saving |
+| [Timeline and clip flow](editing/unified-timeline.md) | Clips and lanes, focusing a clip, split, delete and ripple, trimming, linking audio and video |
 | [Range and trim](editing/range-and-trim.md) | The timeline range, range playback, trim to range, auto-trim silence |
 | [Compare takes](editing/compare-takes.md) | Stacked retakes side by side, picking one with 1–9 |
 | [Audio tracks](editing/audio-tracks.md) | The audio of video clips: enable, detach, restore |
 | [Workspace zones](editing/workspace-zones.md) | Select all and delete per zone, media removal, cache |
 | [Properties panel](editing/properties-panel.md) | Resizing, height, pinned or floating panel |
 | [Clip tooltip](editing/clip-tooltip.md) | The one-line description shown when hovering a clip |
-| [Editor refinements](editing/editor-refinements.md) | Save and save as, backgrounds, MP4 export, AI models and components |
 
 ## 4. Finishing
 
@@ -66,9 +65,8 @@ AI models are downloaded on request from Settings → Manage AI models ([editor 
 
 | Page | What it covers |
 |------|----------------|
+| [Render and export](output/render-and-export.md) | The MP4 render and the OTIO, OTIOZ, EDL, paper edit and SRT exports |
 | [Camtasia export](output/camtasia-export.md) | The `.tscproj` export and what it carries |
-
-The MP4 render and the other exports (OTIO, OTIOZ, EDL, SRT, paper edit) are opened with **Export**; see [editor refinements](editing/editor-refinements.md) and, for what each format carries, [render and export](../architecture/render-export.md).
 
 ## Writing this manual
 
