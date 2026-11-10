@@ -1,5 +1,5 @@
-"""Keyframed transforms (docs/features/keyframes.md): one definition of the interpolation for
-the preview (mirrored in frontend/src/keyframes.ts), the render and the exports."""
+"""Keyframed transforms (docs/features/finishing/keyframes.md): one definition of the interpolation
+for the preview (mirrored in frontend/src/keyframes.ts), the render and the exports."""
 
 from collections.abc import Callable, Sequence
 

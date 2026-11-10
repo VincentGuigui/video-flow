@@ -1,6 +1,6 @@
 # Properties panel
 
-The properties panel (tabs Clip, Effects, Transcript and Project; see [clip effects](clip-effects.md#effects-tab) and [transitions](transitions.md)) sits on the right of the editor area. Its layout is a per-viewer preference, remembered in the browser storage of the window (`videoflow.panel`); without storage it starts from the defaults every time. Code: `frontend/src/panel.ts` (layout, bounds, storage), `frontend/src/ui/PropertiesDock.tsx` (frame, controls, resize, folding).
+The properties panel (tabs Clip, Effects, Transcript and Project; see [clip effects](../finishing/clip-effects.md#effects-tab) and [transitions](../finishing/transitions.md)) sits on the right of the editor area. Its layout is a per-viewer preference, remembered in the browser storage of the window (`videoflow.panel`); without storage it starts from the defaults every time. Code: `frontend/src/panel.ts` (layout, bounds, storage), `frontend/src/ui/PropertiesDock.tsx` (frame, controls, resize, folding).
 
 ## Width
 

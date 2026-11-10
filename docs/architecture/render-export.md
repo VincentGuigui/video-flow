@@ -15,7 +15,7 @@ flowchart LR
 
 ## 1. Render graph
 
-`render/graph.py` `compile_graph(project, preset, titles_dir)` turns the document into one video graph and one independent audio graph (input indices are local to each). `render_document` takes the editor document, or converts a legacy authored edit when it has no transitions or fades (otherwise it refuses), then checks every clip against its asset. Disabled clips are left out and uncovered time is closed up (`layout` in `editor/models.py`); empty clips and retained audio time ([unified timeline](../features/unified-timeline.md)) keep their span as black and silence.
+`render/graph.py` `compile_graph(project, preset, titles_dir)` turns the document into one video graph and one independent audio graph (input indices are local to each). `render_document` takes the editor document, or converts a legacy authored edit when it has no transitions or fades (otherwise it refuses), then checks every clip against its asset. Disabled clips are left out and uncovered time is closed up (`layout` in `editor/models.py`); empty clips and retained audio time ([unified timeline](../features/editing/unified-timeline.md)) keep their span as black and silence.
 
 ### Video
 
@@ -23,12 +23,12 @@ flowchart LR
 - **Clip order:** clips are composited bottom-up by lane, then by start.
 - **Per video clip** (one input per clip, read with `-threads 1`):
   1. `fps=<project rate>:round=near`, then `trim` to the source in/out frames.
-  2. Retime: `setpts=PTS-STARTPTS`, or at another speed `setpts=(PTS-STARTPTS)/speed` and `fps` again ([clip effects](../features/clip-effects.md)).
+  2. Retime: `setpts=PTS-STARTPTS`, or at another speed `setpts=(PTS-STARTPTS)/speed` and `fps` again ([clip effects](../features/finishing/clip-effects.md)).
   3. `tpad=stop_mode=clone` and `trim` to the exact clip length (guards against a short last frame).
   4. HDR (HLG or PQ probe): `zscale` to linear, `tonemap=hable`, back to BT.709 SDR; a warning names the clip.
   5. `setsar=1,format=rgba`, then alpha `fade` in/out for dissolves and edge fades.
-  6. Background (from [editor refinements](../features/editor-refinements.md)): `color` (a colour plate with the same alpha fades), `blur` (the same frames `split`, scaled to cover the frame with 8 % overscan, cropped, `gblur`), or `transparent` (none).
-  7. Picture: `scale` to the transform size, `crop` for the crop insets, then `overlay` at the transform position. A clip with keyframes, a rotation or an opacity below 1 is drawn per frame instead: crop (`crop`, or `perspective` when it animates), a transparent border, `perspective` onto the rotated box corners (piecewise expressions from `editor/keyframes.py`), `colorchannelmixer` for opacity, then `overlay` of the full frame ([keyframed transforms](../features/keyframes.md)).
+  6. Background (from [editor refinements](../features/editing/editor-refinements.md)): `color` (a colour plate with the same alpha fades), `blur` (the same frames `split`, scaled to cover the frame with 8 % overscan, cropped, `gblur`), or `transparent` (none).
+  7. Picture: `scale` to the transform size, `crop` for the crop insets, then `overlay` at the transform position. A clip with keyframes, a rotation or an opacity below 1 is drawn per frame instead: crop (`crop`, or `perspective` when it animates), a transparent border, `perspective` onto the rotated box corners (piecewise expressions from `editor/keyframes.py`), `colorchannelmixer` for opacity, then `overlay` of the full frame ([keyframed transforms](../features/finishing/keyframes.md)).
 - **Placement:** each layer is shifted with `setpts=PTS+start/rate` and overlaid with `eof_action=pass:repeatlast=0` and an `enable` window on **timestamps** with half-frame margins (`gte(t,…)*lt(t,…)`), never frame counters.
 - **Text clips:** the title picture (Pillow, bundled Inter; `editor/titles.py`) is an image input `loop`ed for the clip's frames, alpha-faded and overlaid in its window. Pictures are keyed by a hash of the title and output size and drawn by `write_titles` into `cache/titles/` before FFmpeg runs, so no `drawtext` is needed.
 - **Dips:** after all lanes, each dip is a full-frame black or white `color` layer that fades in over `before` frames and out over `after` frames, overlaid on the composite.
@@ -42,7 +42,7 @@ flowchart LR
 
 ### Transitions
 
-`editor/transitions.py` plans the active transitions ([transitions](../features/transitions.md)): a transition is active only between adjacent enabled video clips on one lane. The requested duration `T` is split `before = ⌊T/2⌋`, `after = T − before`, centred on the cut, and the total length never changes.
+`editor/transitions.py` plans the active transitions ([transitions](../features/finishing/transitions.md)): a transition is active only between adjacent enabled video clips on one lane. The requested duration `T` is split `before = ⌊T/2⌋`, `after = T − before`, centred on the cut, and the total length never changes.
 
 | Type | Plan | Render |
 |------|------|--------|
@@ -118,7 +118,7 @@ The service adds that OTIO gain, fades and fit are metadata only; the EDL adds t
 
 ### Camtasia
 
-`exporters/camtasia.py` writes `.tscproj` 7.0 by cloning structures from a template (`templates/camtasia.tscproj` in the application folder, `--camtasia-template`, or the built-in 2023.4.3 default). It maps lanes to tracks, linked pairs to `UnifiedMedia`, times to 705 600 000 ticks per second, transforms, gain, speed, transform and volume keyframes, edge fades, dissolves and dips as `Fade`/`FadeThroughBlack`, and titles as text callouts. Crop, backgrounds, transition audio crossfades, gaps and disabled clips are reported as not exported. Details: [Camtasia export](../features/camtasia-export.md), [clip effects](../features/clip-effects.md).
+`exporters/camtasia.py` writes `.tscproj` 7.0 by cloning structures from a template (`templates/camtasia.tscproj` in the application folder, `--camtasia-template`, or the built-in 2023.4.3 default). It maps lanes to tracks, linked pairs to `UnifiedMedia`, times to 705 600 000 ticks per second, transforms, gain, speed, transform and volume keyframes, edge fades, dissolves and dips as `Fade`/`FadeThroughBlack`, and titles as text callouts. Crop, backgrounds, transition audio crossfades, gaps and disabled clips are reported as not exported. Details: [Camtasia export](../features/output/camtasia-export.md), [clip effects](../features/finishing/clip-effects.md).
 
 ### CLI
 

@@ -11,7 +11,7 @@ export interface Transform {
   cropRight: number;
   cropTop: number;
   cropBottom: number;
-  rotation?: number; // degrees, clockwise about the box centre (docs/features/keyframes.md)
+  rotation?: number; // degrees, clockwise about the box centre (docs/features/finishing/keyframes.md)
   opacity?: number; // 0..1
 }
 export interface Clip {
@@ -32,13 +32,13 @@ export interface Clip {
   speed?: number; // 1 = normal; source frames per timeline frame
   keyframes?: Keyframe[]; // animated transform, in source frames
   volumeRanges?: VolumeRange[];
-  title?: Title; // text clips only (docs/features/clip-effects.md)
-  fadeIn?: number; // frames, edge fade at the clip's start (docs/features/clip-effects.md)
+  title?: Title; // text clips only (docs/features/finishing/clip-effects.md)
+  fadeIn?: number; // frames, edge fade at the clip's start (docs/features/finishing/clip-effects.md)
   fadeOut?: number;
   background?: { mode: "transparent" | "color" | "blur"; color: string };
   resizeReference?: { width: number; height: number; transform: Transform };
   // Source frame a still clip shows for its whole length (0 for a still image);
-  // null for moving clips (docs/features/still-images.md).
+  // null for moving clips (docs/features/import-analysis/still-images.md).
   stillFrame?: number | null;
 }
 export interface Document {
@@ -70,7 +70,7 @@ export interface Project {
   assets: Asset[];
 }
 export const uid = () => crypto.randomUUID();
-// Speed (docs/features/clip-effects.md): source frames per timeline frame; timeline length is span / speed.
+// Speed (docs/features/finishing/clip-effects.md): source frames per timeline frame; timeline length is span / speed.
 export const speedOf = (c: Clip) => c.speed ?? 1;
 // A still clip repeats one picture: it has no source limit on either edge.
 export const isStill = (c: Clip) => c.stillFrame != null;
@@ -773,7 +773,7 @@ export function setSpeed(doc: Document, id: string, speed: number): Document {
 }
 
 export const FREEZE_SECONDS = 3;
-// Freeze the frame under the cursor of a moving video clip (docs/features/still-images.md):
+// Freeze the frame under the cursor of a moving video clip (docs/features/import-analysis/still-images.md):
 // a still clip of `length` frames holding that frame is inserted at the cursor, and every
 // clip from there on moves later by its length. Inside the clip, the clip (and its linked
 // audio) is split around it. On the first frame, the freeze goes before the clip and takes

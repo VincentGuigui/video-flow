@@ -16,7 +16,7 @@ from videoflow.media.hashing import content_hash
 from videoflow.project.models import Asset, AssetProbe, AudioStreamInfo, VideoStreamInfo
 
 IMAGE_EXTENSIONS = frozenset({".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff"})
-"""Still images, imported as one picture (docs/features/still-images.md)."""
+"""Still images, imported as one picture (docs/features/import-analysis/still-images.md)."""
 MEDIA_EXTENSIONS = frozenset({
     ".mp4", ".mov", ".m4v", ".mkv", ".webm", ".avi", ".mts", ".m2ts", ".mxf", ".mpg", ".mpeg",
     ".wmv", ".3gp",

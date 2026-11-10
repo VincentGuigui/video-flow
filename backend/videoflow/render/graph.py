@@ -61,7 +61,7 @@ def _animated(
     clip: EditorClip, index: int, out: tuple[int, int], scale: tuple[float, float], rate: Rational
 ) -> str:
     """Per-frame transform of [fg{index}] into a full-frame picture [p{index}]
-    (docs/features/keyframes.md): crop, size, position, rotation and opacity.
+    (docs/features/finishing/keyframes.md): crop, size, position, rotation and opacity.
 
     `perspective` maps the (cropped) picture, inside a transparent border, onto the corners
     of its box rotated about the box centre; its expressions read the source frame from the
@@ -153,7 +153,8 @@ def _constant(expression: str) -> bool:
 
 
 def _volume(clip: EditorClip, rate: Rational) -> str:
-    """Mute and ducking ranges as a per-frame gain envelope (docs/features/clip-effects.md)."""
+    """Mute and ducking ranges as a per-frame gain envelope
+    (docs/features/finishing/clip-effects.md)."""
     expression = volume_expression(clip, rate.num / rate.den)
     return f"volume='{expression}':eval=frame," if expression else ""
 
@@ -253,7 +254,7 @@ def compile_graph(
             continue
         if clip.kind == "text" and clip.title:
             # A transparent picture of the title, repeated for the clip's frames
-            # (docs/features/clip-effects.md).
+            # (docs/features/finishing/clip-effects.md).
             index = len(inputs)
             key = f"{clip.title.model_dump_json()}:{out_w}x{out_h}".encode()
             image = titles_dir / f"{hashlib.sha256(key).hexdigest()[:24]}.png"
@@ -304,7 +305,7 @@ def compile_graph(
             # Trim once so foreground and backdrop share exactly the same source frames.
             if clip.still_frame is not None:
                 # A still clip repeats one picture: the image, or one frame of a video
-                # (docs/features/still-images.md).
+                # (docs/features/import-analysis/still-images.md).
                 held = clip.still_frame
                 pick = "" if asset.probe.still else f"fps={fps}:round=near,"
                 prepare = (
@@ -354,7 +355,7 @@ def compile_graph(
                 video_count += 1
             if animated(clip):
                 # Keyframes, rotation or opacity: drawn on a full frame
-                # (docs/features/keyframes.md).
+                # (docs/features/finishing/keyframes.md).
                 picture = _animated(clip, index, (out_w, out_h), (sx, sy), rate)
                 video.append(f"[fg{index}]{picture},{timing}[p{index}]")
                 x = y = 0

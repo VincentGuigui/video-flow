@@ -1,6 +1,6 @@
 # Timeline range, transcript trimming and auto-trim — 2026-10-26
 
-This revision supplements [interactive editor](interactive-editor.md), [unified timeline](unified-timeline.md) and [transcript panel](transcript-panel.md).
+This revision supplements [interactive editor](interactive-editor.md), [unified timeline](unified-timeline.md) and [transcript panel](../import-analysis/transcript-panel.md).
 
 ## Range selector
 

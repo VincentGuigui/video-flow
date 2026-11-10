@@ -280,7 +280,7 @@ export function setAllTransitions(
   return next;
 }
 
-// Clip edge fades (docs/features/clip-effects.md), merged with transition fades; capped at the clip length.
+// Clip edge fades (docs/features/finishing/clip-effects.md), merged with transition fades; capped at the clip length.
 function edgeFades(plan: Plan, clip: Clip) {
   const fadeIn = Math.min(clip.fadeIn ?? 0, duration(clip)),
     fadeOut = Math.min(clip.fadeOut ?? 0, duration(clip));

@@ -1,5 +1,7 @@
 # Functional specification
 
+What Video-Flow is meant to do: goals, vocabulary and requirements with their priority. What it does today is described in the [user manual](../features/README.md); where a requirement differs from the manual, the manual describes the built behaviour.
+
 ## 1. Scope
 
 ### Goals
@@ -8,7 +10,7 @@
 - Produce a final video directly (FFmpeg) or a project that opens in a full editor.
 
 ### Non-goals (v1)
-- Colour grading, keyframed effects, motion graphics, advanced audio mixing.
+- Colour grading, motion graphics, advanced audio mixing. (Keyframed transforms were later built: [keyframed transforms](../features/finishing/keyframes.md).)
 - Multi-user collaboration, cloud storage.
 - Live recording or screen capture.
 
@@ -19,7 +21,7 @@
 | **Rush / Asset** | A source media file. Never modified. |
 | **Segment** | A time range inside an asset produced by analysis: an utterance block (speech) or a shot (non-speech). The unit of grouping. |
 | **Take** | A segment considered as one attempt at a beat. |
-| **Beat** | A unit of the story ("open the lid", "show the charger"). Contains one or more alternative takes. |
+| **Beat** | A unit of the story ("open the lid", "show the charger"). Contains one or more alternative takes. Not built: retakes are stacked as layers instead (section 3). |
 | **Alternative / Branch** | One take of a beat. One is *selected*, others are *alternates* or *rejected*. |
 | **Sync group** | Takes recorded simultaneously by different devices, time-aligned by audio (multicam). |
 | **Main line / Cut** | The ordered sequence of selected takes, after trims and transitions. Compiled to OTIO. |
@@ -29,19 +31,9 @@
 
 ## 3. End-to-end workflow
 
-```mermaid
-flowchart LR
-  A[Create project<br/>pick rushes folder] --> B[Prepare<br/>probe, proxies, thumbnails]
-  B --> C[Analyse<br/>ASR, shots, embeddings, sync]
-  C --> D[Group<br/>beats + alternatives]
-  D --> E[Triage<br/>branch timeline + compare]
-  E --> F[Edit<br/>order, trims, B-roll, transitions]
-  F --> G{Output}
-  G --> H[Render MP4 via FFmpeg]
-  G --> I[Export OTIO / FCPXML / XML / EDL / Camtasia / SRT]
-```
+The workflow as built, with its diagram, opens the [user manual](../features/README.md#end-to-end-workflow): create a project in the media folder, import, prepare, analyse, stack retakes, compare and pick, edit, finish, then render or export.
 
-Typical session: drop 40 clips, wait for analysis, review 12 suggested beats with 2 to 5 takes each, fix 2 groupings by drag and drop, pick takes, add a crossfade at the start and end, render.
+The original plan grouped segments into **beats** laid out on a **branch timeline** (sections 4.2 and 4.3). As built, retakes are stacked as parallel layers of the clip flow on import ([retake grouping](../features/import-analysis/retake-grouping.md)) and compared from there ([compare takes](../features/editing/compare-takes.md)); beats, the branch timeline, FCPXML and FCP7 XML are not built ([roadmap](../roadmap.md)).
 
 ## 4. Functional requirements
 
@@ -96,7 +88,7 @@ Priority: **P0** = MVP, **P1** = shortly after MVP, **P2** = later.
 
 | ID | Requirement | Prio |
 |----|-------------|------|
-| CMP-01 | Open a beat: one player per take (2 to 4 visible, scroll for more) plus each take's transcript. | P0 (implemented for stacked clips, see [compare takes](../features/compare-takes.md)) |
+| CMP-01 | Open a beat: one player per take (2 to 4 visible, scroll for more) plus each take's transcript. | P0 (implemented for stacked clips, see [compare takes](../features/editing/compare-takes.md)) |
 | CMP-02 | Synchronised playback from a common anchor (aligned word), with per-take solo audio. | P0 |
 | CMP-03 | Highlight divergences between takes (words present in one take only, fillers, hesitations). | P0 |
 | CMP-04 | "Pick" button per take; keyboard shortcuts 1 to 9 to pick. | P0 |
@@ -111,26 +103,26 @@ Priority: **P0** = MVP, **P1** = shortly after MVP, **P2** = later.
 | TL-02 | Trim in/out by dragging clip edges, with snapping to word boundaries, shot boundaries, playhead and other clips. | P0 |
 | TL-03 | Blade (split at playhead), ripple delete, lift. | P0 |
 | TL-04 | Roll edit (move a cut point between two clips) and slip (change source range, keep duration). | P1 |
-| TL-05 | Auto-trim silence of the selected clip to the project clip padding (default 0.15 s before first word, 0.30 s after last word), with ripple (see [range and trim](../features/range-and-trim.md)). | P0 |
-| TL-06 | Transcript editing: select words in the transcript panel to set the timeline range, then trim the clip to it or delete it (see [range and trim](../features/range-and-trim.md)). | P1 |
-| TL-07 | Unlink audio and video of a clip; replace the audio with the audio of another take of the same beat (aligned automatically); restore the clip's original audio (see [audio tracks](../features/audio-tracks.md)). | P1 |
+| TL-05 | Auto-trim silence of the selected clip to the project clip padding (default 0.15 s before first word, 0.30 s after last word), with ripple (see [range and trim](../features/editing/range-and-trim.md)). | P0 |
+| TL-06 | Transcript editing: select words in the transcript panel to set the timeline range, then trim the clip to it or delete it (see [range and trim](../features/editing/range-and-trim.md)). | P1 |
+| TL-07 | Unlink audio and video of a clip; replace the audio with the audio of another take of the same beat (aligned automatically); restore the clip's original audio (see [audio tracks](../features/editing/audio-tracks.md)). | P1 |
 | TL-08 | J/L cuts (audio leads or lags video). | P2 |
-| TL-09 | Clip volume and fade in/out (implemented as edge fades, see [clip effects](../features/clip-effects.md)). Silencing a clip uses its enable checkbox; there is no separate mute (see [audio tracks](../features/audio-tracks.md)). | P0 |
+| TL-09 | Clip volume and fade in/out (implemented as edge fades, see [clip effects](../features/finishing/clip-effects.md)). Silencing a clip uses its enable checkbox; there is no separate mute (see [audio tracks](../features/editing/audio-tracks.md)). | P0 |
 | TL-10 | Markers with notes on timeline and on assets. | P1 |
-| TL-11 | Title cards and lower thirds from text templates (text clips, [clip effects](../features/clip-effects.md)). | P2 |
+| TL-11 | Title cards and lower thirds from text templates (text clips, [clip effects](../features/finishing/clip-effects.md)). | P2 |
 | TL-12 | Zoom levels from whole project to frame level; timecode display (HH:MM:SS:FF at project rate). | P0 |
 
 ### 4.6 Transitions (TR)
 
 | ID | Requirement | Prio |
 |----|-------------|------|
-| TR-01 | Apply a transition at any cut between two main-line clips; default duration 0.5 s; default alignment centered on the cut. | P0 (implemented, see [transitions](../features/transitions.md)) |
-| TR-02 | MVP catalog: cut, cross dissolve, fade through black, fade through white. | P0 (implemented, see [transitions](../features/transitions.md)) |
+| TR-01 | Apply a transition at any cut between two main-line clips; default duration 0.5 s; default alignment centered on the cut. | P0 (implemented, see [transitions](../features/finishing/transitions.md)) |
+| TR-02 | MVP catalog: cut, cross dissolve, fade through black, fade through white. | P0 (implemented, see [transitions](../features/finishing/transitions.md)) |
 | TR-03 | Extended catalog mapped to FFmpeg `xfade` (wipes, slides, circle open/close, zoom, pixelize, radial...). See [render and export](../architecture/render-export.md) §4. | P1 |
-| TR-04 | Audio crossfade follows the video transition by default; independent audio transition optional. | P0 (follow implemented, see [transitions](../features/transitions.md)) |
+| TR-04 | Audio crossfade follows the video transition by default; independent audio transition optional. | P0 (follow implemented, see [transitions](../features/finishing/transitions.md)) |
 | TR-05 | Automatic micro-fade (10 ms) on audio hard cuts to avoid clicks. | P0 |
-| TR-06 | Warn when handles are insufficient; offer to shorten the transition or change its alignment (start / end of cut). | P0 (shortening implemented, see [transitions](../features/transitions.md)) |
-| TR-07 | Apply a transition to all cuts / to selected cuts in one action. | P0 (all cuts implemented, see [transitions](../features/transitions.md)) |
+| TR-06 | Warn when handles are insufficient; offer to shorten the transition or change its alignment (start / end of cut). | P0 (shortening implemented, see [transitions](../features/finishing/transitions.md)) |
+| TR-07 | Apply a transition to all cuts / to selected cuts in one action. | P0 (all cuts implemented, see [transitions](../features/finishing/transitions.md)) |
 | TR-08 | Each transition shows its export compatibility (which target formats support it, which fall back to dissolve). | P1 |
 
 ### 4.7 Preview (PRV)
@@ -162,7 +154,7 @@ Priority: **P0** = MVP, **P1** = shortly after MVP, **P2** = later.
 | EXP-03 | CMX 3600 EDL (main video track + dissolves). | P0 |
 | EXP-04 | SRT / VTT captions from the cut transcript. | P0 |
 | EXP-05 | FCP7 XML (xmeml) for Premiere / Resolve / OpenShot. | P1 |
-| EXP-06 | Camtasia project (`.tscproj`, Windows; implemented, see [Camtasia export](../features/camtasia-export.md)). | P1 |
+| EXP-06 | Camtasia project (`.tscproj`, Windows; implemented, see [Camtasia export](../features/output/camtasia-export.md)). | P1 |
 | EXP-07 | Option "include alternates": alternates exported as disabled tracks (OTIO, XML, Camtasia) or as auditions (FCPXML). | P1 |
 | EXP-08 | AAF for Avid / Pro Tools. | P2 |
 | EXP-09 | Paper edit: Markdown / CSV list of selected takes with source time codes and transcript. | P0 |

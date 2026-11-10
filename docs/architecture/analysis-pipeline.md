@@ -1,6 +1,6 @@
 # Analysis pipeline
 
-Analysis turns an imported source into timecoded words, a summary, keywords and topic sections, then uses them to stack retakes. It runs inside the editor's import queue, one file at a time, on the local machine. Behaviour is specified in [interactive editor](../features/interactive-editor.md), [transcript panel](../features/transcript-panel.md), [retake grouping](../features/retake-grouping.md) and [editor refinements](../features/editor-refinements.md); this page maps it to code. See [overview](overview.md) for the process layout and [data model](data-model.md) for the bundle.
+Analysis turns an imported source into timecoded words, a summary, keywords and topic sections, then uses them to stack retakes. It runs inside the editor's import queue, one file at a time, on the local machine. Behaviour is specified in [interactive editor](../features/editing/interactive-editor.md), [transcript panel](../features/import-analysis/transcript-panel.md), [retake grouping](../features/import-analysis/retake-grouping.md) and [editor refinements](../features/editing/editor-refinements.md); this page maps it to code. See [overview](overview.md) for the process layout and [data model](data-model.md) for the bundle.
 
 ## 1. What is wired where
 

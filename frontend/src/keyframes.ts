@@ -1,4 +1,4 @@
-// Keyframed transforms (docs/features/keyframes.md). Mirror of
+// Keyframed transforms (docs/features/finishing/keyframes.md). Mirror of
 // backend/videoflow/editor/keyframes.py: keep both in step.
 import {
   clone,

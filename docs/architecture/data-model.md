@@ -1,6 +1,6 @@
 # Data model and project format
 
-A project is a `<name>.video-flow` folder inside the user's working folder ([projects](../features/projects.md)). Its `project.json` holds a schema-versioned `Project` (`backend/videoflow/project/models.py`) whose `editor` field carries the interactive edit, the `EditorDocument` (`backend/videoflow/editor/models.py`, mirrored in `frontend/src/model.ts`). Exporters and the renderer read the edit through one resolved, frame-quantised timeline. See [overview](overview.md) for the components, [analysis pipeline](analysis-pipeline.md) for derived data and [render and export](render-export.md) for the consumers.
+A project is a `<name>.video-flow` folder inside the user's working folder ([projects](../features/getting-started/projects.md)). Its `project.json` holds a schema-versioned `Project` (`backend/videoflow/project/models.py`) whose `editor` field carries the interactive edit, the `EditorDocument` (`backend/videoflow/editor/models.py`, mirrored in `frontend/src/model.ts`). Exporters and the renderer read the edit through one resolved, frame-quantised timeline. See [overview](overview.md) for the components, [analysis pipeline](analysis-pipeline.md) for derived data and [render and export](render-export.md) for the consumers.
 
 ## Conventions
 
@@ -24,7 +24,7 @@ A project is a `<name>.video-flow` folder inside the user's working folder ([pro
 | `project.v<N>.bak.json` | Original file kept before a schema migration rewrites it. |
 | `history.jsonl` | Append-only log of committed command batches (write-ahead and audit). |
 | `analysis/` *(created)* | `analysis/sidecars/<sha256>.json`: bundle copy of every analysis sidecar. |
-| `features/` *(created)* | `features/sentences/<hash>.npy`: sentence vectors for [retake grouping](../features/retake-grouping.md). |
+| `features/` *(created)* | `features/sentences/<hash>.npy`: sentence vectors for [retake grouping](../features/import-analysis/retake-grouping.md). |
 | `exports/` *(created)* | `edit.otio`, `edit.otioz`, `edit.edl`, `edit.tscproj`, `edit.srt`, `edit.md`/`edit.csv`, `edit.report.json`. |
 | `renders/` *(created)* | `render-<id>.mp4`. |
 
@@ -91,17 +91,17 @@ All positions and lengths are integer project-rate frames. `start` is the timeli
 | `layer` | Lane number 0–999; higher video layers composite on top. Video and audio lanes are numbered independently. |
 | `speed` | 0.1–10, source frames per timeline frame. Timeline `duration = round_half_up(span / speed)` with `span = sourceOut - sourceIn` ≥ 1. |
 | `transform` | Picture rectangle in output pixels plus crop fractions (`crop*` in `[0, 1)`, opposite crops sum below 1). `resizeReference` keeps the canvas size and transform a resize started from. `background`: `transparent`, `color` or `blur`. Frontend-only `fitMode` survives as an extra field. |
-| `stillFrame` | Source frame a still clip shows for its whole length (0 for an image); `null` for moving clips. Video clips at speed 1 only; a still clip has no source limit ([still images](../features/still-images.md)). |
+| `stillFrame` | Source frame a still clip shows for its whole length (0 for an image); `null` for moving clips. Video clips at speed 1 only; a still clip has no source limit ([still images](../features/import-analysis/still-images.md)). |
 | `heldRange` | `{start, end}` timeline frames kept by a standard audio trim without a placeholder clip. |
 | `fadeIn`, `fadeOut` | Edge fades in frames (picture from what lies below, audio from silence). |
 | `gainDb` | −60 to +24 dB. |
-| `keyframes[]` | `frame` (source frame), `transform`, `ease` (`smooth` or `linear`). Video clips only, distinct frames, kept sorted ([keyframed transforms](../features/keyframes.md)). |
+| `keyframes[]` | `frame` (source frame), `transform`, `ease` (`smooth` or `linear`). Video clips only, distinct frames, kept sorted ([keyframed transforms](../features/finishing/keyframes.md)). |
 | `transform` | `x`, `y`, `width`, `height` (output pixels), crop fractions, `rotation` (degrees clockwise, default 0), `opacity` (0–1, default 1). |
 | `volumeRanges[]` | `start`, `end` (source frames), `gainDb` (−60 = silence, ≤0), `ramp` (4 frames, outside the range), `kind` `mute` or `duck`. |
 | `linkId` | Joins exactly one video and one audio clip, which must share `start`, `duration` and `speed`. |
 | `transitions[]` | `type` `dissolve`, `dip_black` or `dip_white`; `duration` 1–3600 requested frames, centred on the cut between `leftId` and `rightId`. Dormant (ignored, never deleted) while the clips are missing or not adjacent on one lane. |
 
-Clip ids are unique. On commit (`SetEditor`), `validate_assets` also checks that each media clip's asset exists, has the needed stream and that `sourceOut` fits the source duration. `layout()` (mirrored in the frontend) packs the assembly: enabled clips (and held ranges) are merged into covered intervals and uncovered time is removed, so only explicit `gap` clips keep empty time. Feature rules live in [interactive editor](../features/interactive-editor.md), [range and trim](../features/range-and-trim.md), [clip effects](../features/clip-effects.md), [transitions](../features/transitions.md) and [audio tracks](../features/audio-tracks.md).
+Clip ids are unique. On commit (`SetEditor`), `validate_assets` also checks that each media clip's asset exists, has the needed stream and that `sourceOut` fits the source duration. `layout()` (mirrored in the frontend) packs the assembly: enabled clips (and held ranges) are merged into covered intervals and uncovered time is removed, so only explicit `gap` clips keep empty time. Feature rules live in [interactive editor](../features/editing/interactive-editor.md), [range and trim](../features/editing/range-and-trim.md), [clip effects](../features/finishing/clip-effects.md), [transitions](../features/finishing/transitions.md) and [audio tracks](../features/editing/audio-tracks.md).
 
 ## Commands, undo and history
 
@@ -174,4 +174,4 @@ Analysis lives outside `project.json`. `editor/analysis.py` writes `<source stem
 }
 ```
 
-A sidecar is used only when `version` is 1 and `sourceHash` matches (or is absent); missing topics are derived on read. See [transcript panel](../features/transcript-panel.md) and [retake grouping](../features/retake-grouping.md).
+A sidecar is used only when `version` is 1 and `sourceHash` matches (or is absent); missing topics are derived on read. See [transcript panel](../features/import-analysis/transcript-panel.md) and [retake grouping](../features/import-analysis/retake-grouping.md).

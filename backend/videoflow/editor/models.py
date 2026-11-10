@@ -19,7 +19,7 @@ class Transform(CamelModel):
     crop_top: float = Field(default=0, ge=0, lt=1)
     crop_bottom: float = Field(default=0, ge=0, lt=1)
     rotation: float = Field(default=0, ge=-3600, le=3600)
-    """Degrees, clockwise, around the centre of the box (docs/features/keyframes.md)."""
+    """Degrees, clockwise, around the centre of the box (docs/features/finishing/keyframes.md)."""
     opacity: float = Field(default=1, ge=0, le=1)
 
     @model_validator(mode="after")
@@ -70,7 +70,7 @@ class HeldRange(CamelModel):
 
 
 class Keyframe(CamelModel):
-    """The clip's transform at one source frame (docs/features/keyframes.md).
+    """The clip's transform at one source frame (docs/features/finishing/keyframes.md).
 
     Between two keyframes every value is interpolated; `ease` shapes the change that starts
     at this keyframe (`smooth` eases in and out). Before the first and after the last
@@ -83,8 +83,8 @@ class Keyframe(CamelModel):
 
 
 class VolumeRange(CamelModel):
-    """Lowered or muted audio over a source range (docs/features/clip-effects.md); ramps sit
-    outside the range."""
+    """Lowered or muted audio over a source range (docs/features/finishing/clip-effects.md); ramps
+    sit outside the range."""
 
     start: int = Field(ge=0)
     end: int = Field(gt=0)
@@ -105,7 +105,7 @@ class VolumeRange(CamelModel):
 
 
 class Title(CamelModel):
-    """Text of a text clip (docs/features/clip-effects.md), laid out by editor.titles."""
+    """Text of a text clip (docs/features/finishing/clip-effects.md), laid out by editor.titles."""
 
     text: str = Field(min_length=1, max_length=1000)
     """Lines separated by newlines."""
@@ -144,16 +144,18 @@ class EditorClip(CamelModel):
     """Frames fading in at the clip's start (picture from what lies below, audio from silence)."""
     fade_out: int = Field(default=0, ge=0)
     speed: float = Field(default=1.0, ge=0.1, le=10)
-    """Playback speed: source frames per timeline frame (docs/features/clip-effects.md)."""
+    """Playback speed: source frames per timeline frame
+    (docs/features/finishing/clip-effects.md)."""
     keyframes: list[Keyframe] = Field(default_factory=list, max_length=1000)
-    """Animated transform of a video clip, in source frames (docs/features/keyframes.md)."""
+    """Animated transform of a video clip, in source frames
+    (docs/features/finishing/keyframes.md)."""
     volume_ranges: list[VolumeRange] = Field(default_factory=list, max_length=2000)
     title: Title | None = None
     """Text drawn by a text clip; text clips have no asset and play on video lanes."""
     still_frame: int | None = Field(default=None, ge=0)
     """Source frame a still clip shows for its whole length (0 for a still image); None for
     moving clips. A still clip has no source limit: its range only measures its length
-    (docs/features/still-images.md)."""
+    (docs/features/import-analysis/still-images.md)."""
 
     @model_validator(mode="after")
     def valid(self) -> "EditorClip":

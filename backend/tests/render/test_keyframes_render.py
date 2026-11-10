@@ -1,4 +1,4 @@
-"""Keyframed transforms in the render (docs/features/keyframes.md)."""
+"""Keyframed transforms in the render (docs/features/finishing/keyframes.md)."""
 
 from tests.render import test_render as base
 from videoflow.editor.keyframes import piecewise, transform_at

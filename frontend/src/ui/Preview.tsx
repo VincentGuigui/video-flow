@@ -50,7 +50,7 @@ function Media({
   const ref = useRef<HTMLVideoElement & HTMLAudioElement>(null);
   const settings = useEditor((s) => s.project?.settings);
   // A still image is drawn as a picture; a still clip of a video stays on its frame
-  // (docs/features/still-images.md).
+  // (docs/features/import-analysis/still-images.md).
   const image = useEditor(
     (s) => !!s.project?.assets.find((a) => a.id === clip.assetId)?.probe.still,
   );
@@ -85,7 +85,7 @@ function Media({
   }, [frame, rate, playing, clip, gain, still]);
   if (clip.kind === "audio")
     return <audio ref={ref} src={mediaUrl(clip.assetId)} preload="auto" />;
-  // The transform at this frame: keyframes interpolated (docs/features/keyframes.md).
+  // The transform at this frame: keyframes interpolated (docs/features/finishing/keyframes.md).
   const t = transformAtFrame(clip, frame);
   return (
     <>

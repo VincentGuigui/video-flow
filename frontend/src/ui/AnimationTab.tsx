@@ -75,7 +75,7 @@ const FIELDS: Field[] = [
 ];
 
 // Animation tab: keyframes of a video clip and its transform at the cursor
-// (docs/features/keyframes.md).
+// (docs/features/finishing/keyframes.md).
 export function AnimationTab({ clip }: { clip: Clip }) {
   const { project, document, frame, save, busy, set } = useEditor();
   const chosen = useEditor((s) => s.keyframe);

@@ -1141,7 +1141,7 @@
     },
     "Keyframe": {
       "additionalProperties": true,
-      "description": "The clip's transform at one source frame (docs/features/keyframes.md).\n\nBetween two keyframes every value is interpolated; `ease` shapes the change that starts\nat this keyframe (`smooth` eases in and out). Before the first and after the last\nkeyframe the transform holds.",
+      "description": "The clip's transform at one source frame (docs/features/finishing/keyframes.md).\n\nBetween two keyframes every value is interpolated; `ease` shapes the change that starts\nat this keyframe (`smooth` eases in and out). Before the first and after the last\nkeyframe the transform holds.",
       "properties": {
         "ease": {
           "default": "smooth",
@@ -2384,7 +2384,7 @@
     },
     "Title": {
       "additionalProperties": true,
-      "description": "Text of a text clip (docs/features/clip-effects.md), laid out by editor.titles.",
+      "description": "Text of a text clip (docs/features/finishing/clip-effects.md), laid out by editor.titles.",
       "properties": {
         "box": {
           "default": false,
@@ -2842,7 +2842,7 @@
     },
     "VolumeRange": {
       "additionalProperties": true,
-      "description": "Lowered or muted audio over a source range (docs/features/clip-effects.md); ramps sit\noutside the range.",
+      "description": "Lowered or muted audio over a source range (docs/features/finishing/clip-effects.md); ramps\nsit outside the range.",
       "properties": {
         "end": {
           "exclusiveMinimum": 0,

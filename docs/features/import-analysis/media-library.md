@@ -6,7 +6,7 @@ Right-clicking a medium in Project media selects it and opens a menu with **Anal
 
 A dialog with the file size (or "Offline"), duration, picture size, whether it has audio, and:
 
-- **Location**: the full path; clicking it shows the file selected in the system file manager (Explorer `/select` on Windows; the containing folder through `xdg-open` on Linux). The path relative to the working folder is shown below it ([projects](projects.md)).
+- **Location**: the full path; clicking it shows the file selected in the system file manager (Explorer `/select` on Windows; the containing folder through `xdg-open` on Linux). The path relative to the working folder is shown below it ([projects](../getting-started/projects.md)).
 - **Analysis**: word and topic counts, summary engine and summary, a link that shows the analysis JSON (the sidecar beside the media, else the project's cached copy) in the file manager, and **Show transcript**, which selects a clip of that medium and opens the Transcript tab.
 
 `GET /api/assets/{id}/info` returns these facts; `POST /api/assets/{id}/reveal?target=media|analysis` shows a file.

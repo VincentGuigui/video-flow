@@ -12,7 +12,7 @@ import {
 import { activeTransitions } from "./transitions";
 import { EFFECTS } from "./effects";
 
-// Still clips (docs/features/still-images.md): one picture held for any length.
+// Still clips (docs/features/import-analysis/still-images.md): one picture held for any length.
 const clip = (id: string, start: number, extra: Partial<Clip> = {}): Clip => ({
   id,
   kind: "video",

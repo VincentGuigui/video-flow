@@ -11,7 +11,7 @@ Targets Windows 11 x64 and Linux x86_64; Windows ARM64 requires qualification. N
 - Backend: Python 3.13, FastAPI, managed with [uv](https://docs.astral.sh/uv/) in `backend/` (package `videoflow`).
 - Desktop: PySide6 + Qt WebEngine; normal launch opens a native application window.
 - Frontend: React + Vite, built with Node >=22.12 and npm. Node is a build-time dependency only.
-- Media: FFmpeg >= 6.1 (system, or a pinned static build in `tools/ffmpeg/` downloaded on request by the installer or the app; see [FFmpeg setup](docs/features/ffmpeg-setup.md)).
+- Media: FFmpeg >= 6.1 (system, or a pinned static build in `tools/ffmpeg/` downloaded on request by the installer or the app; see [FFmpeg setup](docs/features/getting-started/ffmpeg-setup.md)).
 
 ## Install
 
@@ -142,4 +142,4 @@ Editor interactions:
 
 ## Automated releases
 
-Use GitHub **Actions → Release → Run workflow** to build Windows/Linux ZIPs, tag the built commit and publish a versioned release with SHA-256 checksums; its text lists the changes since the previous release, from `docs/release_notes.md`. See [automated releases](docs/features/github-releases.md).
+Use GitHub **Actions → Release → Run workflow** to build Windows/Linux ZIPs, tag the built commit and publish a versioned release with SHA-256 checksums; its text lists the changes since the previous release, from `docs/release_notes.md`. See [automated releases](docs/reference/github-releases.md).

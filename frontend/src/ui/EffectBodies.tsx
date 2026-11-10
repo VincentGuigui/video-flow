@@ -15,7 +15,7 @@ import { useEditor } from "../store";
 import { setFade } from "../transitions";
 
 // Settings of each clip effect, shown inside its card in the Effects tab
-// (docs/features/clip-effects.md).
+// (docs/features/finishing/clip-effects.md).
 
 // Edge fade of the selected clip (and its linked partner), in seconds.
 export function FadeBody({

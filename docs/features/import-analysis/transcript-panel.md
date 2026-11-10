@@ -1,6 +1,6 @@
 # Transcript panel and topic sections — 2026-10-26
 
-This revision supplements [interactive editor](interactive-editor.md) (import and analysis) and [editor refinements](editor-refinements.md) (local AI settings).
+This revision supplements [interactive editor](../editing/interactive-editor.md) (import and analysis) and [editor refinements](../editing/editor-refinements.md) (local AI settings).
 
 ## Analysis output
 
@@ -12,13 +12,13 @@ An analysed import produces, in addition to the timecoded words:
   - A topic boundary needs a clear drop in vocabulary overlap between the three sentences before and after it, or a long pause. Every topic lasts at least 15 s; there are at most 12 per clip. Clips under 30 s, or about one subject, have a single topic.
   - Titles are the five words most specific to the section, in spoken order. With Qwen selected, Qwen writes each title, falling back to the keyword title if it fails; an unusable Qwen summary falls back to the deterministic summary with a warning.
 
-The sidecar JSON ([interactive editor](interactive-editor.md)) gains `topics` and `topicsEngine`; its version stays 1. Older sidecars without topics get them on load, deterministically, without rewriting the file.
+The sidecar JSON ([interactive editor](../editing/interactive-editor.md)) gains `topics` and `topicsEngine`; its version stays 1. Older sidecars without topics get them on load, deterministically, without rewriting the file.
 
 ## Transcript panel
 
 - Properties shows a **Transcript** tab next to Clip and Project, only while a clip is selected. It reads the selected clip's source analysis.
 - It shows the summary, then the list of topics: start – end timecodes and the title.
-- Clicking a topic expands it to its transcript lines, each with a timecode, and sets the timeline range to the topic (see [range and trim](range-and-trim.md)). Clicking it again collapses it and resets the range. Words in the lines set the range too ([range and trim](range-and-trim.md)).
+- Clicking a topic expands it to its transcript lines, each with a timecode, and sets the timeline range to the topic (see [range and trim](../editing/range-and-trim.md)). Clicking it again collapses it and resets the range. Words in the lines set the range too ([range and trim](../editing/range-and-trim.md)).
 - Clicking any timecode (topic start/end or transcript line) moves the timeline cursor there and stops playback.
 - Timecodes are assembly times, mapped through the clip's position and trim. Times outside the clip's trimmed range, or on a disabled clip, show the source time greyed out and do not move the cursor. The range is clamped to the trimmed range.
 - Media without analysis shows a hint to import it again with analysis.

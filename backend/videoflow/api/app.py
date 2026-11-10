@@ -749,7 +749,7 @@ def create_app(
         )
 
     async def still_preview(asset: Any) -> Path:
-        """The PNG preview of a still image (docs/features/still-images.md)."""
+        """The PNG preview of a still image (docs/features/import-analysis/still-images.md)."""
         try:
             return await build_still_preview(
                 Path(asset.path), bundle.proxies_dir, asset.content_hash
@@ -921,7 +921,7 @@ def create_app(
     @app.get("/api/title")
     async def title_picture(spec: str) -> Response:
         """The title picture the render overlays, at the project size
-        (docs/features/clip-effects.md)."""
+        (docs/features/finishing/clip-effects.md)."""
         try:
             title = Title.model_validate_json(spec)
         except ValueError as exc:

@@ -1,6 +1,6 @@
 # Unified timeline and focused editing — 2026-10-26
 
-This revision supersedes conflicting editing details in [interactive editor](interactive-editor.md) and [editor refinements](editor-refinements.md); the native desktop architecture in [desktop shell](../architecture/desktop-shell.md) remains authoritative.
+This revision supersedes conflicting editing details in [interactive editor](interactive-editor.md) and [editor refinements](editor-refinements.md); the native desktop architecture in [desktop shell](../../architecture/desktop-shell.md) remains authoritative.
 
 - The assembly timeline is the only ruler and cursor. Its zoom/fit controls sit at the right of its header. The flow is a clip-lane editor driven by the same scale and horizontal scroll, with no independent ruler, cursor, zoom control or focus banner. Double-clicking a clip fits the assembly range to that clip plus up to two seconds of context. Back to full edit [Esc] appears beside Clip timeline. The scrub hint sits beside the Space hint; the flow footer retains interaction hints without Video/Audio/Enabled legends.
 - Remove the Linked audio text and broken-chain decoration from clip cards. The existing full-chain detach control remains available.

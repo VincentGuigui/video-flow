@@ -1,5 +1,5 @@
 // Ultra short description of a clip, shown as a tooltip when hovering it in the flow
-// (docs/features/clip-tooltip.md). Audio clips use the analysis of their source file,
+// (docs/features/editing/clip-tooltip.md). Audio clips use the analysis of their source file,
 // so audio extracted from a video describes the same content as that video.
 import { isStill, type Clip } from "./model";
 import type { Analysis } from "./transcript";

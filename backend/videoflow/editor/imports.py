@@ -265,8 +265,8 @@ class Imports:
         return ClipText(asset.id, texts, vectors)
 
     async def _match(self, asset: Asset, analysis: AnalysisFile) -> str | None:
-        """Asset id of the clip this source is a retake of (docs/features/retake-grouping.md), if
-        any."""
+        """Asset id of the clip this source is a retake of
+        (docs/features/import-analysis/retake-grouping.md), if any."""
         project = self.bundle.project
         placed = {c.asset_id for c in editable_document(project).clips}
         embed = await asyncio.to_thread(model_state, GROUPING_MODEL) == "up-to-date"
@@ -330,7 +330,7 @@ class Imports:
             layer = max((c.layer for c in document.clips), default=0) + 1
         rate = project.settings.frame_rate
         still = asset.probe.still
-        # A still image starts as a 3 s clip (docs/features/still-images.md).
+        # A still image starts as a 3 s clip (docs/features/import-analysis/still-images.md).
         count = (
             round(STILL_SECONDS * rate.num / rate.den)
             if still

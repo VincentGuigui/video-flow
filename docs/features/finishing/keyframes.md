@@ -26,7 +26,7 @@ A video clip (image and freeze clips included) can animate its transform: positi
 
 ## Projects from earlier versions
 
-The zoom & pan effect is removed without migration (decision of 2026-11-01, [0004 Keyframes replace zoom](../decisions/0004-keyframes-replace-zoom.md)): a project saved with zooms opens, its zooms are ignored.
+The zoom & pan effect is removed without migration (decision of 2026-11-01, [0004 Keyframes replace zoom](../../decisions/0004-keyframes-replace-zoom.md)): a project saved with zooms opens, its zooms are ignored.
 
 ## Validation
 

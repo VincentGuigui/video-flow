@@ -296,7 +296,7 @@ export function Transport() {
   );
 }
 
-// Keyframes of the selected video clip on the timeline (docs/features/keyframes.md):
+// Keyframes of the selected video clip on the timeline (docs/features/finishing/keyframes.md):
 // click to move the cursor there and select it (Delete removes it), drag to move it
 // inside the clip's visible range.
 function KeyframeLane({ origin, scale }: { origin: number; scale: number }) {

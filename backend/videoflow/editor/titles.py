@@ -1,5 +1,5 @@
-"""Text clips (docs/features/clip-effects.md): layout and the transparent picture drawn for the
-render and preview.
+"""Text clips (docs/features/finishing/clip-effects.md): layout and the transparent picture drawn
+for the render and preview.
 
 Every line sits in its own font box (ascender to descender), padded when the title has a
 box. A title is centred in the picture; a lower third is aligned to the left margin with

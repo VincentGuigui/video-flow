@@ -11,7 +11,7 @@ import {
   visibleKeyframes,
 } from "./keyframes";
 
-// Keyframed transforms (docs/features/keyframes.md); mirrors the backend tests.
+// Keyframed transforms (docs/features/finishing/keyframes.md); mirrors the backend tests.
 const at = (x: number, extra = {}) => ({ ...defaultTransform(), x, ...extra });
 const clip = (extra: Partial<Clip> = {}): Clip => ({
   id: "v",

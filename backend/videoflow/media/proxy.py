@@ -232,7 +232,8 @@ async def build_proxy(
 
 
 STILL_PREVIEW_MAX = 1920
-"""Longest side of the preview picture of a still image (docs/features/still-images.md)."""
+"""Longest side of the preview picture of a still image
+(docs/features/import-analysis/still-images.md)."""
 
 
 async def build_still_preview(

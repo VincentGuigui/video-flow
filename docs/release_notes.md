@@ -1,6 +1,6 @@
 # Release notes
 
-Changes per version, newest first, written for users. The GitHub release of a version gathers the entries of every version since the previous GitHub release ([automated releases](features/github-releases.md)).
+Changes per version, newest first, written for users. The GitHub release of a version gathers the entries of every version since the previous GitHub release ([automated releases](reference/github-releases.md)).
 
 Format (checked by the release workflow, `scripts/release_artifacts.py`):
 

@@ -1,4 +1,5 @@
-"""Still images: import, validation, render and exports (docs/features/still-images.md)."""
+"""Still images: import, validation, render and exports
+(docs/features/import-analysis/still-images.md)."""
 
 import asyncio
 import json

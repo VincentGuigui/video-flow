@@ -99,7 +99,7 @@ FFmpeg hardware paths (separate from the Python extras, probed at run time): dec
 
 | Tool | Version | Licence | Purpose | Provisioning |
 |---|---|---|---|---|
-| FFmpeg / ffprobe | >= 6.1 (pinned 7.1.1 Windows x64, 7.0.2 Linux x64) | GPL-3.0 for the pinned builds; separate program, not linked or bundled | Probe, proxies, render | System package, or pinned static build (URL and SHA-256) downloaded into `tools/ffmpeg/` with its licence files, on the user's consent, by `scripts/install.*` or the app's FFmpeg window; see [FFmpeg setup](../features/ffmpeg-setup.md). Windows x64 uses the full build so `flite` is available for synthetic samples. Override with `VIDEOFLOW_FFMPEG_URL` and `VIDEOFLOW_FFMPEG_SHA256` (install scripts) |
+| FFmpeg / ffprobe | >= 6.1 (pinned 7.1.1 Windows x64, 7.0.2 Linux x64) | GPL-3.0 for the pinned builds; separate program, not linked or bundled | Probe, proxies, render | System package, or pinned static build (URL and SHA-256) downloaded into `tools/ffmpeg/` with its licence files, on the user's consent, by `scripts/install.*` or the app's FFmpeg window; see [FFmpeg setup](../features/getting-started/ffmpeg-setup.md). Windows x64 uses the full build so `flite` is available for synthetic samples. Override with `VIDEOFLOW_FFMPEG_URL` and `VIDEOFLOW_FFMPEG_SHA256` (install scripts) |
 | uv | >= 0.5 | MIT / Apache-2.0 | Python and environment manager | Installed by `scripts/install.*` |
 | Python | 3.13 | PSF | Backend | `uv python install 3.13` |
 | Node.js | 22 | MIT | Frontend build only | Manual (checked by the installer) |
@@ -116,7 +116,7 @@ Each model is pinned to a Hugging Face commit. Gated repositories and licences o
 | `parakeet-tdt-0.6b-v3-int8` | istupakov/parakeet-tdt-0.6b-v3-onnx | CC-BY-4.0 (credit NVIDIA Parakeet TDT 0.6B v3) | 670 MB | ASR (S4), default |
 | `qwen2.5-0.5b-instruct` | Qwen/Qwen2.5-0.5B-Instruct | Apache-2.0 | ~1 GB | Optional CPU summaries/keywords (`qwen` extra, included by `desktop`) |
 | `faster-whisper-tiny` | Systran/faster-whisper-tiny | MIT | 75 MB | ASR alternative (`whisper` extra), smoke tier |
-| `paraphrase-multilingual-minilm-l12-v2` | sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 | Apache-2.0 | 118 MB (uint8) | Sentence similarity for retake grouping (only text embedder; see [retake grouping](../features/retake-grouping.md)) |
+| `paraphrase-multilingual-minilm-l12-v2` | sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 | Apache-2.0 | 118 MB (uint8) | Sentence similarity for retake grouping (only text embedder; see [retake grouping](../features/import-analysis/retake-grouping.md)) |
 | `dinov2-small` | Xenova/dinov2-small (export of facebook/dinov2-small) | Apache-2.0 | 24 MB (int8) | Visual embeddings (S7), optional; pipeline only, hidden in Settings |
 
 ### Optional CUDA library repair
