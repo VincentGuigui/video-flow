@@ -1,36 +1,41 @@
 # Camtasia export
 
-**Export → Camtasia project** writes a `.tscproj` that opens in Camtasia with your clips, lanes, transitions and titles (EXP-06; details of other formats in [render and export](../../architecture/render-export.md)). Targets Camtasia 2023.4 and later on Windows (the `.tscproj` format version 7.0 opens in newer releases). The media pack fallback and `.cmproj` (macOS) are not implemented.
+**Export → Camtasia project** writes `edit.tscproj` into the project's `exports` folder. Open it in Camtasia 2023.4 or later on Windows (the format opens in newer versions too). The Mac `.cmproj` format and a media-pack fallback are not supported.
 
-## Template-driven writer
+The project keeps your original media where they are: Camtasia references them by path, so open it on the computer that has the files (or relink the media).
 
-`.tscproj` is undocumented JSON. The writer (`exporters/camtasia.py`) clones structures from a template and fills them from the edit:
+## What is exported
 
-- Template: `templates/camtasia.tscproj` in the application folder if present (any project saved by the user's Camtasia), or `--camtasia-template PATH` on the CLI; otherwise the built-in default, which reproduces the structures of a real Camtasia 2023.4.3 project (UnifiedMedia, VMFile, AMFile, Fade transition, source-bin entries, track attributes, caption attributes) with neutral values.
-- Cloned from the template: top-level settings and version, UnifiedMedia, VMFile, AMFile, transition objects by name, the first track and track-attribute objects, and a video source-bin entry with its source tracks. A missing structure falls back to the built-in one with a warning.
-- Never copied from the template: its media, source bin, tracks and private project metadata (autosave path, thumbnail); only `CanvasZoom`, `Fit`, `Language` and `ProfileName` are kept.
+| In Video-Flow | In Camtasia |
+|---------------|-------------|
+| Each video lane | A track, in the same order; independent audio lanes follow |
+| A video clip with its linked audio | One clip carrying both |
+| Clip position, length and source range | The same, frame accurate |
+| Picture position and size | The same |
+| Rotation, opacity and keyframes ([keyframed transforms](../finishing/keyframes.md)) | The same (rotation could not be checked in Camtasia) |
+| Image clips and freeze frames | Image clips |
+| Clip volume, mute ranges and ducking | Volume and volume keyframes |
+| Speed | The clip's speed |
+| Fade in and out | A Camtasia fade on that edge |
+| Dissolve | A Fade transition |
+| Dip to black | A fade through black (a Fade if your template has none) |
+| Dip to white | A Fade |
+| Titles and lower thirds | Text callouts (one box around all lines, no shadow) |
 
-## Mapping
+## What is not exported
 
-| Edit | Camtasia |
-|------|----------|
-| Video lane (bottom-up) | One track per lane, in lane order; independent audio lanes follow |
-| Linked video + audio | `UnifiedMedia` with inner `VMFile` and `AMFile` |
-| Unlinked video / audio | `VMFile` / `AMFile` |
-| Clip start, duration, source in | `start`, `duration`, `mediaStart` in ticks of 705 600 000 per second |
-| Source file | `sourceBin` entry with `src` = original path; source-track `range` in the track's own `editRate` |
-| Position and size | `translation0/1` (pixels from canvas centre, y up) and `scale0/1` (relative to source size), as static parameter values |
-| Rotation, opacity, keyframes | `rotation2` (radians, counter-clockwise) and `opacity` values; keyframes on these and on position and size, in media time ([keyframed transforms](../finishing/keyframes.md)). Rotation is unverified in Camtasia. |
-| Still images and freeze frames | `IMFile` (one picture) ([still images](../import-analysis/still-images.md)) |
-| Clip gain | AMFile `attributes.gain` (linear) |
-| Cross dissolve | `Fade` transition between the two adjacent medias |
-| Dip to black | `FadeThroughBlack` when the template has it, else `Fade` (warning) |
-| Dip to white | `Fade` (warning) |
+Crop, clip backgrounds, the sound crossfade of transitions, empty clips (Camtasia positions are absolute) and disabled clips. The export tells you what it left out and saves the list as `edit.report.json` next to the project.
 
-Not exported, reported in `edit.report.json`: crop, clip backgrounds, audio crossfades of transitions, gaps (Camtasia positions are absolute), disabled clips.
+## Looking exactly like your Camtasia
 
-## UI
+Camtasia project files are not documented, so Video-Flow builds the file from a template. By default it uses a built-in template that matches Camtasia 2023.4.3. To follow *your* Camtasia version and settings, save any project in Camtasia and put it in a `templates` folder next to the application as `camtasia.tscproj`: its structures are reused (your media and private details are not). If a needed structure is missing from your template, the built-in one is used and a warning says so.
 
-Export → **Camtasia project** writes `edit.tscproj` to the project's exports folder. CLI: `videoflow export BUNDLE --camtasia [--camtasia-template PATH]`.
+From a terminal: `videoflow export BUNDLE --camtasia [--camtasia-template PATH]`.
 
-Validation: unit tests cover lanes, linked pairs as UnifiedMedia, exact tick conversion at 25 fps, source ranges, placement and gain values, unique ids, Fade between adjacent medias, cloning of user template structures (custom keys, transition names, keyframes removed), dropping private metadata, fallbacks and the export service. With a real Camtasia 2023.4.3 project as template, every generated structure (UnifiedMedia, VMFile, AMFile, transition, source-bin entry, top level, timeline) has the same keys as the original and no template content leaks. Opening the result in Camtasia remains a manual check on Windows; y orientation of `translation1` is assumed (y up) until confirmed.
+## Good to know
+
+Opening the result in Camtasia was checked structurally against a real Camtasia 2023.4.3 project; a hands-on check on Windows is still pending, notably the vertical direction of positions and rotation.
+
+## Technical notes
+
+The writer is `exporters/camtasia.py`. The precise mapping (ticks, parameters, template rules) is in [transitions, effects and titles](../../architecture/effects-and-titles.md#camtasia-writer); tests are in the [validation record](../../validation/2026-11-11-finishing-features.md#camtasia-export). This page covers EXP-06 of the [functional spec](../../product/functional-spec.md); other formats are in [render and export](render-and-export.md).

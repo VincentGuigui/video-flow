@@ -118,7 +118,7 @@ The service adds that OTIO gain, fades and fit are metadata only; the EDL adds t
 
 ### Camtasia
 
-`exporters/camtasia.py` writes `.tscproj` 7.0 by cloning structures from a template (`templates/camtasia.tscproj` in the application folder, `--camtasia-template`, or the built-in 2023.4.3 default). It maps lanes to tracks, linked pairs to `UnifiedMedia`, times to 705 600 000 ticks per second, transforms, gain, speed, transform and volume keyframes, edge fades, dissolves and dips as `Fade`/`FadeThroughBlack`, and titles as text callouts. Crop, backgrounds, transition audio crossfades, gaps and disabled clips are reported as not exported. Details: [Camtasia export](../features/output/camtasia-export.md), [clip effects](../features/finishing/clip-effects.md).
+`exporters/camtasia.py` writes `.tscproj` 7.0 by cloning structures from a template (`templates/camtasia.tscproj` in the application folder, `--camtasia-template`, or the built-in 2023.4.3 default). It maps lanes to tracks, linked pairs to `UnifiedMedia`, times to 705 600 000 ticks per second, transforms, gain, speed, transform and volume keyframes, edge fades, dissolves and dips as `Fade`/`FadeThroughBlack`, and titles as text callouts. Crop, backgrounds, transition audio crossfades, gaps and disabled clips are reported as not exported. Details: [transitions, effects and titles](effects-and-titles.md#camtasia-writer), [Camtasia export](../features/output/camtasia-export.md), [clip effects](../features/finishing/clip-effects.md).
 
 ### CLI
 
