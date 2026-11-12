@@ -72,8 +72,6 @@ Additional built editor interactions:
 | Risk | Mitigation |
 |------|------------|
 | Grouping is less accurate on non-speech footage | Manual stacking and moving; visual features from the analysis pipeline |
-| Phone footage quirks (VFR, HDR, rotation) | Proxies for preview, normalisation and tone mapping in the render |
+| Phone footage quirks (VFR, HDR, rotation) | Preview media made CFR, rotated and tone-mapped; normalisation and tone mapping in the render |
 | Camtasia format changes between versions | Template-driven writer: a project saved by the user's version provides the structures |
 | Scope creep towards a full editor | Handoff to other editors through OTIO and Camtasia for advanced finishing |
-
-- Align range guides across the merged timeline workspace
