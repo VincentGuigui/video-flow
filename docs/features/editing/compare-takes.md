@@ -1,20 +1,21 @@
 # Compare takes
 
-Retakes of the same sentences are stacked on parallel lanes when imported ([retake grouping](../import-analysis/retake-grouping.md)). Compare takes plays them side by side so you can keep the best one. (This covers CMP-01 to CMP-04 of the [functional spec](../../product/functional-spec.md); its beats are not used.)
+When you import several takes of the same sentences, Video-Flow stacks them on parallel lanes ([retake grouping](../import-analysis/retake-grouping.md)). **Compare takes** plays them side by side so you can keep the best one.
 
-## Takes
+## Opening it
 
-- The takes of a selected clip are the video clips on any lane that overlap its assembly time, enabled or not, ordered by lane. A selected audio clip stands for its linked video.
-- The toolbar below the clip flow shows **Compare takes (N)** when there are at least two takes.
+Select a clip that has stacked takes (a video clip, or its audio) and click **Compare takes (N)** in the toolbar below the flow; N is the number of takes. The button appears when there are at least two. The takes are the video clips on any lane that overlap the selected clip in time, enabled or not.
 
-## Compare view
+## In the comparison
 
-- A dialog shows one card per take: number, name, duration, a player (proxy media) and the words spoken inside the take's trimmed range.
-- **Sync word**: the first word of the reference take (the first enabled take, else the first) that every take says, preferring words of four or more letters. Words said in one take only are highlighted; the sync word is underlined.
-- **Play all** (Space) starts every player 0.5 s before its sync word (or at its trimmed start when there is none) and stops each at its trimmed end. Only one take is audible; the speaker button on a card selects it (default: the reference take).
-- **Pick** (or keys 1–9) enables the picked take with its linked audio and disables the other takes with theirs; the pick is one undo step. Several takes may be enabled before a pick; all show as picked.
-- Escape closes the dialog. Editor shortcuts are inactive while it is open.
+- One card per take: its number, name, duration, a player and the words said inside the part of the take you kept.
+- The words that only one take says are highlighted. All takes share a **sync word**, the first word of the reference take that every take says (preferably a word of four letters or more); it is underlined.
+- **Play all** (or **Space**) starts every player half a second before its sync word and stops it at the end of its kept part, so you hear the same sentence in each take. Only one take is audible: click the speaker on a card to switch (by default the reference take, the first enabled one).
+- **Pick** (or key **1–9**) keeps that take, with its audio, and disables the others and their audio. It is one undo step. Several takes may be enabled before you pick.
+- **Esc** closes the comparison. The editor shortcuts are off while it is open.
 
-Not covered: picking a range inside a take (CMP-05) and multicam angles (CMP-06).
+Picking part of a take, or comparing camera angles recorded at the same time, is not available yet.
 
-Validation: frontend tests cover take detection (disabled takes, audio selection, overlap), pick enable/disable with linked audio, sync word choice (long-word preference, accents, none) and divergent words. A browser check imported two analysed takes, opened the view from clip properties, verified synced playback with one audible take, divergent highlights, pick with key 2 and Escape.
+## Technical notes
+
+Rules: [editor behaviour](../../architecture/editor-behaviour.md#compare-takes). Tests: [validation record](../../validation/2026-11-12-manual-pages.md#compare-takes). Covers CMP-01 to CMP-04 of the [functional spec](../../product/functional-spec.md); its beats are not used.

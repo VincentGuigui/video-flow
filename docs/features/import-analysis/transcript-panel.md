@@ -1,28 +1,25 @@
-# Transcript panel and topic sections
+# Transcript panel
 
-The Transcript tab shows what was said in the selected clip, with its summary and topics, and lets you correct the words. The analysis comes from the import ([importing media](importing.md)) and the engines chosen in [AI models and components](../getting-started/ai-models.md).
+The **Transcript** tab of the properties panel shows what was said in the selected clip, with its summary and topics, and lets you correct the words. It appears next to Clip and Project while a clip is selected, and reads the analysis of the clip's file ([importing media](importing.md); engines: [AI models and components](../getting-started/ai-models.md)). A clip without analysis shows a hint to import it again with analysis.
 
-## Analysis output
+## Summary and topics
 
-An analysed import produces, in addition to the timecoded words:
+An analysed import gives, besides the timed words:
 
-- **Summary**: a short summary of the whole clip. The deterministic engine picks up to two representative sentences, at most 280 characters, in spoken order. Local Qwen writes the summary when selected in Settings.
-- **Topics**: consecutive sections of the clip, each with a start and end time (integer microseconds, source time), a title of at most five words, and its transcript sentences.
-  - Sentences split on end punctuation, pauses of 0.7 s or more, or 30 words.
-  - A topic boundary needs a clear drop in vocabulary overlap between the three sentences before and after it, or a long pause. Every topic lasts at least 15 s; there are at most 12 per clip. Clips under 30 s, or about one subject, have a single topic.
-  - Titles are the five words most specific to the section, in spoken order. With Qwen selected, Qwen writes each title, falling back to the keyword title if it fails; an unusable Qwen summary falls back to the deterministic summary with a warning.
+- a **summary** of the clip, in one or two sentences;
+- **topics**: consecutive sections of the clip, each with its start and end time, a title of up to five words, and its sentences. A short clip, or one about a single subject, has one topic.
 
-The analysis JSON ([importing media](importing.md#analysis-files)) gains `topics` and `topicsEngine`; its version stays 1. Older sidecars without topics get them on load, deterministically, without rewriting the file.
+## Using the transcript
 
-## Transcript panel
+- **Click a topic** to open its sentences, with a timecode on each, and set the timeline range to it ([range and trim](../editing/range-and-trim.md)); click again to close it and reset the range.
+- **Click a word** to set the range to it, **Shift + click** another word to extend it; or select text across several lines.
+- **Click a timecode** to move the cursor there and stop playback.
+- Timecodes are positions in the edit. Times outside the kept part of the clip, or on a disabled clip, show the original time greyed out and do not move the cursor.
 
-- Properties shows a **Transcript** tab next to Clip and Project, only while a clip is selected. It reads the selected clip's source analysis.
-- It shows the summary, then the list of topics: start – end timecodes and the title.
-- Clicking a topic expands it to its transcript lines, each with a timecode, and sets the timeline range to the topic (see [range and trim](../editing/range-and-trim.md)). Clicking it again collapses it and resets the range. Words in the lines set the range too ([range and trim](../editing/range-and-trim.md)).
-- Clicking any timecode (topic start/end or transcript line) moves the timeline cursor there and stops playback.
-- Timecodes are assembly times, mapped through the clip's position and trim. Times outside the clip's trimmed range, or on a disabled clip, show the source time greyed out and do not move the cursor. The range is clamped to the trimmed range.
-- Media without analysis shows a hint to import it again with analysis.
+## Correcting words
 
-Validation: backend tests cover sentence splitting, two-subject segmentation with timecodes, single-subject stability, title length and LLM fallback, summary length and topics derived for old sidecars. Frontend tests cover source-to-assembly mapping with trims, disabled clips and range clamping. A browser check on a served project confirmed topics, expansion, range selection and cursor seeks.
+Double-click a word to edit it in place; press **Enter** or leave the field to save, **Esc** to cancel. The word keeps its timing, and the sentence text updates. Corrections are saved in the analysis file, so they follow the medium. Your original media are never changed.
 
-Text can be selected normally in expanded transcript lines; the selected words set the timeline range. Double-click a word to correct it inline, then press Enter or leave the input to save (Escape cancels). Corrections preserve word timecodes and update sentence text. They are saved atomically to analysis JSON and the project cache; read-only source folders use the newer cached correction. Concurrent stale word edits are rejected. Original media bytes remain unchanged.
+## Technical notes
+
+How topics and summaries are made, the analysis file and the correction rules: [analysis pipeline](../../architecture/analysis-pipeline.md#summary-and-topics). Tests: [validation record](../../validation/2026-11-12-manual-pages.md#transcript-panel).

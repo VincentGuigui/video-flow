@@ -1,15 +1,30 @@
 # Audio tracks of video clips
 
-How the sound of a video clip behaves: enabling it, detaching it from the picture and restoring it. See also [timeline and clip flow](unified-timeline.md).
+A video imported with sound gives two clips: the picture, and its audio just below it, linked together. This page covers what you can do with the sound. For moving and trimming the pair, see [timeline and clip flow](unified-timeline.md).
 
-- **No mute control.** The per-clip enable checkbox is the only way to silence audio. Disabled audio clips stay visible in their lane and render as silence. TL-09 no longer includes mute.
-- **Detach.** Detach (chain button in the flow, or Detach audio & video in Properties) breaks the link without changing timing. The audio clip then moves, splits and trims on its own (standard audio handles, retained time per 12).
-- **Restore original audio.** For a video clip whose asset has an audio stream, Properties shows Restore original audio unless the clip is already linked to audio from its own asset with the same source range. The action:
-  1. creates a new audio clip from the video's asset, with the video's source in/out, assembly start and full gain;
-  2. links it to the video. If the video was linked to other audio, that audio is unlinked and left where it is;
-  3. leaves every other audio clip untouched, including the detached original audio, which the user can disable or delete;
-  4. moves the pair to the first free lane at the video's position when the new audio would overlap another audio clip.
+## Silencing a clip
 
-  The whole action is one undoable gesture.
+There is no mute button: use the **box on the clip** (its enable checkbox). A disabled audio clip stays visible in its lane and plays as silence. To silence only part of a clip, use [mute ranges](../finishing/clip-effects.md#mute-ranges).
 
-Validation: model tests cover availability (hidden when already linked to its own audio, hidden for audio clips), aligned source range, link creation, and that existing audio clips keep their position.
+## Detaching the audio
+
+Click the **chain button** between the picture and its audio, or **Detach audio & video** in the Clip tab. Nothing moves, but from then on the audio clip moves, splits and trims on its own. This is how you slide a voice-over under another picture, or keep the sound of a clip while replacing its picture.
+
+## Restoring the original audio
+
+Select a video clip and click **Restore original audio** in the Clip tab. It is offered when the clip's file has sound and the clip is not already linked to that same sound. It:
+
+1. adds a new audio clip from the video's file, with the same start and range as the picture, at full volume;
+2. links it to the video (any audio the video was linked to is unlinked and stays where it is);
+3. leaves every other audio clip alone, including the detached original: disable or delete it yourself;
+4. moves the pair to the first free lane if the new audio would overlap another audio clip.
+
+It is one undo step.
+
+## Linking an audio clip to a picture
+
+To link two separate clips (for example a recorder's track and a video), see [linking separate clips](unified-timeline.md#linking-separate-clips).
+
+## Technical notes
+
+Rules and code: [editor behaviour](../../architecture/editor-behaviour.md#audio-tracks). Tests: [validation record](../../validation/2026-11-12-manual-pages.md#audio-tracks).

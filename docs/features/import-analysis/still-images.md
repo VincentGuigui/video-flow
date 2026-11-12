@@ -1,45 +1,38 @@
 # Still images and freeze frames
 
-Pictures (PNG, JPEG, WebP, BMP, TIFF) are imported like video and audio: from Import media, a drop on the window, or a typed path in browser mode. They are referenced in place, never copied or modified.
+## Importing a picture
 
-## Media library
+PNG, JPEG, WebP, BMP and TIFF pictures are imported like video and audio: **Import media**, or drop them on the window ([importing media](importing.md)). They are referenced where they are, never copied or modified. In Project media a picture shows **Image** instead of a duration. Pictures are never analysed (there is nothing to transcribe), even when analysis is on.
 
-An image becomes an asset whose probe has `still: true`, no duration and no audio stream (`media/ingest.py`, `IMAGE_EXTENSIONS`). Its thumbnail shows **Image** instead of a duration, and its size in pixels. Import does not analyse an image (nothing to transcribe), even when analysis is on. Instead of a video proxy, a PNG preview is made once in the cache (`media/proxy.py`, `build_still_preview`): at most 1920 px on its longest side, transparency kept. The preview and the thumbnails use it, so formats browsers cannot show (TIFF) and very large photos work too.
+## Image clips
 
-## In the flow
+An imported picture is added at the end of the flow as a **3 second image clip**. It behaves like a video clip without sound:
 
-Importing an image appends a 3 s **image clip** at the end of the flow, like a video clip without audio. An image clip is a video clip with `stillFrame: 0`:
-
-- `stillFrame` (`EditorClip.still_frame`) is the source frame a still clip shows for its whole length. A clip with a `stillFrame` is a **still clip**; `null` means a moving clip. Only video clips at speed 1 can be still. [Freeze frames](#freeze-frame) use the same field with a frame of a video.
-- A still clip has no source limit. Both edges trim freely, longer or shorter, with the usual ripple and preserve-time handles, and it snaps like any clip. Its source range only measures its length and always starts at 0 (like text clips); splitting it gives two still clips of the same picture.
-- A dissolve onto or from a still clip always has the handles it needs: the picture repeats.
-- Speed does not apply to still clips (the Speed effect is not offered). Fades, transitions, keyframes, transform, crop and backgrounds work as on video clips.
-- An image asset accepts only still clips; validation refuses a moving clip on it (`editor/resolve.py`).
-
-Clip properties name it **Image clip** with its duration and no source range, Transcript tab or link selector.
+- **Any length.** Drag either edge to make it as long or as short as you want; a picture has no end. Both kinds of trim handle work, and it snaps like any clip ([timeline and clip flow](../editing/unified-timeline.md#trimming)).
+- Split it, move it, stack it on lanes, enable or disable it like a clip.
+- **Transitions** always work with it: a dissolve has all the picture it needs ([transitions](../finishing/transitions.md)).
+- Fades, [keyframes](../finishing/keyframes.md), position, size, crop and backgrounds work as on video. **Speed** does not apply.
+- Its properties say **Image clip**, with its duration and no source range, Transcript tab or audio link.
 
 ## Freeze frame
 
-**Freeze** in the clip flow toolbar, or **F**, freezes the frame under the cursor of the selected video clip (or of the video linked to a selected audio clip). It inserts a 3 s still clip of that frame at the cursor, and every clip from there on moves later by 3 s, on every lane (`freezeFrame` in `frontend/src/model.ts`):
+A freeze frame turns the picture under the cursor into a still that lasts as long as you like.
 
-- **Inside the clip**, the clip and its linked audio are split at the cursor; the freeze sits between the two parts, and the second part continues from the frozen frame. The audio lane stays silent under the freeze.
-- **On the first frame**, the clip is not split: the freeze goes before it and takes over its incoming transition.
-- **On the last frame**, the freeze goes after the clip, holding that last frame, and takes over its outgoing transition.
+1. Select a video clip (or its audio) and put the cursor on the frame to freeze.
+2. Click **Freeze** in the toolbar below the flow, or press **F**.
 
-The freeze is a still clip (`stillFrame` = the frozen source frame) named after the clip with “· freeze”, with the transform shown at that frame, the clip's background, and no link, fades or keyframes. It is then selected; like any still clip it can be made longer or shorter freely. Clip properties name it **Freeze frame**. Still clips themselves cannot be frozen.
+A **3 second still** of that frame is inserted at the cursor, and everything after it moves later by 3 seconds, on every lane. The still is selected, ready to be made longer or shorter. Where the freeze goes depends on the cursor:
 
-## Preview, render and exports
+- **Inside the clip**: the clip and its audio are cut at the cursor, the freeze goes between the two parts, and the second part continues from the frozen frame. The audio is silent under the freeze.
+- **On the first frame**: the freeze goes before the clip, and takes its incoming transition.
+- **On the last frame**: the freeze goes after the clip, holding its last frame, and takes its outgoing transition.
 
-- **Preview:** the clip box shows the PNG preview as a picture (`ui/Preview.tsx`, `Picture`); a still clip of a video shows its video paused on the held frame.
-- **Render:** the graph takes the held frame (for an image, its only frame; for a video, frame `stillFrame` after resampling to the project rate), loops it for the clip's frames and places it like any video clip (`render/graph.py`).
-- **Camtasia:** a still clip is an `IMFile` (one picture, `mediaDuration` 1), as Camtasia writes images and frozen frames. For an image, the source-bin entry has a single picture track (type 1, range [0, 1]); for a freeze frame, `mediaStart` is the frozen frame in the video's entry. A template without an image clip falls back on the built-in structure, with a warning.
-- **OTIO:** an image clip references the image without an available range; a freeze frame references its video at the frozen frame with a `FreezeFrame` effect. Both carry `stillFrame` in the clip metadata.
-- **EDL:** a still clip is an event on one source frame with `M2 … 000.0` and `* * FREEZE FRAME`, which editors (and OTIO's reader) take as a freeze frame. SRT and paper edit have no words for it.
+The freeze is named after its clip with "· freeze", keeps the picture's position, size and background as shown at that frame, and its properties say **Freeze frame**. It is an image clip like any other. A still can't itself be frozen.
 
-## Validation
+## In other editors
 
-- `backend/tests/render/test_still_images.py`: images import as still assets; still clips have no source limit and image assets need still clips; a render of a red clip dissolving into a 4 s image (longer than any source) has the right frames, the mixed colours at the cut and the image at the end; a still clip of a video renders its held frame for its whole length; Camtasia writes an `IMFile` with a picture track; every export format accepts still clips.
-- `backend/tests/editor/test_api.py::test_image_import_adds_a_three_second_still_clip_with_a_png_preview`.
-- `backend/tests/render/test_still_images.py` also covers freeze frames in OTIO (`FreezeFrame` effect), EDL (read back as a freeze by OTIO's CMX reader) and Camtasia (`IMFile` at the frozen frame).
-- `frontend/src/still.test.ts`: trimming past any source on both edges, split keeping the held frame, speed refused, full dissolve handles; freeze inside a linked clip (split, silent audio lane, ripple), on the first frame (before, with the incoming transition) and the last (after, with the outgoing one), and refused on still clips or outside the clip.
-- A browser check imported a PNG and a JPEG (Image thumbnails, image clips of 3 s), showed the picture in the preview and extended the image clip on both edges past its one-picture source, then pressed F 1 s into a video clip: it was split around a 3 s freeze of frame 30 and the rest moved later.
+The MP4 shows pictures and freezes exactly as the preview. **Camtasia** receives image clips ([Camtasia export](../output/camtasia-export.md)); **OTIO** receives freeze frames as freeze effects; the **EDL** writes them as freeze-frame events. SRT and paper edit have nothing for them.
+
+## Technical notes
+
+Data, preview, render and export mapping: [transitions, effects, titles, keyframes and still clips](../../architecture/effects-and-titles.md#still-clips-and-freeze-frames). Tests: [validation record](../../validation/2026-11-12-manual-pages.md#still-images-and-freeze-frames).

@@ -1,37 +1,45 @@
 # Keyframed transforms
 
-A video clip (image and freeze clips included) can animate its transform: position, size, rotation, crop and opacity. Keyframes replace the former zoom & pan effect: a zoom is two or more keyframes with a larger size.
+A keyframe records how a video clip looks at one moment: its **position, size, rotation, crop and opacity**. With two or more keyframes, Video-Flow animates the clip smoothly from one to the next. Use it for a slow push-in, a picture sliding in, a fade, a turn. Image clips and freeze frames can be animated too ([still images](../import-analysis/still-images.md)).
 
-## Data
+## Animating a clip
 
-- `Transform` (`editor/models.py`, `frontend/src/model.ts`) has `x`, `y`, `width`, `height` (output pixels), the four crop fractions, `rotation` (degrees, clockwise, about the centre of the box; default 0) and `opacity` (0–1; default 1).
-- `EditorClip.keyframes`: `{frame, transform, ease}`. `frame` is a **source frame**, so keyframes stay on their content through trims, splits and speed changes (a still clip's head trim moves them with the clip). Keyframes are kept sorted, at distinct frames, on video clips only.
-- Between two keyframes every value is interpolated; `ease` shapes the change that starts at the keyframe: `smooth` (smoothstep, default) or `linear`. Before the first keyframe and after the last, the transform holds. Without keyframes, `transform` applies to the whole clip; with keyframes, it is not used.
-- One definition of the interpolation: `editor/keyframes.py` (render, exports), mirrored in `frontend/src/keyframes.ts` (preview, editing).
+1. Select a video clip and open the **Animation** tab of the properties panel.
+2. Put the cursor where the animation starts and click **Add at cursor** (or press **K**): a keyframe holds the clip as it looks there.
+3. Move the cursor to where it should end and add another keyframe.
+4. With the cursor on that keyframe, change the values (or drag and resize the picture in the preview): **X**, **Y**, **Scale** (uniform, around the centre), **Width**, **Height**, **Rotation**, **Opacity** and the four **Crop** values. Between the two keyframes, every value changes gradually.
 
-## Editing
+Before the first keyframe and after the last, the clip holds that look. Once a clip has keyframes, changing a value at a spot with no keyframe adds one there, so you can simply move the cursor and adjust.
 
-- **Animation tab** of the properties panel (video clips): **Add at cursor** (or **K**) adds a keyframe holding the transform shown at the cursor; arrows go to the previous or next keyframe. Each keyframe of the clip's visible range is listed with its time (click to go there), its easing and a remove button. Below, the values at the cursor: X, Y, Scale (uniform, about the centre, relative to the clip's transform), Width, Height, Rotation, Opacity and the four crops. Without keyframes they change the clip's transform; with keyframes, changing one sets the keyframe at the cursor, or adds one there (auto-key). **Remove animation** deletes every keyframe; the clip keeps the transform shown at the cursor.
-- **Preview handles** follow the same rule: dragging or resizing the selected clip edits its transform, or the keyframe at the cursor once it has keyframes. The handles show the unrotated box.
-- **Timeline:** the keyframes of the selected clip are diamonds on the assembly timeline (within the clip's visible range). Click one to move the cursor there and select it; drag it to move it inside the clip (never onto another keyframe); **Delete** removes the selected keyframe. The flow card shows the same diamonds.
-- The Clip tab's transform fields apply to clips without keyframes; an animated clip shows the number of keyframes and a button to the Animation tab.
-- Changing the output resolution maps every keyframe like the transform. A freeze frame takes the transform shown at the frozen frame, without keyframes.
+A zoom is simply a keyframe with a larger size between keyframes at the normal size. (Zoom & pan of earlier versions is replaced by this; zooms in older projects are ignored.)
 
-## Preview, render and exports
+## The keyframe list
 
-- **Preview:** the clip box takes the interpolated position and size, crops with `clip-path`, turns with a CSS rotation about its centre and multiplies the picture's opacity.
-- **Render:** a clip with keyframes, a rotation or an opacity below 1 takes the per-frame path in `render/graph.py`: an animated crop is a first `perspective` (crop region stretched to the frame; a constant crop is a plain `crop`), then the picture inside a 2 px transparent border goes onto a full-frame canvas, and a second `perspective` maps it to the four corners of its box, rotated about the centre. Their corner expressions are piecewise functions of the source frame, read from the filter's frame counter. Opacity uses `colorchannelmixer`, driven per frame by `sendcmd` when it changes. A box larger than 1.25× the output is drawn on a canvas twice the output size, then scaled down. Other clips keep the plain `scale`/`crop`/`overlay` path.
-- **Camtasia:** keyframes become keyframes on `translation0/1`, `scale0/1`, `rotation2` (radians, counter-clockwise) and `opacity`, in media time; each ramps from the previous keyframe to its value. Camtasia's own easing applies (the per-keyframe ease is not carried); crop is not exported. A static rotation or opacity is exported as a parameter value.
-- **OTIO:** keyframes are clip metadata (`videoflow.keyframes`), with the warning `editor_keyframes`. EDL does not carry them.
+Under **KEYFRAMES**, each keyframe shows its time (click to go there), its **easing** and a **×** to remove it. The arrows go to the previous and next keyframe.
 
-## Projects from earlier versions
+- **Smooth** (default) eases in and out of the change that starts at that keyframe; **Linear** changes at a constant speed.
+- **Remove animation** deletes every keyframe; the clip keeps the look it has at the cursor.
 
-The zoom & pan effect is removed without migration (decision of 2026-11-01, [0004 Keyframes replace zoom](../../decisions/0004-keyframes-replace-zoom.md)): a project saved with zooms opens, its zooms are ignored.
+## On the timeline
 
-## Validation
+The keyframes of the selected clip appear as **diamonds** on the timeline (and on the clip in the flow), within the part of the clip you kept:
 
-- `backend/tests/render/test_keyframes_render.py`: interpolation (hold, linear, smooth, sorting) and the piecewise expression; renders of an opacity fade over a lower clip, an animated crop revealing the clip below, and a 45° rotation (centre, corners and tips of the box).
-- `backend/tests/render/test_transitions_render.py::test_keyframes_magnify_toward_the_left_edge_and_return`: a 400 % push-in on the left edge and back, with exact frames.
-- `backend/tests/exporters/test_camtasia.py::test_keyframes_become_camtasia_keyframes_in_media_time`.
-- `frontend/src/keyframes.test.ts`: interpolation, auto-key, add, move within the visible range, remove (the last one becomes the transform), clear, visible keyframes and still-clip head trims.
-- A browser check added two keyframes on an image clip (the second at 50 %, 30°, 60 % opacity), saw the preview halfway between them and the diamonds on the timeline and the flow card.
+- click a diamond to move the cursor there and select it;
+- **drag** it to move it in time (never onto another keyframe);
+- press **Delete** to remove the selected one.
+
+Without keyframes, the Clip tab's X, Y, Width and Height fields set the clip's look; once animated, the Clip tab sends you to the Animation tab.
+
+## Good to know
+
+- Changing the project's output resolution scales all keyframes with the picture.
+- The preview handles show the unrotated box; set the rotation in the Animation tab.
+- A very large picture zoomed far in may look slightly softer than the source in the render.
+
+## In other editors
+
+The MP4 shows the animation exactly. **Camtasia** receives keyframes on position, size, rotation and opacity ([Camtasia export](../output/camtasia-export.md)), with Camtasia's own easing; crop is not exported. **OTIO** keeps them as notes for other tools; the **EDL** has none.
+
+## Technical notes
+
+Data, interpolation, render and export mapping: [transitions, effects, titles, keyframes and still clips](../../architecture/effects-and-titles.md#keyframed-transforms). Tests: [validation record](../../validation/2026-11-12-manual-pages.md#keyframes).

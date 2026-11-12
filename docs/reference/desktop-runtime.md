@@ -15,7 +15,7 @@ Analysis checks the compatible source-adjacent JSON first, then fingerprint-keye
 The log line `Video-Flow startup (seconds since the process started): …` gives the time of each step of the last launch (see [desktop shell](../architecture/desktop-shell.md#startup)). Measured on Linux (warm disk cache, software rendering): window shown at 0.5 s, project shown at 1.2–1.35 s. What shortens it:
 
 - The window opens with a loading screen before the backend is ready, while the backend imports and builds the API in its thread. Both need Python's global lock, so the total time hardly changes; the window shows about 0.4 s sooner.
-- FFmpeg's capabilities are probed once per build ([FFmpeg setup](../features/getting-started/ffmpeg-setup.md#capability-probe)), not at every launch.
+- FFmpeg's capabilities are probed once per build ([FFmpeg capability probe](../architecture/projects-and-setup.md#capability-probe)), not at every launch.
 - The packaged app ships compiled Python bytecode. A run from source compiles it at the first launch after an install or update (about 3.6 s on Linux), then reuses `__pycache__`.
 
 ## Qualification

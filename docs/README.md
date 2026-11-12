@@ -6,7 +6,7 @@ Start with the [project README](../README.md) for what Video-Flow does and how t
 |--------|---------|
 | [product/](product/) | What the product is meant to do: [functional specification](product/functional-spec.md) (goals, glossary, requirements with their priority and status) |
 | [features/](features/README.md) | The user manual: the end-to-end workflow, then one page per built feature in one subfolder per stage. They describe the current behaviour |
-| [architecture/](architecture/) | How it is built: [overview](architecture/overview.md), [desktop shell](architecture/desktop-shell.md), [data model](architecture/data-model.md), [analysis pipeline](architecture/analysis-pipeline.md), [render and export](architecture/render-export.md), [transitions, effects and titles](architecture/effects-and-titles.md) |
+| [architecture/](architecture/) | How it is built: [overview](architecture/overview.md), [desktop shell](architecture/desktop-shell.md), [data model](architecture/data-model.md), [analysis pipeline](architecture/analysis-pipeline.md), [render and export](architecture/render-export.md), [transitions, effects, titles, keyframes and still clips](architecture/effects-and-titles.md), [editor behaviour](architecture/editor-behaviour.md), [projects, cache and FFmpeg](architecture/projects-and-setup.md) |
 | [decisions/](decisions/) | Dated decision records, numbered in order. Kept as history |
 | [reference/](reference/) | [Dependencies](reference/dependencies.md) (versions, licences, accelerators), [desktop runtime](reference/desktop-runtime.md), [workspace layout](reference/workspace-layout.md), [automated releases](reference/github-releases.md) |
 | [validation/](validation/) | Dated validation records: tests and checks, on real hardware where noted |

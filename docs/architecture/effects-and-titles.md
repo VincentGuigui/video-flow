@@ -1,6 +1,6 @@
-# Transitions, effects and titles: model and mapping
+# Transitions, effects, titles, keyframes and still clips: model and mapping
 
-How the finishing features of the [user manual](../features/README.md) are modelled and mapped to the preview, the render and the exports. User-facing behaviour is in [transitions](../features/finishing/transitions.md), [clip effects](../features/finishing/clip-effects.md) and [Camtasia export](../features/output/camtasia-export.md); [render and export](render-export.md) covers the render graph and the other formats.
+How the finishing features of the [user manual](../features/README.md) are modelled and mapped to the preview, the render and the exports. User-facing behaviour is in [transitions](../features/finishing/transitions.md), [clip effects](../features/finishing/clip-effects.md), [keyframed transforms](../features/finishing/keyframes.md), [still images](../features/import-analysis/still-images.md) and [Camtasia export](../features/output/camtasia-export.md); [render and export](render-export.md) covers the render graph and the other formats.
 
 ## Transitions
 
@@ -74,3 +74,27 @@ When the source has too few frames beyond the cut, or a clip is shorter than its
 | Dip to white | `Fade` (warning) |
 
 Not exported, reported in `edit.report.json`: crop, clip backgrounds, audio crossfades of transitions, gaps (Camtasia positions are absolute), disabled clips. CLI: `videoflow export BUNDLE --camtasia [--camtasia-template PATH]`.
+
+## Keyframed transforms
+
+- `Transform` (`editor/models.py`, `frontend/src/model.ts`) has `x`, `y`, `width`, `height` (output pixels), the four crop fractions, `rotation` (degrees, clockwise, about the centre of the box; default 0) and `opacity` (0–1; default 1).
+- `EditorClip.keyframes`: `{frame, transform, ease}`. `frame` is a **source frame**, so keyframes stay on their content through trims, splits and speed changes (a still clip's head trim moves them with the clip). Keyframes are kept sorted, at distinct frames, on video clips only.
+- Between two keyframes every value is interpolated; `ease` shapes the change that starts at the keyframe: `smooth` (smoothstep, default) or `linear`. Before the first keyframe and after the last, the transform holds. Without keyframes, `transform` applies to the whole clip; with keyframes, it is not used.
+- One definition of the interpolation: `editor/keyframes.py` (render, exports), mirrored in `frontend/src/keyframes.ts` (preview, editing).
+- Editing: with keyframes, changing a value or dragging in the preview sets the keyframe at the cursor, or adds one there (auto-key). Changing the output resolution maps every keyframe like the transform. A freeze frame takes the transform shown at the frozen frame, without keyframes. The preview handles show the unrotated box.
+- **Preview:** the clip box takes the interpolated position and size, crops with `clip-path`, turns with a CSS rotation about its centre and multiplies the picture's opacity.
+- **Render:** a clip with keyframes, a rotation or an opacity below 1 takes the per-frame path in `render/graph.py`: an animated crop is a first `perspective` (crop region stretched to the frame; a constant crop is a plain `crop`), then the picture inside a 2 px transparent border goes onto a full-frame canvas, and a second `perspective` maps it to the four corners of its box, rotated about the centre. Their corner expressions are piecewise functions of the source frame, read from the filter's frame counter. Opacity uses `colorchannelmixer`, driven per frame by `sendcmd` when it changes. A box larger than 1.25× the output is drawn on a canvas twice the output size, then scaled down. Other clips keep the plain `scale`/`crop`/`overlay` path.
+- **Camtasia:** keyframes become keyframes on `translation0/1`, `scale0/1`, `rotation2` (radians, counter-clockwise) and `opacity`, in media time; each ramps from the previous keyframe to its value. Camtasia's own easing applies (the per-keyframe ease is not carried); crop is not exported. A static rotation or opacity is exported as a parameter value.
+- **OTIO:** keyframes are clip metadata (`videoflow.keyframes`), with the warning `editor_keyframes`. EDL does not carry them.
+- The zoom & pan effect is removed without migration (decision of 2026-11-01, [0004 Keyframes replace zoom](../decisions/0004-keyframes-replace-zoom.md)): a project saved with zooms opens, its zooms are ignored.
+
+## Still clips and freeze frames
+
+- **Media library:** an image becomes an asset whose probe has `still: true`, no duration and no audio stream (`media/ingest.py`, `IMAGE_EXTENSIONS`). Import does not analyse an image. Instead of a video proxy, a PNG preview is made once in the cache (`media/proxy.py`, `build_still_preview`): at most 1920 px on its longest side, transparency kept. The preview and the thumbnails use it, so formats browsers cannot show (TIFF) and very large photos work too.
+- **Clips:** an image clip is a video clip with `stillFrame: 0`. `stillFrame` (`EditorClip.still_frame`) is the source frame a still clip shows for its whole length; `null` means a moving clip. Only video clips at speed 1 can be still. A still clip has no source limit; its source range only measures its length and always starts at 0 (like text clips); splitting it gives two still clips of the same picture. A dissolve onto or from a still clip always has the handles it needs. An image asset accepts only still clips; validation refuses a moving clip on it (`editor/resolve.py`).
+- **Freeze:** `freezeFrame` in `frontend/src/model.ts` inserts a 3 s still clip (`stillFrame` = the frozen source frame) named after the clip with “· freeze”, with the transform shown at that frame and the clip's background, no link, fades or keyframes. Every clip from the cursor on moves later by 3 s, on every lane. Inside the clip, the clip and its linked audio are split; on the first frame the freeze goes before the clip and takes over its incoming transition; on the last frame it goes after it and takes over its outgoing transition. Still clips themselves cannot be frozen.
+- **Preview:** the clip box shows the PNG preview as a picture (`ui/Preview.tsx`, `Picture`); a still clip of a video shows its video paused on the held frame.
+- **Render:** the graph takes the held frame (for an image, its only frame; for a video, frame `stillFrame` after resampling to the project rate), loops it for the clip's frames and places it like any video clip (`render/graph.py`).
+- **Camtasia:** a still clip is an `IMFile` (one picture, `mediaDuration` 1), as Camtasia writes images and frozen frames. For an image, the source-bin entry has a single picture track (type 1, range [0, 1]); for a freeze frame, `mediaStart` is the frozen frame in the video's entry. A template without an image clip falls back on the built-in structure, with a warning.
+- **OTIO:** an image clip references the image without an available range; a freeze frame references its video at the frozen frame with a `FreezeFrame` effect. Both carry `stillFrame` in the clip metadata.
+- **EDL:** a still clip is an event on one source frame with `M2 … 000.0` and `* * FREEZE FRAME`, which editors (and OTIO's reader) take as a freeze frame. SRT and paper edit have no words for it.

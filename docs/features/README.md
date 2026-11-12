@@ -70,4 +70,4 @@ Typical session: create a project in the folder of the day's rushes, drop 40 cli
 
 ## Writing this manual
 
-Each page describes one feature as it works now, and sits in the folder of its stage. A new feature gets a page (or a section of the closest page) in the right folder and a row above. Technical details (code paths, data, validation) go at the end of the page.
+Each page describes one feature as it works now, and sits in the folder of its stage. A new feature gets a page (or a section of the closest page) in the right folder and a row above. Pages are written as instructions for users: what to click, what happens, what to know. Rules, code paths and data go to the [architecture](../architecture/overview.md) pages and tests to a [validation record](../validation/2026-11-12-manual-pages.md); the page ends with a short "Technical notes" section linking to them.

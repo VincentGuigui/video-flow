@@ -1,20 +1,22 @@
-# Project media: context menu, info and re-analysis
+# Project media
 
-Right-clicking a medium in Project media selects it and opens a menu with **Analysis…** and **Info**.
+The **Project media** list, on the left of the editor, shows every medium you imported, with a thumbnail, its duration (or **Image**), its size, and whether it is ready or offline. Hover a card for two seconds to see the topics of its transcript, when it has one.
+
+**Right-click** a medium to select it and open its menu: **Info** and **Analysis…**. Selecting several media (Ctrl + click) and pressing Delete removes them ([selecting and deleting](../editing/workspace-zones.md)).
 
 ## Info
 
-A dialog with the file size (or "Offline"), duration, picture size, whether it has audio, and:
+A window with the file size (or "Offline"), duration, picture size, and whether it has sound, then:
 
-- **Location**: the full path; clicking it shows the file selected in the system file manager (Explorer `/select` on Windows; the containing folder through `xdg-open` on Linux). The path relative to the working folder is shown below it ([projects](../getting-started/projects.md)).
-- **Analysis**: word and topic counts, summary engine and summary, a link that shows the analysis JSON (the sidecar beside the media, else the project's cached copy) in the file manager, and **Show transcript**, which selects a clip of that medium and opens the Transcript tab.
-
-`GET /api/assets/{id}/info` returns these facts; `POST /api/assets/{id}/reveal?target=media|analysis` shows a file.
+- **Location**: the full path. Click it to show the file in your file manager. Below it, the path relative to the working folder ([projects](../getting-started/projects.md)).
+- **Analysis**: the number of words and topics, the engine that made the summary, the summary, a link that shows the analysis file, and **Show transcript**, which selects a clip of that medium and opens the Transcript tab.
 
 ## Analysis…
 
-Opens the import dialog in re-analysis mode: the same progress, cancellation and missing-model prompt as an import. **Analyse** transcribes the medium again and writes a new summary, keywords and topics, replacing its analysis JSON (the sidecar beside the media is overwritten; the project's cached copy too). `POST /api/assets/{id}/analyse` starts it as an import job that ignores any existing analysis; it is refused while the medium is offline. Clips already in the edit are kept. When the new analysis matches another clip's media (same rule as on import, see [retake grouping](retake-grouping.md)) and the medium has a single clip (or one linked pair) in the edit that is not already over that retake, the clip moves onto a new lane at the matched clip's position; this is one undo step. Several clips of the medium leave the edit unchanged.
+Analyses the medium again, in the same window as an import, with the same progress, cancel and missing-model prompt. **Analyse** transcribes it again and writes a new summary, keywords and topics, **replacing** its analysis file (the one next to the medium, and the project's copy). It is refused while the medium is offline.
 
-Validation: a backend test covers the info facts before and after an analysis exists, revealing the media and its JSON, and a re-analysis that does not reuse the existing JSON. A browser check opened the menu, the Info dialog (size, duration, relative path, analysis summary), Show transcript, and started a re-analysis that transcribed again instead of reusing the JSON.
+The clips already in the edit stay. If the new analysis shows that the medium is a retake of another clip, and the medium has a single clip (or one linked picture and audio) not already stacked over that retake, the clip moves onto a new lane over it — one undo step. With several clips of the medium, the edit is left as it is.
 
-Hovering a media card continuously for two seconds shows its transcribed topic titles. Leaving, dragging or scrolling dismisses the tooltip. Sources without transcribed words and topics show no tooltip.
+## Technical notes
+
+Endpoints and rules: [editor behaviour](../../architecture/editor-behaviour.md#project-media-menu). Tests: [validation record](../../validation/2026-11-12-manual-pages.md#project-media-menu).

@@ -65,7 +65,7 @@ just test | smoke | lint | serve | build | package   # or scripts/dev.sh … (sc
 - **Properties panel:** drag its left edge to resize it; switch it between half height (beside the preview) and tall (beside preview, timeline and flow); unpin it to float over the editor and fold into a strip when the pointer leaves.
 - **Zones:** Ctrl+A selects everything in the zone last clicked (project media, timeline, clip flow or editor); Delete removes it. Removing media also removes its clips; undo restores both.
 
-Everything plays in the preview, renders in the MP4 and is exported to Camtasia; the [feature documents](docs/README.md#features) give the details.
+Everything plays in the preview, renders in the MP4 and is exported to Camtasia; the [user manual](docs/features/README.md) give the details.
 
 ## Settings and local models
 

@@ -2,7 +2,7 @@
 
 Video-Flow is a local-first desktop editor for footage shot with many retakes. A Python backend does media, analysis, render and export work; a React interface edits one project at a time. Everything runs on the user's machine: originals are referenced in place and never copied or modified, and the only network access is an explicit model download from Settings.
 
-Related documents: [desktop shell](desktop-shell.md), [data model](data-model.md), [analysis pipeline](analysis-pipeline.md), [render and export](render-export.md). Behaviour is described per feature in [`../features/`](../README.md#features).
+Related documents: [desktop shell](desktop-shell.md), [data model](data-model.md), [analysis pipeline](analysis-pipeline.md), [render and export](render-export.md). Behaviour is described per feature in [`../features/`](../features/README.md).
 
 ## 1. Process model
 

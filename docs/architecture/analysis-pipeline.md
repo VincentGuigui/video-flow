@@ -133,3 +133,38 @@ The `analysis/` modules implement the original beat model as tested library code
 | `order.py` | Beat order and default take | — |
 | `reconcile.py` | Merge proposals into `project.json` beats, keeping locked ones | — |
 | `cache.py` | Stage cache `<root>/<stage>/<key>/`; key = BLAKE2b-128 of (inputs, stage, version, params); atomic directory rename | — |
+
+## Summary and topics
+
+An analysed import produces, in addition to the timecoded words:
+
+- **Summary**: the deterministic engine picks up to two representative sentences, at most 280 characters, in spoken order. Local Qwen writes the summary when selected in Settings.
+- **Topics**: consecutive sections of the clip, each with a start and end time (integer microseconds, source time), a title of at most five words, and its transcript sentences. Sentences split on end punctuation, pauses of 0.7 s or more, or 30 words. A topic boundary needs a clear drop in vocabulary overlap between the three sentences before and after it, or a long pause. Every topic lasts at least 15 s; there are at most 12 per clip. Clips under 30 s, or about one subject, have a single topic. Titles are the five words most specific to the section, in spoken order. With Qwen selected, Qwen writes each title, falling back to the keyword title if it fails; an unusable Qwen summary falls back to the deterministic summary with a warning.
+- The analysis JSON gains `topics` and `topicsEngine`; its version stays 1. Older sidecars without topics get them on load, deterministically, without rewriting the file.
+- The Transcript tab maps source times to assembly times through the clip's position and trim; times outside the trimmed range, or on a disabled clip, show the source time greyed out and do not move the cursor, and the range is clamped to the trimmed range. Word corrections are saved atomically to the analysis JSON and the project cache; read-only source folders use the newer cached correction, and concurrent stale word edits are rejected.
+
+## Retake grouping
+
+One text embedder is kept: **paraphrase-multilingual-MiniLM-L12-v2** (Apache-2.0, 118 MB uint8 ONNX, ~3–5 ms per sentence on CPU). multilingual-e5-small is removed from the manifest and code.
+
+Benchmark: `backend/tests/fixtures/retake_pairs.json`, 34 retake pairs (fillers, rewording, reordering, truncation; mostly French, some English) and 36 hard negatives from the same unboxing context, sharing vocabulary on purpose.
+
+| Scorer | AUC | Best accuracy | Positive mean / negative mean |
+|--------|-----|---------------|-------------------------------|
+| Word overlap only (`token_set_ratio`) | 0.996 | 0.986 | 0.85 / 0.47 |
+| multilingual-e5-small | 0.996 | 0.971 | 0.97 / 0.88 (compressed scale) |
+| multilingual-e5-base (279 MB) | 0.990 | 0.971 | 0.96 / 0.85 |
+| paraphrase-multilingual-mpnet-base-v2 (279 MB) | 0.988 | 0.986 | 0.92 / 0.45 |
+| **MiniLM-L12** | 0.980 | 0.971 | 0.88 / 0.40 |
+| **MiniLM-L12 + word overlap (50/50)** | **1.000** | **1.000** | 0.86 / 0.43 |
+| mpnet-base + word overlap | 1.000 | 1.000 | 0.88 / 0.46 |
+
+MiniLM blended with word overlap separates every pair, like mpnet, at 2.4× less size and CPU time; its cosine scale leaves room between classes, unlike e5. The benchmark is synthetic: thresholds must be confirmed on real rushes.
+
+Algorithm:
+
+- Sentences: the transcript split as above (punctuation, pauses ≥ 0.7 s, 30 words), keeping sentences of two words or more.
+- Two sentences match when `0.5 × cosine + 0.5 × word overlap ≥ 0.68`. Without vectors, word overlap alone must reach 0.60. MiniLM is a required model, so an import that needs transcription waits for it; the word-overlap-only fallback applies when an existing analysis sidecar is reused while MiniLM is missing.
+- Coverage of clip A in clip B: share of A's words in sentences that match some sentence of B. Retake score = max(coverage A→B, B→A), so a partial retake matches its full take in either order.
+- On analysed import, the new clip is compared with every clip already in the edit that has a transcript; the best score ≥ 0.5 wins. The new clip is placed at that clip's position on a new lane (its video clip if it has one). Otherwise it is appended. Re-analysing a medium applies the same match and moves its clip over its retake when unambiguous.
+- Sentence vectors are computed in the import worker and cached per source in `features/sentences/` of the bundle; the speech engines are not loaded for that. No model is downloaded implicitly: grouping falls back to word overlap while the model is missing.
