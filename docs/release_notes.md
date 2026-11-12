@@ -14,6 +14,7 @@ Format (checked by the release workflow, `scripts/release_artifacts.py`):
 ## 0.36.0 — 2026-11-12
 
 - FEATURE: Search what is said in the edit (Ctrl + F): matching clips and occurrences are marked in the clip flow, and Enter or the arrows move the cursor from one occurrence to the next.
+- DEV: The unused H.264 proxy encoder is removed; its size, frame-rate, tone-mapping and rotation tests now check the WebM previews.
 
 ## 0.35.0 — 2026-11-12
 

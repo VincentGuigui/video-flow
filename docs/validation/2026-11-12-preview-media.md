@@ -8,7 +8,7 @@ Behaviour: [importing media](../features/import-analysis/importing.md#preview-me
 
 ## Tests
 
-`backend/tests/editor/test_previews.py` covers the quick pass (one still per second, clamped indices, Opus sound), the background video replacing it (VP9/Opus, quick-pass folder deleted), queue order and priority, reuse of earlier WebM files, sources that play as they are (WAV, images; AAC does not), and the API: stills, sound and thumbnail served while the video is being made, then the WebM once ready. `frontend/src/previews.test.ts` covers the media and still URLs and when a clip is playable.
+`backend/tests/editor/test_previews.py` covers the quick pass (one still per second, clamped indices, Opus sound), the background video replacing it (VP9/Opus, quick-pass folder deleted), queue order and priority, reuse of earlier WebM files, sources that play as they are (WAV, images; AAC does not), and the API: stills, sound and thumbnail served while the video is being made, then the WebM once ready. `backend/tests/media/test_media_service.py` checks the preview video itself: 540p, 25 fps CFR with a keyframe every second and the source duration; VFR made CFR; HLG tone-mapped to BT.709 8-bit; rotation baked into a portrait picture. `frontend/src/previews.test.ts` covers the media and still URLs and when a clip is playable.
 
 ## Browser check
 

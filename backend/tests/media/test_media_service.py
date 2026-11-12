@@ -14,7 +14,7 @@ from videoflow.media.caps import get_caps, locate_binaries
 from videoflow.media.hashing import FULL_HASH_LIMIT, cache_key, content_hash_sync
 from videoflow.media.ingest import ingest_files, ingest_folder, scan_media
 from videoflow.media.peaks import SAMPLE_RATE, compute_peaks, read_peaks
-from videoflow.media.proxy import build_proxy, proxy_fps, proxy_size
+from videoflow.media.proxy import proxy_fps, proxy_size
 
 
 def _keyframe_times(path: Path) -> list[float]:
@@ -101,73 +101,65 @@ def test_proxy_size_and_fps() -> None:
     assert proxy_size(3840, 2160, 720) == (1280, 720)
 
 
-@pytest.fixture(scope="module")
-def proxies(samples_dir: Path, tmp_path_factory: pytest.TempPathFactory) -> Path:
-    return tmp_path_factory.mktemp("proxies")
+async def _preview(src: Path, tmp_path: Path) -> Path:
+    """The background preview video of `src` (docs/features/import-analysis/importing.md)."""
+    from videoflow.editor.previews import Previews
+    from videoflow.project.models import new_project
+    from videoflow.project.store import Bundle
+
+    bundle = Bundle.create(tmp_path / f"{src.stem}.video-flow", new_project("Preview"))
+    bundle.project.assets = (await ingest_files([src])).assets
+    asset = bundle.project.assets[0]
+    previews = Previews(bundle)
+    await previews._encode(asset, src)
+    path = previews.video_path(asset)
+    assert path is not None
+    return path
 
 
-async def test_proxy_cfr_540_keyframes(samples_dir: Path, proxies: Path) -> None:
+async def test_preview_cfr_540_keyframes(samples_dir: Path, tmp_path: Path) -> None:
     src = samples_dir / "cam_a_720p25_stereo.mp4"
-    h = content_hash_sync(src)
-    r = await build_proxy(src, proxies, h, hw="cpu")
-    assert r is not None and not r.cached and r.encoder == "libx264"
-    pr = await ffmpeg.probe(r.path)
+    path = await _preview(src, tmp_path)
+    pr = await ffmpeg.probe(path)
     v = pr.video
     assert v is not None
-    assert (v.width, v.height) == (960, 540) and v.codec == "h264"
-    assert v.pix_fmt == "yuv420p" and not v.is_vfr and v.fps == 25
+    assert (v.width, v.height) == (960, 540) and v.codec == "vp9"
+    assert v.pix_fmt == "yuv420p" and v.fps == 25
     assert pr.audio and pr.audio[0].channels == 2 and pr.audio[0].sample_rate == 48000
-    keys = _keyframe_times(r.path)
+    keys = _keyframe_times(path)
     gaps = np.diff(keys)
     assert keys[0] == 0 and len(keys) >= 7
     assert np.all(gaps > 0.9) and np.all(gaps < 1.1)
-    assert r.time_aligned
-    again = await build_proxy(src, proxies, h, hw="cpu")
-    assert again is not None and again.cached and again.path == r.path
+    source = await ffmpeg.probe(src)
+    assert pr.duration_us and source.duration_us
+    assert abs(pr.duration_us - source.duration_us) <= 100_000  # preview time = source time
 
 
-async def test_proxy_vfr_becomes_cfr(samples_dir: Path, proxies: Path) -> None:
-    src = samples_dir / "clip_vfr.mp4"
-    r = await build_proxy(src, proxies, content_hash_sync(src), hw="cpu")
-    assert r is not None
-    v = (await ffmpeg.probe(r.path)).video
-    assert v is not None and not v.is_vfr and v.fps == 30
-    steps = np.diff(_frame_times(r.path))
+async def test_preview_vfr_becomes_cfr(samples_dir: Path, tmp_path: Path) -> None:
+    path = await _preview(samples_dir / "clip_vfr.mp4", tmp_path)
+    v = (await ffmpeg.probe(path)).video
+    assert v is not None and v.fps == 30
+    steps = np.diff(_frame_times(path))
     assert np.allclose(steps, 1 / 30, atol=1e-3)
-    assert r.time_aligned
 
 
-async def test_proxy_hlg_tone_mapped_to_bt709(samples_dir: Path, proxies: Path) -> None:
+async def test_preview_hlg_tone_mapped_to_bt709(samples_dir: Path, tmp_path: Path) -> None:
     caps = get_caps()
     if not (caps.has_filter("zscale") and caps.has_filter("tonemap")):
         pytest.skip("zscale/tonemap not available")
-    src = samples_dir / "clip_hlg.mp4"
-    r = await build_proxy(src, proxies, content_hash_sync(src), hw="cpu")
-    assert r is not None and r.tone_mapped
-    v = (await ffmpeg.probe(r.path)).video
+    path = await _preview(samples_dir / "clip_hlg.mp4", tmp_path)
+    v = (await ffmpeg.probe(path)).video
     assert v is not None
     assert (v.color_transfer, v.color_primaries, v.color_space) == ("bt709",) * 3
     assert v.pix_fmt == "yuv420p" and not v.is_hdr and v.bit_depth in (None, 8)
 
 
-async def test_proxy_bakes_rotation(rotated_clip: Path, proxies: Path) -> None:
+async def test_preview_bakes_rotation(rotated_clip: Path, tmp_path: Path) -> None:
     src_probe = await ffmpeg.probe(rotated_clip)
     assert src_probe.video is not None and src_probe.video.rotation in (90, 270)
-    r = await build_proxy(rotated_clip, proxies, content_hash_sync(rotated_clip), hw="cpu")
-    assert r is not None
-    v = (await ffmpeg.probe(r.path)).video
-    assert v is not None and v.rotation == 0
-    assert v.height > v.width and (v.width, v.height) == (r.width, r.height)  # portrait baked
-
-
-async def test_proxy_video_less_is_none(samples_dir: Path, proxies: Path) -> None:
-    wav = proxies / "a.wav"
-    subprocess.run(  # noqa: ASYNC221
-        [str(locate_binaries().ffmpeg), "-v", "error", "-y", "-f", "lavfi", "-i",
-         "sine=d=0.5", str(wav)],
-        check=True,
-    )  # fmt: skip
-    assert await build_proxy(wav, proxies, content_hash_sync(wav), hw="cpu") is None
+    path = await _preview(rotated_clip, tmp_path)
+    v = (await ffmpeg.probe(path)).video
+    assert v is not None and v.rotation == 0 and v.height > v.width  # portrait baked
 
 
 def test_proxy_fps_rules() -> None:
@@ -224,10 +216,3 @@ async def test_peaks_cancel(samples_dir: Path, tmp_path: Path) -> None:
     with pytest.raises(MediaCancelled):
         await compute_peaks(samples_dir / "retake_en.mp4", tmp_path / "c.bin", cancel=ev)
     assert not (tmp_path / "c.bin").exists()
-
-
-async def test_proxy_auto_hw_falls_back_to_software(samples_dir: Path, proxies: Path) -> None:
-    src = samples_dir / "broll_a1.mp4"
-    r = await build_proxy(src, proxies, content_hash_sync(src), hw="auto")
-    assert r is not None and r.path.is_file()
-    assert (await ffmpeg.probe(r.path)).video is not None

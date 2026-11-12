@@ -27,7 +27,7 @@ from typing import Any
 
 from videoflow.media import ffmpeg
 from videoflow.media.caps import get_caps
-from videoflow.media.proxy import proxy_fps, proxy_size, video_filter
+from videoflow.media.proxy import COLOR_TAGS, proxy_fps, proxy_size, video_filter
 from videoflow.project.models import Asset
 from videoflow.project.store import Bundle
 
@@ -280,6 +280,7 @@ class Previews:
             "-c:v", "libvpx-vp9", "-deadline", "realtime", "-cpu-used", "8",
             "-row-mt", "1", "-threads", str(encoder_threads()),
             "-crf", "35", "-b:v", "0", "-g", str(gop), "-keyint_min", str(gop),
+            *COLOR_TAGS,
             "-c:a", "libopus", "-b:a", "96k", "-ac", "2", "-ar", "48000",
             "-f", "webm", str(temp),
         ]  # fmt: skip
