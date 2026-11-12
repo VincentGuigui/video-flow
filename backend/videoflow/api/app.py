@@ -35,7 +35,7 @@ from videoflow.editor.analysis import (
 )
 from videoflow.editor.imports import Imports
 from videoflow.editor.models import Title
-from videoflow.editor.playback import PlaybackProxies
+from videoflow.editor.previews import Previews, plays_as_is
 from videoflow.editor.resolve import editable_document
 from videoflow.editor.titles import title_png
 from videoflow.engines.components import Components
@@ -46,7 +46,7 @@ from videoflow.media.errors import MediaError
 from videoflow.media.hashing import content_hash
 from videoflow.media.ingest import MEDIA_EXTENSIONS
 from videoflow.media.peaks import compute_peaks, read_peaks
-from videoflow.media.proxy import build_proxy, build_still_preview
+from videoflow.media.proxy import build_still_preview
 from videoflow.preferences import Preferences, load_preferences, save_preferences
 from videoflow.project import cache
 from videoflow.project.commands import Command, RelinkAsset
@@ -138,9 +138,9 @@ def create_app(
     preferences = load_preferences()
     downloads = ModelDownloads()
     components = Components(native=desktop_secret is not None)
-    imports = Imports(bundle, preferences=preferences, require_models=True)
+    previews = Previews(bundle)
+    imports = Imports(bundle, preferences=preferences, require_models=True, previews=previews)
     renders = Renders(bundle)
-    playbacks = PlaybackProxies(bundle)
     roots = [p.resolve() for p in (media_roots or [bundle.path.parent])]
     host = f"127.0.0.1:{port}"
     resources = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[3]))
@@ -168,7 +168,10 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):  # type: ignore[no-untyped-def]
+        if project_open:
+            previews.enqueue_missing()
         yield
+        await previews.close()
         await imports.close()
         await renders.close()
         await downloads.close()
@@ -332,11 +335,17 @@ def create_app(
                 j.state in ("queued", "running", "waiting-models") for j in imports.jobs.values()
             ):
                 raise HTTPException(409, "Finish or cancel imports and renders before clearing")
+            nonlocal previews
+            # Preview encodes write into the cache: stop them, then start again afterwards.
+            await previews.close()
             failed = await asyncio.to_thread(cache.clear, cache_root())
             # The open project rebuilds its cache on demand; recreate its folders and label.
             for folder in bundle.directories():
                 folder.mkdir(parents=True, exist_ok=True)
             bundle.label_cache()
+            previews = Previews(bundle)
+            imports.previews = previews
+            previews.enqueue_missing()
         return {"failed": failed}
 
     @app.put("/api/settings")
@@ -427,19 +436,21 @@ def create_app(
         }
 
     async def switch_project(target: Bundle) -> None:
-        nonlocal bundle, imports, playbacks, grants, renders
+        nonlocal bundle, imports, previews, grants, renders
         if any(j.state in ("queued", "running", "waiting-models") for j in imports.jobs.values()):
             raise HTTPException(409, "Finish or cancel imports before switching projects")
         if renders.active:
             raise HTTPException(409, "Finish or cancel renders before switching projects")
         await renders.close()
         await imports.close()
+        await previews.close()
         renders = Renders(target)
-        bundle, imports, playbacks = (
+        previews = Previews(target)
+        bundle, imports = (
             target,
-            Imports(target, preferences=preferences, require_models=True),
-            PlaybackProxies(target),
+            Imports(target, preferences=preferences, require_models=True, previews=previews),
         )
+        previews.enqueue_missing()
         app.state.imports = imports
         grants = SelectionGrants()
         trusted_assets.clear()
@@ -758,33 +769,50 @@ def create_app(
             raise HTTPException(422, str(exc)) from exc
 
     @app.get("/api/media/{asset_id}")
-    async def media(asset_id: str, codec: Literal["auto", "webm"] = "auto") -> FileResponse:
-        asset = bundle.project.asset(asset_id)
-        if asset is None:
-            raise HTTPException(404, "Unknown asset")
-        path = Path(asset.path)
+    async def media(asset_id: str) -> FileResponse:
+        """The playable preview of a source: its WebM video, its sound (audio-only sources)
+        or its picture (still images). See `/api/previews` for what is ready."""
+        asset = known_asset(asset_id)
         if asset.probe.still:
             path = await still_preview(asset)
-        elif asset.probe.video:
-            preview = (asset.model_extra or {}).get("previewPath")
-            proxy_path = Path(preview) if preview else imports.proxies.get(asset_id)
-            if proxy_path is not None and not proxy_path.resolve().is_relative_to(
-                bundle.proxies_dir.resolve()
-            ):
-                proxy_path = None
-            if proxy_path is None or not proxy_path.is_file():
-                result = await build_proxy(path, bundle.proxies_dir, asset.content_hash)
-                proxy_path = result.path if result else path
-                imports.proxies[asset_id] = proxy_path
-            path = proxy_path
-        if not path.is_file():
-            raise HTTPException(404, "Source media is missing")
-        if codec == "webm":
-            try:
-                path = await playbacks.webm(asset, path)
-            except (ValueError, OSError) as exc:
-                raise HTTPException(422, str(exc)) from exc
+        elif plays_as_is(asset):
+            path = Path(asset.path)
+            if not await asyncio.to_thread(path.is_file):
+                raise HTTPException(404, "Source media is missing")
+        else:
+            found = previews.video_path(asset) or previews.audio_path(asset)
+            if found is None:
+                previews.enqueue([asset.id], first=True)
+                raise HTTPException(409, "The preview is not ready yet")
+            path = found
         return FileResponse(path)  # Starlette handles byte-range requests (206/416).
+
+    @app.get("/api/previews")
+    async def preview_states() -> Any:
+        """What can be played for each source; missing previews are queued again."""
+        states = {a.id: previews.status(a) for a in bundle.project.assets}
+        previews.enqueue([i for i, s in states.items() if s.state == "pending"])
+        return {asset_id: state.dump() for asset_id, state in states.items()}
+
+    @app.get("/api/previews/{asset_id}/still/{second}")
+    async def preview_still(asset_id: str, second: int) -> FileResponse:
+        """Still of one second of a source, until its preview video is ready."""
+        asset = known_asset(asset_id)
+        path = previews.still_path(asset, second)
+        if path is None:
+            raise HTTPException(404, "No still for this source")
+        previews.enqueue([asset.id], first=True)  # what is on screen is made first
+        return FileResponse(path, headers={"Cache-Control": "max-age=600"})
+
+    @app.get("/api/previews/{asset_id}/audio")
+    async def preview_audio(asset_id: str) -> FileResponse:
+        """Sound of a source in Opus, until its preview video is ready."""
+        asset = known_asset(asset_id)
+        path = previews.audio_path(asset)
+        if path is None:
+            raise HTTPException(404, "No preview sound for this source")
+        previews.enqueue([asset.id], first=True)
+        return FileResponse(path)
 
     @app.put("/api/analysis/{asset_id}/word")
     async def edit_word(asset_id: str, payload: WordCorrection) -> Any:
@@ -909,8 +937,8 @@ def create_app(
             if asset.probe.still:
                 source = await still_preview(asset)
             else:
-                proxy = await build_proxy(Path(asset.path), bundle.proxies_dir, asset.content_hash)
-                source = proxy.path if proxy else Path(asset.path)
+                # The first still if the quick pass made one, else the original's first frame.
+                source = previews.still_path(asset, 0) or Path(asset.path)
             result = await ffmpeg.run(
                 ["-y", "-i", str(source), "-frames:v", "1", "-vf", "scale=240:-2", str(target)]
             )

@@ -11,7 +11,7 @@ Precise rules behind the editing pages of the [user manual](../features/README.m
 ## Compare takes
 
 - The takes of a selected clip are the video clips on any lane that overlap its assembly time, enabled or not, ordered by lane. A selected audio clip stands for its linked video. The toolbar shows **Compare takes (N)** when there are at least two takes.
-- The dialog shows one card per take: number, name, duration, a player (proxy media) and the words spoken inside the take's trimmed range.
+- The dialog shows one card per take: number, name, duration, a player (preview video; "Preparing the preview video…" until it is ready) and the words spoken inside the take's trimmed range.
 - **Sync word**: the first word of the reference take (the first enabled take, else the first) that every take says, preferring words of four or more letters. Words said in one take only are highlighted; the sync word is underlined.
 - **Play all** (Space) starts every player 0.5 s before its sync word (or at its trimmed start when there is none) and stops each at its trimmed end. Only one take is audible; the speaker button on a card selects it (default: the reference take).
 - **Pick** (or keys 1–9) enables the picked take with its linked audio and disables the other takes with theirs; the pick is one undo step. Several takes may be enabled before a pick; all show as picked. Escape closes the dialog; editor shortcuts are inactive while it is open.

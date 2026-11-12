@@ -9,7 +9,7 @@ This manual describes what the app does today, stage by stage. What it is meant 
 ```mermaid
 flowchart LR
   A[Create a project<br/>in the media folder] --> B[Import<br/>video, audio, images]
-  B --> C[Prepare<br/>proxies, thumbnails, waveforms]
+  B --> C[Prepare<br/>preview media, thumbnails, waveforms]
   C --> D[Analyse<br/>transcript, summary, topics]
   D --> E[Stack retakes<br/>similar sentences]
   E --> F[Compare<br/>and pick a take]
@@ -34,7 +34,7 @@ Typical session: create a project in the folder of the day's rushes, drop 40 cli
 
 | Page | What it covers |
 |------|----------------|
-| [Importing media](import-analysis/importing.md) | Adding files, analyse or import only, progress and cancel, analysis files |
+| [Importing media](import-analysis/importing.md) | Adding files, analyse or import only, progress and cancel, preview media, analysis files |
 | [Project media](import-analysis/media-library.md) | The media list, Info and Analyse again |
 | [Still images and freeze frames](import-analysis/still-images.md) | Pictures as clips of any length, and freezing the frame at the cursor |
 | [Transcript panel](import-analysis/transcript-panel.md) | Summary, topics and words of a clip; editing words; selecting a range from the text |

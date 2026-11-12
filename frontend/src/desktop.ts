@@ -38,8 +38,5 @@ export function reportReady() {
       { once: true },
     );
 }
-const h264 = document
-  .createElement("video")
-  .canPlayType('video/mp4; codecs="avc1.42E01E"');
-export const mediaUrl = (assetId: string | null) =>
-  `/api/media/${assetId}${h264 ? "" : "?codec=webm"}`;
+// Media URLs come from previews.ts: every source is previewed as WebM, which Qt
+// WebEngine and browsers both play.

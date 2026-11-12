@@ -82,6 +82,7 @@ import {
 import { PropertiesDock } from "./PropertiesDock";
 import { addKeyframe, removeKeyframe } from "../keyframes";
 import { loadLayout, storeLayout } from "../panel";
+import { usePreviews } from "../previews";
 
 const RESOLUTIONS = [
   [1920, 1080, "16:9 · Landscape"],
@@ -150,6 +151,10 @@ export function App() {
       ? `${project.name} — Video-Flow`
       : "Video-Flow";
   }, [project?.name]);
+  const assetKey = project?.assets.map((a) => a.id).join(",") ?? "";
+  useEffect(() => {
+    if (assetKey) void usePreviews.getState().refresh();
+  }, [assetKey]);
   useEffect(() => {
     void load().then(reportReady);
     void api<ComponentState>("/components")
@@ -596,7 +601,11 @@ export function App() {
                     ? `${asset.probe.video.width} × ${asset.probe.video.height}`
                     : "Audio"}
                   <span>●</span>
-                  {state.offline.includes(asset.id) ? "Offline" : "Ready"}
+                  {state.offline.includes(asset.id) ? (
+                    "Offline"
+                  ) : (
+                    <PreviewStatus assetId={asset.id} />
+                  )}
                 </small>
                 {state.offline.includes(asset.id) && native() && (
                   <button
@@ -1201,5 +1210,20 @@ function Inspector({
         </div>
       )}
     </div>
+  );
+}
+
+/** Preview media state of a source in the media list (docs/features/import-analysis/importing.md#preview-media). */
+function PreviewStatus({ assetId }: { assetId: string }) {
+  const preview = usePreviews((s) => s.states[assetId]);
+  if (!preview || preview.state === "ready") return <>Ready</>;
+  if (preview.state === "failed")
+    return <span title={preview.error ?? undefined}>Preview failed</span>;
+  return (
+    <span title="Stills and sound are used until the preview video is ready">
+      {preview.progress != null
+        ? `Preview ${Math.round(preview.progress * 100)}%`
+        : "Preview queued"}
+    </span>
   );
 }

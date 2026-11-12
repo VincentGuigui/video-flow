@@ -11,6 +11,11 @@ Format (checked by the release workflow, `scripts/release_artifacts.py`):
   - `FIX`: a bug fixed;
   - `DEV`: infrastructure or technical work only (left out of GitHub release notes).
 
+## 0.35.0 — 2026-11-12
+
+- IMPROVEMENT: Imported videos are usable at once: the preview shows one picture per second with the real sound until the smooth preview video is ready.
+- IMPROVEMENT: Preview videos are made in the background, one at a time and at low priority, so the timeline stays fluid; the media list shows their progress.
+
 ## 0.34.0 — 2026-11-08
 
 - DEV: GitHub release notes follow a fixed template and gather the changes of every version since the previous release.

@@ -49,7 +49,7 @@ Priority: **P0** = MVP, **P1** = shortly after MVP, **P2** = later.
 | PRJ-04 | Project settings: output resolution, frame rate, sample rate, aspect ratio (16:9, 9:16, 1:1), target loudness. Defaults inferred from the majority of rushes. | P0 |
 | ING-01 | Import video and audio files by folder or drag and drop (MP4, MOV, MKV, MTS, M4A, WAV). | P0 |
 | ING-02 | Probe each asset: duration, codecs, resolution, rotation, frame rate (and VFR flag), colour transfer (HDR flag), audio streams, creation time. | P0 |
-| ING-03 | Generate a proxy (540p H.264, one keyframe per second), a thumbnail and waveform peaks for each asset. | P0 (implemented) |
+| ING-03 | Generate preview media (stills and sound at once, then a 540p WebM with one keyframe per second in the background), a thumbnail and waveform peaks for each asset. | P0 (implemented) |
 | ING-04 | Detect and skip exact duplicate files (same content hash). | P0 |
 | ING-05 | Import an external audio recorder track and attach it to video assets through a sync group. | P1 |
 | ING-06 | Add assets to an existing project and analyse only the new ones (incremental). | P1 |

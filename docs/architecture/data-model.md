@@ -28,7 +28,7 @@ A project is a `<name>.video-flow` folder inside the user's working folder ([pro
 | `exports/` *(created)* | `edit.otio`, `edit.otioz`, `edit.edl`, `edit.tscproj`, `edit.srt`, `edit.md`/`edit.csv`, `edit.report.json`. |
 | `renders/` *(created)* | `render-<id>.mp4`. |
 
-The cache is outside the project, so copying a working folder copies only the project and its media: `Bundle.cache_dir` is `<cache root>/<project id>/` (`runtime.cache_root()`: `cache/` beside the executable, or `VIDEOFLOW_CACHE_DIR`). It holds `proxies/` (playback proxies keyed by asset content hash), `thumbs/`, `peaks/` (waveform `.bin`), `titles/` (title pictures), `render/<id>/` (render scratch files), an unused `previews/`, and `project.txt` (project name and path, for Settings). Everything in it is rebuilt on demand.
+The cache is outside the project, so copying a working folder copies only the project and its media: `Bundle.cache_dir` is `<cache root>/<project id>/` (`runtime.cache_root()`: `cache/` beside the executable, or `VIDEOFLOW_CACHE_DIR`). It holds `proxies/` (WebM preview videos keyed by asset content hash), `previews/` (one folder per source with the quick-pass stills and sound, deleted once its video is ready), `thumbs/`, `peaks/` (waveform `.bin`), `titles/` (title pictures), `render/<id>/` (render scratch files), and `project.txt` (project name and path, for Settings). Everything in it is rebuilt on demand.
 
 `Bundle.timeline_file` names `timeline.otio`, but no code writes it: OTIO is produced only on export. Everything under `analysis/`, `features/` and `cache/` is rebuildable. Source media stay where they are and are never copied or modified.
 

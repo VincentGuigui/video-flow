@@ -437,7 +437,7 @@ def test_media_info_reveal_and_reanalysis(client, app_bundle, original, monkeypa
     deadline = time.monotonic() + 10
     while time.monotonic() < deadline:
         current = next(j for j in client.get("/api/jobs").json() if j["id"] == rerun["id"])
-        if current["phase"] not in ("Waiting", "Reading media", "Preparing playback"):
+        if current["phase"] not in ("Waiting", "Reading media", "Preparing preview"):
             break
         time.sleep(0.05)
     assert not current["cached"] and current["state"] in ("running", "waiting-models", "done")

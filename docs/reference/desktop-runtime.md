@@ -6,7 +6,7 @@ Video-Flow uses PySide6 and Qt WebEngine to host the built React interface. Norm
 
 Install `uv sync --extra desktop --extra cpu` in `backend/`, then `npm install` and `npm run build` in `frontend/`. Run `videoflow desktop --project PATH.video-flow`. Native picks and drops use single-use, file-scoped grants; the browser renderer receives opaque handles, not arbitrary filesystem capabilities. Typed-path diagnostic imports retain configured-root restrictions. Browser uploads are disabled by default and are always disabled in the desktop host.
 
-The selected Qt WebEngine build may lack H.264/AAC codecs. The frontend checks codec support and requests a cached VP9/Opus WebM playback proxy when needed. The existing H.264 SDR proxy remains the normalization stage for video. These are generated caches, never copies of original rushes. The renderer has no general local-file access and cannot navigate to privileged external pages.
+The selected Qt WebEngine build lacks H.264/AAC codecs, so the editor always plays cached VP9/Opus WebM previews, preceded by one still per second and an Opus sound right after import ([preview media](../features/import-analysis/importing.md#preview-media)). These are generated caches, never copies of original rushes. The renderer has no general local-file access and cannot navigate to privileged external pages.
 
 Analysis checks the compatible source-adjacent JSON first, then fingerprint-keyed bundle cache. Successful analysis is cached before attempting the sidecar write. A read-only directory or unrelated existing JSON produces a warning identifying the cache; it does not require retranscription. Missing sources are shown as offline; native relinking verifies the original fingerprint and retains authored edits.
 

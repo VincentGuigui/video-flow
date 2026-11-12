@@ -26,7 +26,7 @@ Not implemented at all: timestamp refinement (WhisperX), audio features (EBU R12
 | Step | Phase shown | What happens |
 |------|-------------|--------------|
 | 1 | Reading media | `media.ingest.ingest_files`: ffprobe and content hash (BLAKE2b; whole file up to 64 MiB, otherwise size + 16 sampled 1 MiB chunks). A known hash is a duplicate: a skip-analysis import ends as "Already imported" |
-| 2 | Preparing playback | `media.proxy.build_proxy`: 540p proxy in `cache/proxies/`, keyed by content hash, proxy version and height |
+| 2 | Preparing preview | `editor.previews.Previews.quick`: one still per second and the sound, then the source is queued for its background WebM ([desktop shell](desktop-shell.md#media-playback)) |
 | 3 | Checking analysis JSON | Analysed imports only: `load_analysis` looks for a reusable sidecar (§4). A hit skips steps 4–7 (`cached = true`) |
 | 4 | Download missing models in Settings, or cancel import | Uncached source with audio: state `waiting-models` while any model of `required_models(preferences)` is not up to date (polled every 0.35 s). Nothing downloads implicitly |
 | 5 | Loading speech models / transcribing | FFmpeg extracts 16 kHz mono float32 PCM to `cache/<job>.f32` (deleted afterwards); the worker runs VAD then ASR; `describe()` builds words, deterministic summary, keywords and topics |

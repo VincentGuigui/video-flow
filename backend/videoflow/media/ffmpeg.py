@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
+import os
+import subprocess
 from collections import deque
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
@@ -18,6 +21,8 @@ from videoflow.media.caps import (
     locate_binaries,
     probe_caps,
 )
+
+BELOW_NORMAL: int = getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)  # Windows only
 
 __all__ = [
     "AudioStreamInfo", "FFmpegCaps", "ProbeError", "ProbeResult", "Progress", "Result",
@@ -149,10 +154,12 @@ async def run(
     duration_us: int | None = None,
     ffmpeg: Path | str | None = None,
     timeout: float | None = None,  # noqa: ASYNC109
+    low_priority: bool = False,
 ) -> Result:
     """Run ffmpeg with `args` (without the binary). Progress comes from `-progress pipe:1`.
 
     Setting `cancel` stops ffmpeg (q, then terminate, then kill) and returns `cancelled=True`.
+    `low_priority` lets the interface and other work go first (background preview encodes).
     """
     exe = str(ffmpeg) if ffmpeg else str(locate_binaries().ffmpeg)
     cmd = [exe, "-hide_banner", "-nostats", "-progress", "pipe:1", *args]
@@ -161,8 +168,11 @@ async def run(
         stdin=asyncio.subprocess.PIPE,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
-        creationflags=NO_WINDOW,
+        creationflags=NO_WINDOW | (BELOW_NORMAL if low_priority else 0),
     )
+    if low_priority and hasattr(os, "setpriority"):
+        with contextlib.suppress(OSError):
+            os.setpriority(os.PRIO_PROCESS, proc.pid, 10)
     assert proc.stdout is not None and proc.stderr is not None
     tail: deque[str] = deque(maxlen=STDERR_TAIL_LINES)
     readers = [

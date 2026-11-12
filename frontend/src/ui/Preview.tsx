@@ -18,7 +18,7 @@ import {
 import { useEditor } from "../store";
 import { snapHandle } from "../snap";
 import { BackgroundSelector } from "./BackgroundSelector";
-import { mediaUrl } from "../desktop";
+import { mediaUrl, playable, stillUrl, usePreview } from "../previews";
 import { setTransformAt, transformAtFrame } from "../keyframes";
 import { envelopeAt } from "../volume";
 import { titleUrl } from "../titles";
@@ -56,6 +56,20 @@ function Media({
   );
   const still = isStill(clip);
   if (still) playing = false;
+  // Until its WebM is ready, a video shows the still of the current second and its
+  // audio plays the preview sound (docs/features/import-analysis/importing.md#preview-media).
+  const preview = usePreview(clip.assetId);
+  const seconds = still
+    ? (clip.stillFrame ?? 0) / rate
+    : (clip.sourceIn + (frame - clip.start) * (clip.speed ?? 1)) / rate;
+  const video = image || !!preview?.video;
+  const src = image
+    ? mediaUrl(clip.assetId)
+    : video
+      ? mediaUrl(clip.assetId, preview)
+      : preview?.stills
+        ? stillUrl(clip.assetId, seconds)
+        : null;
   useEffect(() => {
     const media = ref.current;
     if (!media) return;
@@ -85,9 +99,12 @@ function Media({
     if (media.readyState) sync();
     else media.addEventListener("loadedmetadata", sync, { once: true });
     return () => media.removeEventListener("loadedmetadata", sync);
-  }, [frame, rate, playing, clip, gain, still]);
+  }, [frame, rate, playing, clip, gain, still, preview?.video, preview?.audio]);
   if (clip.kind === "audio")
-    return <audio ref={ref} src={mediaUrl(clip.assetId)} preload="auto" />;
+    return playable(preview, true) ? (
+      <audio ref={ref} src={mediaUrl(clip.assetId, preview)} preload="auto" />
+    ) : null;
+  if (!src) return null;
   // The transform at this frame: keyframes interpolated (docs/features/finishing/keyframes.md).
   const t = transformAtFrame(clip, frame);
   return (
@@ -114,9 +131,9 @@ function Media({
       )}
       {backdrop ? (
         <Picture
-          image={image}
+          image={!video || image}
           media={ref}
-          src={mediaUrl(clip.assetId)}
+          src={src}
           style={{
             position: "absolute",
             opacity,
@@ -145,9 +162,9 @@ function Media({
           }}
         >
           <Picture
-            image={image}
+            image={!video || image}
             media={ref}
-            src={mediaUrl(clip.assetId)}
+            src={src}
             style={{
               width: "100%",
               height: "100%",

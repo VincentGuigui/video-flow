@@ -23,12 +23,13 @@ from videoflow.editor.grouping import (
     vectors_path,
 )
 from videoflow.editor.models import EditorClip, EditorDocument, layout
+from videoflow.editor.previews import Previews
 from videoflow.editor.resolve import editable_document, fit_transform
 from videoflow.engines.downloads import missing_models, model_state
 from videoflow.jobs.workers import EngineSpec, WorkerPool
 from videoflow.media import ffmpeg
 from videoflow.media.ingest import ingest_files
-from videoflow.media.proxy import build_proxy, build_still_preview
+from videoflow.media.proxy import build_still_preview
 from videoflow.preferences import Preferences, load_preferences
 from videoflow.project.commands import AddAsset, SetEditor
 from videoflow.project.models import Asset
@@ -60,8 +61,10 @@ class Imports:
         *,
         preferences: Preferences | None = None,
         require_models: bool = False,
+        previews: Previews | None = None,
     ) -> None:
         self.bundle = bundle
+        self.previews = previews or Previews(bundle)
         self.preferences = preferences or load_preferences()
         self.require_models = require_models
         self.jobs: dict[str, ImportJob] = {}
@@ -129,10 +132,10 @@ class Imports:
                     asset = existing.model_copy(deep=True)
                 else:
                     asset = result.assets[0]
-                job.progress, job.phase = 0.1, "Preparing playback"
+                job.progress, job.phase = 0.1, "Preparing preview"
 
-                def progress(p: ffmpeg.Progress) -> None:
-                    job.progress = 0.1 + 0.3 * (p.fraction or 0)
+                def progress(fraction: float) -> None:
+                    job.progress = 0.1 + 0.3 * fraction
 
                 if asset.probe.still:
                     preview = await build_still_preview(
@@ -141,12 +144,9 @@ class Imports:
                     self.proxies[asset.id] = preview
                     asset.model_extra["previewPath"] = str(preview)  # type: ignore[index]
                 else:
-                    proxy = await build_proxy(
-                        path, self.bundle.proxies_dir, asset.content_hash, on_progress=progress
-                    )
-                    if proxy:
-                        self.proxies[asset.id] = proxy.path
-                        asset.model_extra["previewPath"] = str(proxy.path)  # type: ignore[index]
+                    # Stills and sound now; the preview video is made in the background
+                    # (docs/features/import-analysis/importing.md#preview-media).
+                    await self.previews.quick(asset, path, progress)
                 analysis: AnalysisFile | None = None
                 qwen_warning = ""
                 # A still image has nothing to transcribe.
@@ -245,6 +245,7 @@ class Imports:
                     if match:
                         job.inverses = self._restack(asset.id, match)
                 job.asset_id, job.state, job.progress, job.phase = asset.id, "done", 1, "Ready"
+                self.previews.enqueue([asset.id])
         except asyncio.CancelledError:
             job.state, job.phase = "cancelled", "Cancelled"
             raise

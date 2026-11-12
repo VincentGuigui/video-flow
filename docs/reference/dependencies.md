@@ -35,7 +35,7 @@ Bundled font: Inter 4.0 Regular and Bold (`assets/fonts/`, SIL Open Font License
 
 ## Optional extras
 
-`desktop`: PySide6 6.12 (including Qt WebEngine and Shiboken), LGPL-3.0/GPL/commercial terms by component; hosts React and supplies native dialogs, file drops, WebChannel and application lifecycle. Installed by the normal installer; includes the `qwen` extra below (runtimes only, no model weights). The tested Windows x64 wheel lacks H.264 decoding; generated VP9/Opus playback proxies are selected through runtime codec detection. See [desktop runtime notices](desktop-runtime.md).
+`desktop`: PySide6 6.12 (including Qt WebEngine and Shiboken), LGPL-3.0/GPL/commercial terms by component; hosts React and supplies native dialogs, file drops, WebChannel and application lifecycle. Installed by the normal installer; includes the `qwen` extra below (runtimes only, no model weights). The tested Windows x64 wheel lacks H.264 decoding; the editor plays generated VP9/Opus WebM previews. See [desktop runtime notices](desktop-runtime.md).
 
 The `packaging` dependency group adds PyInstaller 6.22 (GPL-2.0 with the bootloader exception) for one-folder builds; it is not required at runtime. Frontend dependencies are recorded in `frontend/package.json` and `package-lock.json`: React 19, Zustand 5, Lucide, Vite 8, TypeScript 6, Vitest and Prettier (MIT licences; see each package's notices).
 
@@ -99,7 +99,7 @@ FFmpeg hardware paths (separate from the Python extras, probed at run time): dec
 
 | Tool | Version | Licence | Purpose | Provisioning |
 |---|---|---|---|---|
-| FFmpeg / ffprobe | >= 6.1 (pinned 7.1.1 Windows x64, 7.0.2 Linux x64) | GPL-3.0 for the pinned builds; separate program, not linked or bundled | Probe, proxies, render | System package, or pinned static build (URL and SHA-256) downloaded into `tools/ffmpeg/` with its licence files, on the user's consent, by `scripts/install.*` or the app's FFmpeg window; see [FFmpeg setup](../features/getting-started/ffmpeg-setup.md). Windows x64 uses the full build so `flite` is available for synthetic samples. Override with `VIDEOFLOW_FFMPEG_URL` and `VIDEOFLOW_FFMPEG_SHA256` (install scripts) |
+| FFmpeg / ffprobe | >= 6.1 (pinned 7.1.1 Windows x64, 7.0.2 Linux x64) | GPL-3.0 for the pinned builds; separate program, not linked or bundled | Probe, preview media, render | System package, or pinned static build (URL and SHA-256) downloaded into `tools/ffmpeg/` with its licence files, on the user's consent, by `scripts/install.*` or the app's FFmpeg window; see [FFmpeg setup](../features/getting-started/ffmpeg-setup.md). Windows x64 uses the full build so `flite` is available for synthetic samples. Override with `VIDEOFLOW_FFMPEG_URL` and `VIDEOFLOW_FFMPEG_SHA256` (install scripts) |
 | uv | >= 0.5 | MIT / Apache-2.0 | Python and environment manager | Installed by `scripts/install.*` |
 | Python | 3.13 | PSF | Backend | `uv python install 3.13` |
 | Node.js | 22 | MIT | Frontend build only | Manual (checked by the installer) |

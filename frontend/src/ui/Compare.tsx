@@ -7,7 +7,7 @@ import {
   stackedTakes,
   takeWords,
 } from "../compare";
-import { mediaUrl } from "../desktop";
+import { mediaUrl, usePreviews } from "../previews";
 import { duration, fps, timecode } from "../model";
 import { useEditor } from "../store";
 import { useAnalyses } from "./useAnalysis";
@@ -19,6 +19,7 @@ export function Compare({ clipId }: { clipId: string }) {
   const { project, document, save, busy, set } = useEditor();
   const rate = project ? fps(project.settings) : 30;
   const takes = stackedTakes(document, clipId);
+  const previews = usePreviews((s) => s.states);
   const analyses = useAnalyses(takes.map((t) => t.assetId ?? ""));
   const words = takes.map((t) =>
     takeWords(t, analyses[t.assetId ?? ""]?.words ?? [], rate),
@@ -124,11 +125,20 @@ export function Compare({ clipId }: { clipId: string }) {
                 </strong>
                 <span className="muted">{timecode(duration(take), rate)}</span>
               </header>
+              {!previews[take.assetId ?? ""]?.video && (
+                <p className="muted compare-pending">
+                  Preparing the preview video…
+                </p>
+              )}
               <video
                 ref={(node) => {
                   players.current[index] = node;
                 }}
-                src={mediaUrl(take.assetId)}
+                src={
+                  previews[take.assetId ?? ""]?.video
+                    ? mediaUrl(take.assetId)
+                    : undefined
+                }
                 muted={solo !== index}
                 preload="auto"
                 onLoadedMetadata={(e) => {

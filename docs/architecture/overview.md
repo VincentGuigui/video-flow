@@ -63,12 +63,12 @@ flowchart LR
 
 React 19, Vite and Zustand; no other state or UI framework (icons from `lucide-react`).
 
-- **Pure logic** (`*.ts`, each with a `*.test.ts`): `model.ts` (edit document types, layout, lanes, linking; mirrors `editor/models.py`), `transitions.ts`, `volume.ts`, `keyframes.ts` and `titles.ts` (mirrors of the backend modules of the same name, kept in step), `range.ts`, `snap.ts`, `compare.ts`, `transcript.ts`, `zones.ts`, `timeline.ts`, `playback.ts`, `desktop.ts` (Qt bridge and media URLs).
+- **Pure logic** (`*.ts`, each with a `*.test.ts`): `model.ts` (edit document types, layout, lanes, linking; mirrors `editor/models.py`), `transitions.ts`, `volume.ts`, `keyframes.ts` and `titles.ts` (mirrors of the backend modules of the same name, kept in step), `range.ts`, `snap.ts`, `compare.ts`, `transcript.ts`, `zones.ts`, `timeline.ts`, `playback.ts`, `previews.ts` (preview media states and URLs), `desktop.ts` (Qt bridge).
 - **UI** (`ui/`): `App.tsx` (editor shell), `Home.tsx` (recent projects, new, open), `Flow.tsx` (clip flow), `Preview.tsx`, `Transport.tsx`, `Transcript.tsx`, `Compare.tsx`, `Imports.tsx`, `RenderPanel.tsx`, `Settings.tsx`, `ProjectSave.tsx` and property controls.
 - **State** (`store.ts`): one Zustand store holds the project, the edit document, selection, zone, focus, cursor frame, range and the undo/redo stacks.
 - **Saving**: every edit sends the whole document as `{baseRevision, commands: [SetEditor, ...]}` through `PATCH /api/project`. The backend applies the batch atomically, bumps the revision and returns the project, the resolved editor document and the inverse commands. A stale `baseRevision` is rejected with 409 and the store reloads.
 - **Undo/redo**: the client owns the stacks (last 100 steps). Undo sends the stored inverses as a new batch and pushes the returned inverses on the redo stack. Imports return their inverses too, so an import is one undo step.
-- **Preview**: each visible clip plays its proxy in its own `<video>` element, positioned with the clip transform (keyframes interpolated), crop, rotation and opacity; audio gain (fades, mutes, ducking) is applied through the media element volume. H.264 proxies are used when the engine can play them, else a VP9 WebM (`/api/media/{id}?codec=webm`). Titles are the PNG the render uses (`/api/title`). The FFmpeg render is the reference.
+- **Preview**: each visible clip plays its WebM preview in its own `<video>` element (the still of the current second until the video is ready), positioned with the clip transform (keyframes interpolated), crop, rotation and opacity; audio gain (fades, mutes, ducking) is applied through the media element volume. Titles are the PNG the render uses (`/api/title`). The FFmpeg render is the reference.
 - **Progress**: the UI polls `/api/jobs`, `/api/renders` and `/api/settings`.
 
 ## 5. API
@@ -90,7 +90,8 @@ All under `/api`, JSON in camelCase.
 | POST | `/import-path` | Browser mode: import a file under a media root |
 | POST | `/uploads/{batch}/{file}` | Byte upload; disabled in the shipped app |
 | GET / POST | `/jobs`, `/jobs/cancel` | Import jobs / cancel one or all |
-| GET | `/media/{asset}` | Proxy (or source audio), with byte ranges; `?codec=webm` fallback |
+| GET | `/media/{asset}` | Preview video or sound (or source image/audio), with byte ranges |
+| GET | `/previews`, `/previews/{asset}/still/{second}`, `/previews/{asset}/audio` | Preview states; quick-pass stills and sound |
 | GET | `/analysis/{asset}` | Transcript words, summary, keywords, topics |
 | GET | `/waveform/{asset}`, `/thumbnail/{asset}` | Peaks (RMS, downsampled) / one 240 px JPEG frame |
 | GET | `/title?spec=` | Title picture at project size |
@@ -101,7 +102,7 @@ All under `/api`, JSON in camelCase.
 
 ## 6. Jobs, imports, renders and downloads
 
-- **Imports** (`editor/imports.py`): one asyncio task per file, run one at a time. Steps: probe and hash (duplicates reuse the existing asset), build the proxy, load analysis (sidecar beside the source, then the bundle cache), otherwise wait for missing models (`waiting-models`), extract 16 kHz mono PCM, transcribe in the worker, derive summary, keywords and topics, store the analysis, match retakes, then publish `AddAsset` + `SetEditor` as one commit. Progress, phase, warnings and inverses are on the job. See [importing media](../features/import-analysis/importing.md), [retake grouping](../features/import-analysis/retake-grouping.md).
+- **Imports** (`editor/imports.py`): one asyncio task per file, run one at a time. Steps: probe and hash (duplicates reuse the existing asset), make the preview stills and sound (then queue the background WebM), load analysis (sidecar beside the source, then the bundle cache), otherwise wait for missing models (`waiting-models`), extract 16 kHz mono PCM, transcribe in the worker, derive summary, keywords and topics, store the analysis, match retakes, then publish `AddAsset` + `SetEditor` as one commit. Progress, phase, warnings and inverses are on the job. See [importing media](../features/import-analysis/importing.md), [retake grouping](../features/import-analysis/retake-grouping.md).
 - **ML workers** (`jobs/workers.py`): engines run in long-lived processes started with `spawn`; a worker builds its engine once and serves calls over a pipe. Cancelling a call kills the process and respawns it, since ONNX and CTranslate2 calls cannot be interrupted.
 - **Renders** (`render/jobs.py`): one render at a time from an immutable project snapshot; cancellable; the MP4 is published to `renders/` only after frame and duration checks.
 - **Downloads** (`engines/downloads.py`): one cancellable download per model, in a worker process, from the pinned Hugging Face revision into `models/`. Inference never triggers a download.
@@ -111,9 +112,9 @@ All under `/api`, JSON in camelCase.
 
 - **FFmpeg** >= 6.1 (installer check), run as subprocesses with `-progress` parsing; `media/caps.py` probes version, filters, encoders, hardware accelerations and the filter-graph file flag.
 - **Content hash** (`media/hashing.py`): BLAKE2b of the whole file up to 64 MiB, else of its size plus 16 evenly spaced chunks. It keys duplicates, caches and sidecars, and checks relinks.
-- **Proxies** (`media/proxy.py`): H.264 8-bit SDR BT.709, short side at most 540 px, CFR, a keyframe every second, rotation baked in, HDR tone-mapped when `zscale` and `tonemap` exist; proxy time equals source time. Hardware decode/encode from `hw/video.py`, with a software retry.
-- **Thumbnails**: one 240 px JPEG per video asset, from the proxy, on first request. **Waveforms**: one-resolution peaks file (`VFPK`: min, max, RMS per bucket) on first request.
-- Proxies, thumbnails, peaks, title pictures, WebM fallbacks and render scratch files are in the application cache (`cache/<project id>/` beside the executable, outside the project); sentence vectors in `features/`. See [workspace zones](../features/editing/workspace-zones.md) for the cache folder.
+- **Preview media** (`editor/previews.py`): stills and sound first, then a VP9/Opus WebM per source in a low-priority background queue; short side at most 540 px, CFR, a keyframe every second, rotation baked in, HDR tone-mapped when `zscale` and `tonemap` exist (filters from `media/proxy.py`); preview time equals source time. See [desktop shell](desktop-shell.md#media-playback).
+- **Thumbnails**: one 240 px JPEG per video asset, from the first preview still or the source, on first request. **Waveforms**: one-resolution peaks file (`VFPK`: min, max, RMS per bucket) on first request.
+- Preview videos (`proxies/`), preview stills and sound (`previews/`), thumbnails, peaks, title pictures and render scratch files are in the application cache (`cache/<project id>/` beside the executable, outside the project); sentence vectors in `features/`. See [workspace zones](../features/editing/workspace-zones.md) for the cache folder.
 
 ## 8. AI engines and device selection
 

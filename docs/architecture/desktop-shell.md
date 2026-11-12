@@ -9,7 +9,7 @@ Video-Flow runs as a desktop application. A PySide6 / Qt WebEngine window hosts 
 | Qt application, `EditorWindow`, `QWebEngineView`, native dialogs and drops | Main thread | `desktop/host.py` |
 | FastAPI app under uvicorn, with its own asyncio loop | Daemon thread `video-flow-backend` | `desktop/host.py` (`Backend`), `api/app.py` |
 | Native selection requests to the backend | Short-lived daemon threads `native-media-selection` | `desktop/host.py` (`NativeBridge.select`) |
-| FFmpeg and ffprobe (probe, proxies, playback proxies, renders) | Subprocesses | `media/`, `render/` |
+| FFmpeg and ffprobe (probe, preview media, renders) | Subprocesses | `media/`, `render/` |
 | Speech, summary and keyword models | Worker processes in a `WorkerPool` | `jobs/workers.py`, `editor/imports.py` |
 
 One process serves one open project at a time. The home screen closes it first (`close` action: imports, worker processes and renders are shut down and recreated idle), then opens or creates another in place (`switch_project`); none of this is allowed while an import or render is active. Renaming the open project releases it, renames its folder and opens it again. The window title follows the page title, which names the open project.
@@ -86,7 +86,7 @@ The host object is registered on the `QWebChannel` as `desktop`. The injected sc
 
 ## Native file workflows
 
-- **Import.** The Import button calls `pickFiles()`. The resulting handles feed the import dialog, which submits them one at a time to `/api/native-import`, with or without analysis. Sequential processing, progress and cancellation follow [importing media](../features/import-analysis/importing.md). Originals are referenced in place. Proxies, thumbnails, waveforms and analysis caches go in the bundle.
+- **Import.** The Import button calls `pickFiles()`. The resulting handles feed the import dialog, which submits them one at a time to `/api/native-import`, with or without analysis. Sequential processing, progress and cancellation follow [importing media](../features/import-analysis/importing.md). Originals are referenced in place. Preview media, thumbnails and waveforms go in the application cache.
 - **Drop.** An event filter on the web view and on every widget Qt WebEngine adds inside it (drops land on its render widget) handles drag-enter, drag-move and drop events. It is not installed on the whole application: an application-wide Python event filter crashes Qt WebEngine on Linux. It accepts a drop only if every URL is a local file. It keeps files with media extensions and silently ignores the rest. The paths then follow the same grant flow as the picker. The web page never sees the file contents or the paths.
 - **Relink.** Assets whose source file is missing are listed as offline by `GET /api/project`. In the desktop app they show a Relink action. `/api/native-relink` requires the selected file's content hash to match the asset's fingerprint. It then commits `RelinkAsset`, adding a relative path when the file is under the bundle's parent folder. The result is one undo step, and trims and links are kept.
 - **Save as MP4.** After a render finishes, the host asks for a destination. `/api/desktop/render-save` accepts only a completed render inside the bundle's `renders/` folder and a `.mp4` destination that is not one of the project's original files. It copies the render to a temporary file and moves it into place with `os.replace`. The MP4 export itself is described in [render and export](../features/output/render-and-export.md).
@@ -95,13 +95,21 @@ The host object is registered on the `QWebChannel` as `desktop`. The injected sc
 
 ## Media playback
 
-`GET /api/media/{assetId}` serves preview media with HTTP byte ranges through Starlette's `FileResponse`. Only assets of the open project can be requested.
+Qt WebEngine (PySide6 wheels) has no H.264 or AAC decoder, so the editor plays WebM (VP9 video, Opus sound), which browsers play too. `editor/previews.py` makes it in two stages ([preview media](../features/import-analysis/importing.md#preview-media)):
 
-- **Video assets.** The endpoint returns the cached 540p H.264 SDR proxy from `cache/proxies`. It builds the proxy on demand if it is missing, and ignores proxy paths outside that folder.
-- **Audio-only assets.** The endpoint serves the original file.
-- **`?codec=webm`.** `editor/playback.py` derives a VP9/Opus WebM from that media and caches it in the proxies folder. The cache key is the content hash. A lock for each key prevents parallel builds of the same file, and the file is written to a temporary name and then moved into place.
+1. **Quick pass**, run by the import (phase "Preparing preview"): one FFmpeg run decodes keyframes only (`-skip_frame nokey`) and writes one 360p JPEG per second (`fps=1:start_time=0`, so still *n* is the last keyframe at or before second *n*) and the sound as `audio.webm` (Opus 96 kb/s). Files go to `cache/<project>/previews/<key>/`, written in a temporary folder then moved into place. About 0.6 s per minute of 1080p footage, against 8 s or more for a full transcode.
+2. **Background video**: a single asyncio worker takes one source at a time from a queue and encodes the original directly to `cache/<project>/proxies/<key>.webm`: 540p (`media/proxy.py` size, rotation, HDR tone mapping and CFR filters), libvpx-vp9 realtime (`-cpu-used 8`, row-mt, CRF 35), a keyframe every second, Opus, half the processors, low process priority (`BELOW_NORMAL_PRIORITY_CLASS` on Windows, nice 10 on Linux). When it is done the quick-pass folder is deleted. Failures are kept per source and reported; editing goes on with the stills.
 
-At load time, `frontend/src/desktop.ts` checks once whether the page can play H.264 (`video/mp4; codecs="avc1.42E01E"`). If not, it adds `?codec=webm` to every preview and compare URL. Qt WebEngine builds without proprietary codecs therefore play the WebM proxies. All playback files are generated caches and never copies of the originals.
+The key is the content hash plus the preview version; WebM files of earlier versions (key `:webm-v1`) are still used. Sources missing a video are queued when a project opens; a still or media request moves a source to the front of the queue. Still images and WAV, MP3, FLAC, OGG and Opus audio need no preview (`plays_as_is`).
+
+Endpoints (only assets of the open project, HTTP byte ranges through Starlette's `FileResponse`):
+
+- `GET /api/media/{assetId}`: the image PNG, the original for playable audio, else the preview video, else the quick-pass sound; 409 while nothing exists yet.
+- `GET /api/previews`: state of each source (`ready`, `stills`, `pending`, `failed`), still count, progress and error; the frontend (`frontend/src/previews.ts`) polls it every 1.5 s while one is not ready.
+- `GET /api/previews/{assetId}/still/{second}`: the still of that second (clamped to the last one), cacheable for 10 minutes.
+- `GET /api/previews/{assetId}/audio`: the quick-pass sound.
+
+The preview shows the still of the current second in an `<img>` until the video exists, then switches to the `<video>`; audio clips play the quick-pass sound meanwhile. All playback files are generated caches and never copies of the originals.
 
 While a dialog is open (Settings, import, help, save, project home dialogs), the editor workspace is hidden with `visibility: hidden` and only the dialog stays visible. Video layers repainting under a dialog corrupted compositing tiles in Qt WebEngine on Windows; taking them out of compositing avoids it.
 
