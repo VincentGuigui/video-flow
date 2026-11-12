@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { Cpu, Film, X } from "lucide-react";
+import { Cpu, Film, RefreshCw, X } from "lucide-react";
 import { api, useEditor } from "../store";
 import { CacheSettings } from "./CacheSettings";
 import { ManageModels } from "./ManageModels";
 import { FfmpegSetup } from "./FfmpegSetup";
+import { UpdateDialog } from "./UpdateDialog";
+import type { UpdateState } from "../updates";
 
 export interface Preferences {
   summaryEngine: "deterministic" | "qwen";
@@ -12,6 +14,8 @@ export interface Preferences {
   analyseImports: boolean;
   renderPreset: "draft" | "final";
   normalizeAudio: boolean;
+  checkUpdates: boolean;
+  skippedUpdate: string | null;
 }
 interface Model {
   id: string;
@@ -43,7 +47,9 @@ export function Settings({ onClose }: { onClose: () => void }) {
     [saving, setSaving] = useState(false),
     [message, setMessage] = useState(""),
     [models, setModels] = useState(false),
-    [ffmpeg, setFfmpeg] = useState(false);
+    [ffmpeg, setFfmpeg] = useState(false),
+    [update, setUpdate] = useState<UpdateState | null>(null),
+    [updateMessage, setUpdateMessage] = useState("");
   const { set } = useEditor();
   useEffect(() => {
     let stopped = false;
@@ -188,6 +194,19 @@ export function Settings({ onClose }: { onClose: () => void }) {
               <label className="checkbox-label">
                 <input
                   type="checkbox"
+                  checked={preferences.checkUpdates}
+                  onChange={(e) =>
+                    setPreferences({
+                      ...preferences,
+                      checkUpdates: e.target.checked,
+                    })
+                  }
+                />
+                Check for a new version at start
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
                   checked={preferences.normalizeAudio}
                   onChange={(e) =>
                     setPreferences({
@@ -237,9 +256,43 @@ export function Settings({ onClose }: { onClose: () => void }) {
                 </button>
               </div>
             </div>
+            <h3>Updates</h3>
+            <div className="settings-cache">
+              <p className="muted">
+                New versions are published on GitHub. Video-Flow can download
+                one and restart in it, keeping your projects, models and
+                settings.
+              </p>
+              <div className="cache-actions">
+                <button
+                  className="button"
+                  onClick={() => {
+                    setUpdateMessage("Checking…");
+                    void api<UpdateState>("/update?refresh=true")
+                      .then((state) => {
+                        if (state.newer) {
+                          setUpdateMessage("");
+                          setUpdate(state);
+                        } else
+                          setUpdateMessage(
+                            `Video-Flow ${state.current} is the latest version.`,
+                          );
+                      })
+                      .catch((e) => setUpdateMessage(String(e)));
+                  }}
+                >
+                  <RefreshCw size={15} />
+                  Check for updates
+                </button>
+                <span role="status">{updateMessage}</span>
+              </div>
+            </div>
           </>
         )}
       </section>
+      {update && (
+        <UpdateDialog initial={update} onClose={() => setUpdate(null)} />
+      )}
       {models && <ManageModels onClose={() => setModels(false)} />}
       {ffmpeg && <FfmpegSetup onClose={() => setFfmpeg(false)} />}
     </div>

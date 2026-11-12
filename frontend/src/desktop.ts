@@ -22,6 +22,7 @@ declare global {
       relink: (assetId: string) => void;
       pickFolder: (purpose: "workdir" | "project") => void;
       ready?: () => void;
+      quit?: () => void;
     };
   }
 }

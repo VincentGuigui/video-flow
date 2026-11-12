@@ -3131,3 +3131,12 @@ button.timecode:hover {
     width: 80px;
   }
 }
+/* Update window (docs/features/getting-started/updates.md). */
+.update-notes {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  line-height: 1.5;
+}
+.update-dialog h3 {
+  margin: 8px 0 6px;
+}

@@ -84,6 +84,8 @@ import { addKeyframe, removeKeyframe } from "../keyframes";
 import { loadLayout, storeLayout } from "../panel";
 import { usePreviews } from "../previews";
 import { SearchBox } from "./SearchBox";
+import { UpdateDialog } from "./UpdateDialog";
+import { offerAtStart, type UpdateState } from "../updates";
 
 const RESOLUTIONS = [
   [1920, 1080, "16:9 · Landscape"],
@@ -127,6 +129,9 @@ export function App() {
     [settings, setSettings] = useState(false),
     [modelPrompt, setModelPrompt] = useState(false),
     [ffmpegPrompt, setFfmpegPrompt] = useState(false),
+    // A newer version is offered first, before the FFmpeg and model windows.
+    [update, setUpdate] = useState<UpdateState | null>(null),
+    [updateChecked, setUpdateChecked] = useState(false),
     [help, setHelp] = useState(false),
     [drag, setDrag] = useState(false),
     [output, setOutput] = useState(false),
@@ -158,6 +163,10 @@ export function App() {
   }, [assetKey]);
   useEffect(() => {
     void load().then(reportReady);
+    void api<UpdateState>("/update?start=true")
+      .then((state) => offerAtStart(state) && setUpdate(state))
+      .catch(() => undefined) // offline: no update offer
+      .finally(() => setUpdateChecked(true));
     void api<ComponentState>("/components")
       .then((data) => {
         if (data.components.some((component) => !component.available))
@@ -247,6 +256,7 @@ export function App() {
         settings ||
         modelPrompt ||
         ffmpegPrompt ||
+        update ||
         home ||
         useEditor.getState().closed ||
         importFiles ||
@@ -386,7 +396,16 @@ export function App() {
     }
     window.addEventListener("keydown", keyboard);
     return () => window.removeEventListener("keydown", keyboard);
-  }, [settings, modelPrompt, ffmpegPrompt, home, importFiles, help, output]);
+  }, [
+    settings,
+    modelPrompt,
+    ffmpegPrompt,
+    update,
+    home,
+    importFiles,
+    help,
+    output,
+  ]);
   // The home page closes the project: the server releases its workers and files, and
   // the editor unmounts its media. Opening or creating a project loads it again.
   async function closeProject() {
@@ -727,10 +746,13 @@ export function App() {
       )}
       {state.compare && <Compare clipId={state.compare} />}
       {settings && <Settings onClose={() => setSettings(false)} />}
-      {ffmpegPrompt && (
+      {update && (
+        <UpdateDialog initial={update} onClose={() => setUpdate(null)} />
+      )}
+      {ffmpegPrompt && updateChecked && !update && (
         <FfmpegSetup requested onClose={() => setFfmpegPrompt(false)} />
       )}
-      {modelPrompt && !ffmpegPrompt && (
+      {modelPrompt && !ffmpegPrompt && updateChecked && !update && (
         <ManageModels requested onClose={() => setModelPrompt(false)} />
       )}
       {help && (

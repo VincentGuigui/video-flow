@@ -23,7 +23,7 @@ from fastapi.responses import (
 )
 from pydantic import Field
 
-from videoflow import __version__
+from videoflow import __version__, updates
 from videoflow.core.base import CamelModel
 from videoflow.desktop.grants import SelectionGrants
 from videoflow.editor.analysis import (
@@ -53,7 +53,13 @@ from videoflow.project.commands import Command, RelinkAsset
 from videoflow.project.library import ProjectLibrary, is_project, open_bundle
 from videoflow.project.store import Bundle, ProjectStoreError, StaleRevisionError
 from videoflow.render.jobs import Renders
-from videoflow.runtime import cache_root, open_folder, recent_projects_file, reveal_file
+from videoflow.runtime import (
+    application_dir,
+    cache_root,
+    open_folder,
+    recent_projects_file,
+    reveal_file,
+)
 
 
 class Patch(CamelModel):
@@ -305,6 +311,103 @@ def create_app(
     @app.post("/api/ffmpeg/cancel")
     async def ffmpeg_stop() -> Any:
         ffmpeg_cancel.set()
+        return {"ok": True}
+
+    # Updates (docs/features/getting-started/updates.md) -------------------------------
+    update_state: dict[str, Any] = {"check": None, "job": None, "app": None}
+    update_cancel = threading.Event()
+    update_tasks: set[asyncio.Task[None]] = set()
+
+    def update_status() -> dict[str, Any]:
+        check = dict(update_state["check"] or updates.check(None))
+        release = check.get("release") or {}
+        check["skipped"] = bool(release) and release.get("version") == preferences.skipped_update
+        check["enabled"] = preferences.check_updates
+        check["job"] = update_state["job"]
+        return check
+
+    @app.get("/api/update")
+    async def update_check(start: bool = False, refresh: bool = False) -> Any:
+        """The latest GitHub release against this version. `start`: the start-up check,
+        skipped when turned off in Settings; `refresh`: ask GitHub again."""
+        if start and not preferences.check_updates:
+            return update_status()
+        if update_state["check"] is None or refresh:
+            try:
+                release = await asyncio.to_thread(updates.fetch_latest)
+                update_state["check"] = updates.check(release)
+            except Exception as exc:  # offline, rate-limited: never blocks the app
+                if refresh:
+                    raise HTTPException(502, f"Could not reach GitHub: {exc}") from exc
+                return update_status()
+        return update_status()
+
+    @app.post("/api/update/skip")
+    async def update_skip() -> Any:
+        nonlocal preferences
+        release = (update_state["check"] or {}).get("release")
+        if not release:
+            raise HTTPException(409, "No release to skip")
+        preferences = preferences.model_copy(update={"skipped_update": release["version"]})
+        await asyncio.to_thread(save_preferences, preferences)
+        return update_status()
+
+    @app.post("/api/update/install")
+    async def update_install() -> Any:
+        check = update_state["check"]
+        if not check or not check["installable"]:
+            raise HTTPException(409, (check or {}).get("reason") or "No update to install")
+        job = update_state["job"]
+        if job and job["state"] in ("running", "ready"):
+            return update_status()
+        release = updates.Release(**check["release"])
+        update_cancel.clear()
+        update_state["job"] = {
+            "state": "running",
+            "progress": 0.0,
+            "phase": "Starting",
+            "error": None,
+        }
+
+        def progress(value: float, phase: str) -> None:
+            update_state["job"].update(progress=value, phase=phase)
+
+        async def run() -> None:
+            job = update_state["job"]
+            try:
+                folder = updates.updates_dir() / release.version
+                update_state["app"] = await asyncio.to_thread(
+                    updates.download, release, folder, progress, update_cancel
+                )
+                job.update(state="ready", progress=1.0, phase="Update ready")
+            except InterruptedError:
+                job.update(state="cancelled", phase="Cancelled")
+            except Exception as exc:  # network, checksum, disk: reported to the user
+                job.update(state="failed", error=str(exc))
+
+        task = asyncio.create_task(run())
+        update_tasks.add(task)
+        task.add_done_callback(update_tasks.discard)
+        return update_status()
+
+    @app.post("/api/update/cancel")
+    async def update_stop() -> Any:
+        update_cancel.set()
+        return update_status()
+
+    @app.post("/api/update/restart")
+    async def update_restart() -> Any:
+        """Start the downloaded version's installer; the window then closes the app."""
+        job = update_state["job"]
+        if not job or job["state"] != "ready" or update_state["app"] is None:
+            raise HTTPException(409, "Download the update first")
+        if renders.active or any(
+            j.state in ("queued", "running", "waiting-models") for j in imports.jobs.values()
+        ):
+            raise HTTPException(409, "Finish or cancel imports and renders before updating")
+        await asyncio.to_thread(
+            updates.start_apply, update_state["app"], application_dir(), os.getpid()
+        )
         return {"ok": True}
 
     @app.get("/api/cache")

@@ -28,6 +28,7 @@ Typical session: create a project in the folder of the day's rushes, drop 40 cli
 |------|----------------|
 | [Projects](getting-started/projects.md) | Projects as `<name>.video-flow` folders next to the media, the home page, recent projects, rename, delete |
 | [FFmpeg setup](getting-started/ffmpeg-setup.md) | Where FFmpeg is found, and its download (with your consent) from the app or the install scripts |
+| [Updates](getting-started/updates.md) | New versions from GitHub at start or from Settings, download and restart, skip a version |
 | [AI models and components](getting-started/ai-models.md) | Downloading and removing models, installing components, GPU or CPU, analysis settings |
 
 ## 2. Import and analysis

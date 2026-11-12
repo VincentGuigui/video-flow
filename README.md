@@ -70,6 +70,8 @@ Everything plays in the preview, renders in the MP4 and is exported to Camtasia;
 
 ## Settings and local models
 
+At start, Video-Flow offers a newer GitHub release before anything else; it downloads it (SHA-256 checked), replaces its own files and restarts, keeping models, FFmpeg, cache and settings. A version can be skipped, and Settings turns the check off or runs it now ([updates](docs/features/getting-started/updates.md)).
+
 Use Settings in the editor header to select transcription and summary engines, open Manage AI models (download size, size on disk, download, update, remove), set import/export defaults, and see, open or clear the cache (preview media, thumbnails and waveforms of every project, kept outside the projects and rebuilt when needed). Models always live in the application `models/` subdirectory; `VIDEOFLOW_MODELS_DIR` points there. Missing weights require an explicit download action. Compatible analysis JSON is reused first. Deterministic summaries need no generative model; optional Qwen summaries run locally on CPU. Development installs offering both optional engines use `uv sync --extra desktop --extra cpu --extra whisper --extra qwen` in `backend/`.
 
 The logo closes the current project and opens the home page: recent projects (open, rename, remove from list, delete to the trash), New project (name and working folder) and Open project…. Save names an untitled project; Save as copies the edit with source references retained and opens the copy. The window title shows the open project, and the app reopens the last saved project at launch. Export → Save as MP4 video renders the enabled edit with progress, cancellation and a native save dialog. Other handoff formats remain available below it.

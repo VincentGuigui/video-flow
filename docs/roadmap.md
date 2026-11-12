@@ -6,6 +6,7 @@ Snapshot of what is built and what comes next. Update it with every feature. His
 
 - **Automated releases:** manual or tagged GitHub Action builds Windows/Linux ZIPs, verifies versions/checksums and tags/publishes the exact built commit. See [automated releases](reference/github-releases.md).
 
+- **Updates:** at start, a newer GitHub release is offered before the FFmpeg and model windows; download checked by SHA-256, the app replaces its own files and restarts, keeping models, FFmpeg, cache and settings; skip a version, check from Settings. See [updates](features/getting-started/updates.md).
 - **Desktop app:** status bar reports the running application version; CUDA releases bundle compatible native libraries; PySide6 / Qt WebEngine window hosting the React editor; native file and folder dialogs and drops; only the app's own context menus; window shown at once with a loading screen, startup timeline in the log; originals referenced in place, relink when offline. See [desktop shell](architecture/desktop-shell.md).
 - **Text search:** search box in the header (Ctrl + F) over what is said in the clips of the edit; matching clips outlined and occurrences marked in the flow; Enter / Shift + Enter and arrows move the cursor between occurrences. See [text search](features/editing/text-search.md).
 - **Clip tooltip:** hovering a clip in the flow shows its one-line description from the analysis (audio: the same as its video). See [clip tooltip](features/editing/clip-tooltip.md).
@@ -56,7 +57,7 @@ Additional built editor interactions:
 - Confirm the Camtasia export in Camtasia itself (opening, fades, linked audio, titles).
 - Measure retake grouping and transcription accuracy on real rushes, and tune thresholds.
 - Qualify NPU execution providers (OpenVINO, QNN, VitisAI) and GPU encoders on target Windows and Linux machines; Windows ARM64 qualification gate.
-- Release packaging and installer hardening for the desktop build.
+- Release packaging and installer hardening for the desktop build; run an update end to end from 0.37.0 to the next release on Windows and Linux.
 
 ## Later
 

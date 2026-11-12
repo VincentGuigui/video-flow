@@ -14,6 +14,10 @@ class Preferences(CamelModel):
     analyse_imports: bool = True
     render_preset: Literal["draft", "final"] = "final"
     normalize_audio: bool = True
+    check_updates: bool = True
+    """Look for a newer GitHub release at start (docs/features/getting-started/updates.md)."""
+    skipped_update: str | None = None
+    """A version the user chose to skip: not offered again at start."""
 
 
 def load_preferences() -> Preferences:

@@ -248,6 +248,13 @@ class NativeBridge(QObject):
             startup.mark("editor")
             startup.report()
 
+    @Slot()
+    def quit(self) -> None:
+        """Close the app so the downloaded update can replace it
+        (docs/features/getting-started/updates.md)."""
+        if self.trusted():
+            self.window.close()
+
     @Slot(float)
     def setZoom(self, factor: float) -> None:
         if self.trusted() and 0.5 <= factor <= 2.0:
@@ -413,7 +420,7 @@ new QWebChannel(qt.webChannelTransport, function(channel) {
   window.videoFlowDesktop = {pickFiles: () => host.pickFiles(), ready: () => host.ready(),
     setZoom: factor => host.setZoom(factor),
     relink: id => host.relink(id), saveRenderedVideo: id => host.saveRenderedVideo(id),
-    pickFolder: purpose => host.pickFolder(purpose)};
+    pickFolder: purpose => host.pickFolder(purpose), quit: () => host.quit()};
   host.folderSelected.connect(value => window.dispatchEvent(
     new CustomEvent('videoflow-folder', {detail: JSON.parse(value)})));
   host.filesSelected.connect(value => window.dispatchEvent(

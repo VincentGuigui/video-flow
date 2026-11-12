@@ -1,6 +1,7 @@
 """Command line entry point (``videoflow``)."""
 
 import json
+import sys
 from pathlib import Path
 from typing import Annotated
 
@@ -43,6 +44,13 @@ def desktop(
         typer.echo("Desktop runtime missing. Install with: uv sync --extra desktop", err=True)
         raise typer.Exit(1) from exc
     startup.mark("qt")
+    if getattr(sys, "frozen", False):
+        import threading
+
+        from videoflow.updates import cleanup
+
+        # Files of an applied update: deleted in the background (large _internal folders).
+        threading.Thread(target=cleanup, name="update-cleanup", daemon=True).start()
     if project is None:
         from videoflow.project.library import LEGACY_SUFFIX, ProjectLibrary, is_project
         from videoflow.runtime import recent_projects_file, user_data_dir
@@ -202,6 +210,29 @@ def export_command(
     report = json.loads(paths[-1].read_text(encoding="utf-8"))
     for warning in report["warnings"]:
         typer.echo(f"Warning: {warning}", err=True)
+
+
+@app.command("apply-update", hidden=True)
+def apply_update(
+    target: Annotated[Path, typer.Option(help="Application folder to update.")],
+    pid: Annotated[int, typer.Option(help="Process to wait for (the running old version).")],
+) -> None:
+    """Replace the application in `target` with this one, then start it (contract between
+    versions: docs/features/getting-started/updates.md)."""
+    import logging
+
+    from videoflow.runtime import application_dir, user_data_dir
+    from videoflow.updates import apply
+
+    logs = user_data_dir() / "logs"
+    logs.mkdir(parents=True, exist_ok=True)
+    logging.basicConfig(filename=logs / "update.log", level=logging.INFO)
+    logging.info("Applying %s to %s after process %s", __version__, target, pid)
+    try:
+        apply(application_dir(), target.resolve(), pid)
+    except Exception as exc:
+        raise typer.Exit(1) from exc
+    logging.info("Update applied")
 
 
 @app.command("components-check", hidden=True)
