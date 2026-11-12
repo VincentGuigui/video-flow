@@ -162,15 +162,23 @@ export function autoTrim(
 }
 
 // Split only at selection boundaries, then lift or ripple the selected segment.
-export function removeRange(doc:Document,id:string,range:Range,ripple:boolean):Document {
-  let next=pack(doc);
-  const clip=next.clips.find(c=>c.id===id);
-  if(!clip)return doc;
-  const start=Math.max(clip.start,range.start),end=Math.min(clip.start+duration(clip),range.end);
-  if(end<=start)return doc;
-  if(start>clip.start) next=split(next,id,start);
-  const part=next.clips.find(c=>c.kind===clip.kind&&c.layer===clip.layer&&c.start===start);
-  if(!part)return doc;
-  if(end<part.start+duration(part))next=split(next,part.id,end);
-  return remove(next,part.id,ripple);
+export function removeRange(
+  doc: Document,
+  id: string,
+  range: Range,
+  ripple: boolean,
+): Document {
+  let next = pack(doc);
+  const clip = next.clips.find((c) => c.id === id);
+  if (!clip) return doc;
+  const start = Math.max(clip.start, range.start),
+    end = Math.min(clip.start + duration(clip), range.end);
+  if (end <= start) return doc;
+  if (start > clip.start) next = split(next, id, start);
+  const part = next.clips.find(
+    (c) => c.kind === clip.kind && c.layer === clip.layer && c.start === start,
+  );
+  if (!part) return doc;
+  if (end < part.start + duration(part)) next = split(next, part.id, end);
+  return remove(next, part.id, ripple);
 }

@@ -167,7 +167,9 @@ export function App() {
         if (
           data.preferences.analyseImports &&
           data.models.some(
-            (m) => m.required && (m.state !== "up-to-date" || m.runtimeMissing.length > 0),
+            (m) =>
+              m.required &&
+              (m.state !== "up-to-date" || m.runtimeMissing.length > 0),
           )
         ) {
           setModelPrompt(true);
@@ -349,7 +351,16 @@ export function App() {
           s.set({ selectedAssets: [], selected: null, focus: null });
         } else if (clipIds.length) {
           e.preventDefault();
-          void s.save(s.range && s.selected ? removeRange(s.document,s.selected,s.range,e.key === "Backspace") : removeClips(s.document, clipIds, e.key === "Backspace"));
+          void s.save(
+            s.range && s.selected
+              ? removeRange(
+                  s.document,
+                  s.selected,
+                  s.range,
+                  e.key === "Backspace",
+                )
+              : removeClips(s.document, clipIds, e.key === "Backspace"),
+          );
           s.set({ selected: null, focus: null, playing: false });
         }
       }
@@ -579,9 +590,7 @@ export function App() {
                   </span>
                 </div>
                 <MediaTopics assetId={asset.id} />
-                <strong>
-                  {asset.path.split(/[\\/]/).at(-1)}
-                </strong>
+                <strong>{asset.path.split(/[\\/]/).at(-1)}</strong>
                 <small>
                   {asset.probe.video
                     ? `${asset.probe.video.width} × ${asset.probe.video.height}`
@@ -629,11 +638,13 @@ export function App() {
           >
             <div className="preview-container">
               <Preview />
-
             </div>
             {panel.height === "half" && dock}
           </div>
-          <section className="timeline-workspace"><Transport /><Flow /></section>
+          <section className="timeline-workspace">
+            <Transport />
+            <Flow />
+          </section>
         </main>
         {panel.height === "tall" && dock}
       </div>
@@ -888,42 +899,41 @@ function Inspector({
       </div>
       {tab === "Project" ? (
         <div className="inspector-content">
-              <select
-                className="project-resolution"
-                aria-label="Output resolution"
-                value={
-                  project
-                    ? `${project.settings.width}x${project.settings.height}`
-                    : ""
-                }
-                onChange={(e) => {
-                  if (!project) return;
-                  const [width, height] = e.target.value.split("x").map(Number);
-                  void save(resize(document, project.settings, width, height), {
-                    ...project.settings,
-                    width,
-                    height,
-                  });
-                }}
-              >
-                {project &&
-                  !RESOLUTIONS.some(
-                    ([w, h]) =>
-                      w === project.settings.width &&
-                      h === project.settings.height,
-                  ) && (
-                    <option
-                      value={`${project.settings.width}x${project.settings.height}`}
-                    >
-                      {project.settings.width} × {project.settings.height}
-                    </option>
-                  )}
-                {RESOLUTIONS.map(([w, h, label]) => (
-                  <option value={`${w}x${h}`} key={`${w}x${h}`}>
-                    {w} × {h} · {label}
-                  </option>
-                ))}
-              </select>
+          <select
+            className="project-resolution"
+            aria-label="Output resolution"
+            value={
+              project
+                ? `${project.settings.width}x${project.settings.height}`
+                : ""
+            }
+            onChange={(e) => {
+              if (!project) return;
+              const [width, height] = e.target.value.split("x").map(Number);
+              void save(resize(document, project.settings, width, height), {
+                ...project.settings,
+                width,
+                height,
+              });
+            }}
+          >
+            {project &&
+              !RESOLUTIONS.some(
+                ([w, h]) =>
+                  w === project.settings.width && h === project.settings.height,
+              ) && (
+                <option
+                  value={`${project.settings.width}x${project.settings.height}`}
+                >
+                  {project.settings.width} × {project.settings.height}
+                </option>
+              )}
+            {RESOLUTIONS.map(([w, h, label]) => (
+              <option value={`${w}x${h}`} key={`${w}x${h}`}>
+                {w} × {h} · {label}
+              </option>
+            ))}
+          </select>
           <span className="overline">OUTPUT</span>
           <h3>
             {project?.settings.width} × {project?.settings.height}
@@ -1142,7 +1152,6 @@ function Inspector({
               Restore original audio
             </button>
           )}
-
 
           {clip.kind !== "gap" && (
             <button

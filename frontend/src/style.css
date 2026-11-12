@@ -2999,15 +2999,63 @@ button.timecode:hover {
   color: #97a18e;
 }
 
-.preview-panel > .panel-title { justify-content: center; }
-.preview-panel .transport-buttons { flex-wrap: wrap; justify-content: center; padding: 0; border: 0; }
+.preview-panel > .panel-title {
+  justify-content: center;
+}
+.preview-panel .transport-buttons {
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+}
 
-.timeline-workspace { display:flex;flex-direction:column;min-height:0;flex:1;border:1px solid var(--line, #dce4d8);border-radius:8px;overflow:hidden; }
-.timeline-workspace .transport-panel,.timeline-workspace .flow-panel { border:0;border-radius:0;margin:0; }
-.timeline-workspace .flow-panel {flex:1;min-height:200px;}
-.timeline-workspace .overview-content {height:42px;}
-.flow-range {position:absolute;top:0;bottom:0;z-index:8;background:#e5b95515;border-left:1px solid #cca14c;border-right:1px solid #cca14c;pointer-events:none;}
-.flow-cursor {position:absolute;top:0;bottom:0;z-index:9;border-left:1px solid #f38b35;pointer-events:none;}
+.timeline-workspace {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  border: 1px solid var(--line, #dce4d8);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.timeline-workspace .transport-panel,
+.timeline-workspace .flow-panel {
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+}
+.timeline-workspace .flow-panel {
+  flex: 1;
+  min-height: 200px;
+}
+.timeline-workspace .overview-content {
+  height: 42px;
+}
+.flow-range {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 8;
+  background: #e5b95515;
+  border-left: 1px solid #cca14c;
+  border-right: 1px solid #cca14c;
+  pointer-events: none;
+}
+.flow-cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 9;
+  border-left: 1px solid #f38b35;
+  pointer-events: none;
+}
 
-.timeline-workspace .overview-scroll {margin:0;height:42px;flex-shrink:0;}
-.timeline-workspace .flow-toolbar,.timeline-workspace .clip-actions {flex-wrap:wrap;}
+.timeline-workspace .overview-scroll {
+  margin: 0;
+  height: 42px;
+  flex-shrink: 0;
+}
+.timeline-workspace .flow-toolbar,
+.timeline-workspace .clip-actions {
+  flex-wrap: wrap;
+}

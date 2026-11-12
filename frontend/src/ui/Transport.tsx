@@ -42,8 +42,7 @@ import {
 } from "../transitions";
 
 export function Transport() {
-  const { project, document, frame, focus, rangeHandle, set } =
-    useEditor();
+  const { project, document, frame, focus, rangeHandle, set } = useEditor();
   const zone = useEditor((s) => s.zone);
   const range = currentRange();
   const root = useRef<HTMLDivElement>(null);
@@ -212,11 +211,28 @@ export function Transport() {
         ref={root}
         onScroll={(e) => setTimeline({ scroll: e.currentTarget.scrollLeft })}
         onPointerDown={scrub}
-        onDoubleClick={e=>{
-          const node=root.current;if(!node)return;
-          const at=(e.clientX-node.getBoundingClientRect().left+node.scrollLeft-origin)/scale;
-          const clip=[...resolved.clips].filter(c=>c.kind!=="gap"&&c.start<=at&&c.start+duration(c)>at).sort((a,b)=>b.layer-a.layer)[0];
-          if(clip)set({selected:clip.id,focus:clip.id,frame:Math.floor(at),playing:false});
+        onDoubleClick={(e) => {
+          const node = root.current;
+          if (!node) return;
+          const at =
+            (e.clientX -
+              node.getBoundingClientRect().left +
+              node.scrollLeft -
+              origin) /
+            scale;
+          const clip = [...resolved.clips]
+            .filter(
+              (c) =>
+                c.kind !== "gap" && c.start <= at && c.start + duration(c) > at,
+            )
+            .sort((a, b) => b.layer - a.layer)[0];
+          if (clip)
+            set({
+              selected: clip.id,
+              focus: clip.id,
+              frame: Math.floor(at),
+              playing: false,
+            });
         }}
         data-testid="timeline"
       >
@@ -291,7 +307,6 @@ export function Transport() {
           </div>
         </div>
       </div>
-
     </section>
   );
 }
@@ -365,74 +380,80 @@ function KeyframeLane({ origin, scale }: { origin: number; scale: number }) {
   );
 }
 
-
 export function PlaybackControls() {
-  const {project,document,frame,playing,focus,set} = useEditor();
+  const { project, document, frame, playing, focus, set } = useEditor();
   const rate = project ? fps(project.settings) : 30;
   const total = layout(document).total;
-  const {start,end} = defaultRange(document,focus,rate);
-  const seek = (value:number) => set({frame:Math.max(start,Math.min(Math.max(start,end-1),Math.round(value))),playing:false});
+  const { start, end } = defaultRange(document, focus, rate);
+  const seek = (value: number) =>
+    set({
+      frame: Math.max(
+        start,
+        Math.min(Math.max(start, end - 1), Math.round(value)),
+      ),
+      playing: false,
+    });
   return (
-      <div className="transport-buttons">
-        <div className="navigation">
-          <button title="Beginning (Home)" onClick={() => seek(start)}>
-            <SkipBack size={16} />
-          </button>
-          <button
-            title="Back 10 seconds (Ctrl + Left)"
-            onClick={() => seek(frame - rate * 10)}
-          >
-            <ChevronsLeft size={15} />
-            <small>10s</small>
-          </button>
-          <button
-            title="Back 1 second (Shift + Left)"
-            onClick={() => seek(frame - rate)}
-          >
-            <ChevronLeft size={15} />
-            <small>1s</small>
-          </button>
-          <button title="Previous frame (Left)" onClick={() => seek(frame - 1)}>
-            <ChevronLeft size={15} />
-            <small>1f</small>
-          </button>
-          <button
-            className="play-button"
-            aria-label={playing ? "Pause" : "Play"}
-            disabled={!total}
-            onClick={togglePlay}
-          >
-            {playing ? (
-              <Pause size={18} />
-            ) : (
-              <Play size={18} fill="currentColor" />
-            )}
-          </button>
-          <button title="Next frame (Right)" onClick={() => seek(frame + 1)}>
-            <small>1f</small>
-            <ChevronRight size={15} />
-          </button>
-          <button
-            title="Forward 1 second (Shift + Right)"
-            onClick={() => seek(frame + rate)}
-          >
-            <small>1s</small>
-            <ChevronRight size={15} />
-          </button>
-          <button
-            title="Forward 10 seconds (Ctrl + Right)"
-            onClick={() => seek(frame + rate * 10)}
-          >
-            <small>10s</small>
-            <ChevronsRight size={15} />
-          </button>
-          <button title="End (End)" onClick={() => seek(end - 1)}>
-            <SkipForward size={16} />
-          </button>
-        </div>
-        <span className="transport-space">
-          <kbd>Space</kbd> plays the range <i /> Drag the cursor to scrub
-        </span>
+    <div className="transport-buttons">
+      <div className="navigation">
+        <button title="Beginning (Home)" onClick={() => seek(start)}>
+          <SkipBack size={16} />
+        </button>
+        <button
+          title="Back 10 seconds (Ctrl + Left)"
+          onClick={() => seek(frame - rate * 10)}
+        >
+          <ChevronsLeft size={15} />
+          <small>10s</small>
+        </button>
+        <button
+          title="Back 1 second (Shift + Left)"
+          onClick={() => seek(frame - rate)}
+        >
+          <ChevronLeft size={15} />
+          <small>1s</small>
+        </button>
+        <button title="Previous frame (Left)" onClick={() => seek(frame - 1)}>
+          <ChevronLeft size={15} />
+          <small>1f</small>
+        </button>
+        <button
+          className="play-button"
+          aria-label={playing ? "Pause" : "Play"}
+          disabled={!total}
+          onClick={togglePlay}
+        >
+          {playing ? (
+            <Pause size={18} />
+          ) : (
+            <Play size={18} fill="currentColor" />
+          )}
+        </button>
+        <button title="Next frame (Right)" onClick={() => seek(frame + 1)}>
+          <small>1f</small>
+          <ChevronRight size={15} />
+        </button>
+        <button
+          title="Forward 1 second (Shift + Right)"
+          onClick={() => seek(frame + rate)}
+        >
+          <small>1s</small>
+          <ChevronRight size={15} />
+        </button>
+        <button
+          title="Forward 10 seconds (Ctrl + Right)"
+          onClick={() => seek(frame + rate * 10)}
+        >
+          <small>10s</small>
+          <ChevronsRight size={15} />
+        </button>
+        <button title="End (End)" onClick={() => seek(end - 1)}>
+          <SkipForward size={16} />
+        </button>
       </div>
+      <span className="transport-space">
+        <kbd>Space</kbd> plays the range <i /> Drag the cursor to scrub
+      </span>
+    </div>
   );
 }

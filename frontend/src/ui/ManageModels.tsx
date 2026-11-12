@@ -93,8 +93,8 @@ export function ManageModels({
         {requested && (
           <p className="settings-notice">
             Local analysis needs runtime dependencies and model files. Install
-            them below, or close this window to continue editing without analysis. Downloads only start
-            when you ask.
+            them below, or close this window to continue editing without
+            analysis. Downloads only start when you ask.
           </p>
         )}
         <RuntimeSetup />
@@ -159,7 +159,8 @@ export function ManageModels({
                   {model.runtimeMissing.length > 0 && (
                     <p className="error">
                       Runtime components missing:{" "}
-                      {model.runtimeMissing.join(", ")}. Use Runtime components above to install or repair them.
+                      {model.runtimeMissing.join(", ")}. Use Runtime components
+                      above to install or repair them.
                     </p>
                   )}
                   {active && (

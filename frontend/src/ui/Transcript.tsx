@@ -34,9 +34,14 @@ export function Transcript({ clip }: { clip: Clip }) {
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed || !selection.rangeCount) return;
     const selected = selection.getRangeAt(0);
-    const nodes = [...root.querySelectorAll<HTMLElement>("[data-word-start]")]
-      .filter(node => selected.intersectsNode(node));
-    if (nodes.length) select(Number(nodes[0].dataset.wordStart), Number(nodes.at(-1)!.dataset.wordEnd));
+    const nodes = [
+      ...root.querySelectorAll<HTMLElement>("[data-word-start]"),
+    ].filter((node) => selected.intersectsNode(node));
+    if (nodes.length)
+      select(
+        Number(nodes[0].dataset.wordStart),
+        Number(nodes.at(-1)!.dataset.wordEnd),
+      );
   }
   function pickWord(word: Word, extend: boolean) {
     if (extend && anchor) {
@@ -54,9 +59,21 @@ export function Transcript({ clip }: { clip: Clip }) {
     if (!analysis?.words || editing === null || !clip.assetId || saving) return;
     setSaving(true);
     try {
-      await api(`/analysis/${clip.assetId}/word`, {method:"PUT",body:JSON.stringify({index:editing,text:correction,expected:analysis.words[editing].text})});
-      forgetAnalysis(clip.assetId); setEditing(null);
-    } catch(e) { set({error:String(e)}); } finally { setSaving(false); }
+      await api(`/analysis/${clip.assetId}/word`, {
+        method: "PUT",
+        body: JSON.stringify({
+          index: editing,
+          text: correction,
+          expected: analysis.words[editing].text,
+        }),
+      });
+      forgetAnalysis(clip.assetId);
+      setEditing(null);
+    } catch (e) {
+      set({ error: String(e) });
+    } finally {
+      setSaving(false);
+    }
   }
   function Time({ us }: { us: number }) {
     const frame = assemblyFrame(document, clip.id, us, rate);
@@ -95,9 +112,15 @@ export function Transcript({ clip }: { clip: Clip }) {
   const topics = analysis.topics ?? [],
     words = analysis.words ?? [];
   return (
-    <div className="inspector-content transcript-panel" style={{userSelect:"text"}}
-      onMouseUp={e => { const root=e.currentTarget; setTimeout(() => selectText(root), 0); }}
-      onKeyUp={e => selectText(e.currentTarget)}>
+    <div
+      className="inspector-content transcript-panel"
+      style={{ userSelect: "text" }}
+      onMouseUp={(e) => {
+        const root = e.currentTarget;
+        setTimeout(() => selectText(root), 0);
+      }}
+      onKeyUp={(e) => selectText(e.currentTarget)}
+    >
       <span className="overline">SUMMARY</span>
       <p className="transcript-summary">
         {analysis.summary || "No speech detected."}
@@ -145,22 +168,47 @@ export function Transcript({ clip }: { clip: Clip }) {
                             <Time us={line.startUs} />
                             <span>
                               {spoken.length
-                                ? spoken.map((w, j) => (
-                                    editing === words.indexOf(w) ? <input key={j} aria-label="Correct transcript word" autoFocus value={correction} disabled={saving}
-                                      onChange={e=>setCorrection(e.target.value)} onBlur={()=>void saveWord()}
-                                      onKeyDown={e=>{if(e.key==="Enter") void saveWord();if(e.key==="Escape") {e.preventDefault();e.stopPropagation();setEditing(null);}}} /> : <span
-                                      key={j}
-                                      data-word-start={w.startUs}
-                                      data-word-end={w.endUs}
-                                      style={{userSelect:"text"}}
-                                      className={`word ${anchor === w ? "anchor" : ""}`}
-                                      title="Click: set the range to this word. Shift+click: extend it."
-                                      onDoubleClick={e=>{e.stopPropagation();setEditing(words.indexOf(w));setCorrection(w.text);}}
-                                      onClick={(e) => pickWord(w, e.shiftKey)}
-                                    >
-                                      {w.text}{" "}
-                                    </span>
-                                  ))
+                                ? spoken.map((w, j) =>
+                                    editing === words.indexOf(w) ? (
+                                      <input
+                                        key={j}
+                                        aria-label="Correct transcript word"
+                                        autoFocus
+                                        value={correction}
+                                        disabled={saving}
+                                        onChange={(e) =>
+                                          setCorrection(e.target.value)
+                                        }
+                                        onBlur={() => void saveWord()}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter")
+                                            void saveWord();
+                                          if (e.key === "Escape") {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setEditing(null);
+                                          }
+                                        }}
+                                      />
+                                    ) : (
+                                      <span
+                                        key={j}
+                                        data-word-start={w.startUs}
+                                        data-word-end={w.endUs}
+                                        style={{ userSelect: "text" }}
+                                        className={`word ${anchor === w ? "anchor" : ""}`}
+                                        title="Click: set the range to this word. Shift+click: extend it."
+                                        onDoubleClick={(e) => {
+                                          e.stopPropagation();
+                                          setEditing(words.indexOf(w));
+                                          setCorrection(w.text);
+                                        }}
+                                        onClick={(e) => pickWord(w, e.shiftKey)}
+                                      >
+                                        {w.text}{" "}
+                                      </span>
+                                    ),
+                                  )
                                 : line.text}
                             </span>
                           </li>

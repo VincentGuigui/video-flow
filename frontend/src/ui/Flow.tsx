@@ -129,10 +129,22 @@ export function Flow() {
     48 + (layers - 1 - c.layer) * 112 >= viewport.top - 180 &&
     48 + (layers - 1 - c.layer) * 112 <= viewport.top + viewport.height + 180;
   const selectedClip = base.clips.find((c) => c.id === selected);
-  const takes = selectedClip ? stackedTakes(document,selectedClip.id) : [];
+  const takes = selectedClip ? stackedTakes(document, selectedClip.id) : [];
   const selectedAnalysis = analyses[selectedClip?.assetId ?? ""];
-  const rangeTrim = selectedClip ? trimToRange(document,selectedClip.id,currentRange()) : null;
-  const silenceTrim = selectedClip && selectedAnalysis?.words ? autoTrim(document,selectedClip.id,selectedAnalysis.words,rate,project?.settings.clipPadding as {beforeUs:number;afterUs:number}|undefined) : null;
+  const rangeTrim = selectedClip
+    ? trimToRange(document, selectedClip.id, currentRange())
+    : null;
+  const silenceTrim =
+    selectedClip && selectedAnalysis?.words
+      ? autoTrim(
+          document,
+          selectedClip.id,
+          selectedAnalysis.words,
+          rate,
+          project?.settings.clipPadding as
+            { beforeUs: number; afterUs: number } | undefined,
+        )
+      : null;
   const analysis = selectedAnalysis;
   const width = Math.max(
     viewport.width,
@@ -219,8 +231,17 @@ export function Flow() {
             if (e.target === e.currentTarget) set({ selected: null });
           }}
         >
-          <div className="flow-range" style={{left:56+currentRange().start*px,width:Math.max(1,(currentRange().end-currentRange().start)*px)}} />
-          <div className="flow-cursor" style={{left:56+frame*px}} />
+          <div
+            className="flow-range"
+            style={{
+              left: 56 + currentRange().start * px,
+              width: Math.max(
+                1,
+                (currentRange().end - currentRange().start) * px,
+              ),
+            }}
+          />
+          <div className="flow-cursor" style={{ left: 56 + frame * px }} />
           {Array.from({ length: layers }, (_, i) => (
             <div
               key={i}
@@ -482,7 +503,9 @@ export function Flow() {
             <button
               className="button compare-action"
               onClick={() =>
-                useEditor.getState().set({ compare: selectedClip!.id, playing: false })
+                useEditor
+                  .getState()
+                  .set({ compare: selectedClip!.id, playing: false })
               }
             >
               <Layers size={14} />
@@ -490,32 +513,32 @@ export function Flow() {
             </button>
           )}
 
-<button
-                className="button trim-range-action"
-                disabled={busy || !rangeTrim}
-                title="Keep only the part of the clip inside the timeline range; later clips move earlier"
-                onClick={() => {
-                  if (!rangeTrim) return;
-                  apply(rangeTrim);
-                  useEditor.getState().set({ range: null, rangeHandle: null });
-                }}
-              >
-                <Scissors size={14} />
-                Trim clip to range
-              </button>
-<button
-                className="button auto-trim-action"
-                disabled={busy || !silenceTrim}
-                title={
-                  analysis?.words?.length
-                    ? "Remove silence before the first and after the last word"
-                    : "Needs a transcript (import with analysis)"
-                }
-                onClick={() => silenceTrim && apply(silenceTrim)}
-              >
-                <Scissors size={14} />
-                Auto-trim silence
-              </button>
+          <button
+            className="button trim-range-action"
+            disabled={busy || !rangeTrim}
+            title="Keep only the part of the clip inside the timeline range; later clips move earlier"
+            onClick={() => {
+              if (!rangeTrim) return;
+              apply(rangeTrim);
+              useEditor.getState().set({ range: null, rangeHandle: null });
+            }}
+          >
+            <Scissors size={14} />
+            Trim clip to range
+          </button>
+          <button
+            className="button auto-trim-action"
+            disabled={busy || !silenceTrim}
+            title={
+              analysis?.words?.length
+                ? "Remove silence before the first and after the last word"
+                : "Needs a transcript (import with analysis)"
+            }
+            onClick={() => silenceTrim && apply(silenceTrim)}
+          >
+            <Scissors size={14} />
+            Auto-trim silence
+          </button>
 
           <button
             disabled={!selectedClip || busy}
@@ -544,7 +567,11 @@ export function Flow() {
             disabled={!selectedClip || busy}
             onClick={() =>
               selectedClip &&
-              apply(state.range ? removeRange(document,selectedClip.id,state.range,false) : remove(pack(document), selectedClip.id, false))
+              apply(
+                state.range
+                  ? removeRange(document, selectedClip.id, state.range, false)
+                  : remove(pack(document), selectedClip.id, false),
+              )
             }
             title="Delete selection or clip, preserving time (Delete)"
           >
@@ -555,7 +582,11 @@ export function Flow() {
             disabled={!selectedClip || busy}
             onClick={() =>
               selectedClip &&
-              apply(state.range ? removeRange(document,selectedClip.id,state.range,true) : remove(pack(document), selectedClip.id, true))
+              apply(
+                state.range
+                  ? removeRange(document, selectedClip.id, state.range, true)
+                  : remove(pack(document), selectedClip.id, true),
+              )
             }
             title="Ripple delete (Backspace)"
           >

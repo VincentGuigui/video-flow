@@ -64,8 +64,11 @@ function Media({
       : (clip.sourceIn + (frame - clip.start) * (clip.speed ?? 1)) / rate;
     media.playbackRate = clip.speed ?? 1;
     const sync = () => {
-      const held = Number.isFinite(media.duration) && target >= media.duration - 1 / rate;
-      const position = Number.isFinite(media.duration) ? Math.min(target, Math.max(0,media.duration - 1/rate)) : target;
+      const held =
+        Number.isFinite(media.duration) && target >= media.duration - 1 / rate;
+      const position = Number.isFinite(media.duration)
+        ? Math.min(target, Math.max(0, media.duration - 1 / rate))
+        : target;
       if (Math.abs(media.currentTime - position) > (playing ? 0.12 : 0.005))
         media.currentTime = Math.max(0, position);
       if (playing && !held && media.paused)
