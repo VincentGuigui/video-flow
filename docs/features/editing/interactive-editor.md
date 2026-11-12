@@ -48,6 +48,7 @@ The **Project** tab of the properties sets the output resolution: landscape, por
 | Delete, keeping the time | Delete |
 | Ripple delete | Backspace |
 | Select all in the zone last clicked | Ctrl + A |
+| Search what is said; next / previous occurrence | Ctrl + F; Enter / Shift + Enter ([text search](text-search.md)) |
 | Undo / redo | Ctrl + Z / Ctrl + Shift + Z |
 | Zoom the timeline around the pointer | Ctrl + wheel |
 | Scroll the timeline | Shift + wheel |

@@ -3059,3 +3059,75 @@ button.timecode:hover {
 .timeline-workspace .clip-actions {
   flex-wrap: wrap;
 }
+
+/* Text search (docs/features/editing/text-search.md). */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 29px;
+  padding: 0 6px 0 9px;
+  border: 1px solid var(--line, #dcd8cc);
+  border-radius: 7px;
+  background: #fff;
+  color: #6b6b62;
+}
+.search-box:focus-within {
+  border-color: #2f6b4f;
+  box-shadow: 0 0 0 2px rgba(47, 107, 79, 0.15);
+}
+.search-box input {
+  width: 150px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  color: #1f241f;
+}
+.search-box.active input {
+  width: 120px;
+}
+.search-count {
+  font-size: 11.5px;
+  white-space: nowrap;
+  min-width: 46px;
+  text-align: right;
+}
+.search-step {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.search-step:hover:not(:disabled) {
+  background: #eef0ea;
+}
+.search-step:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.clip-card.search-hit {
+  box-shadow: 0 0 0 2px #e8a33d;
+}
+.flow-search-mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: #e07a1f;
+  pointer-events: none;
+}
+@media (max-width: 900px) {
+  .search-box input,
+  .search-box.active input {
+    width: 80px;
+  }
+}

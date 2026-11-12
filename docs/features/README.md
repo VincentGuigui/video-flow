@@ -52,6 +52,7 @@ Typical session: create a project in the folder of the day's rushes, drop 40 cli
 | [Workspace zones](editing/workspace-zones.md) | Select all and delete per zone, media removal, cache |
 | [Properties panel](editing/properties-panel.md) | Resizing, height, pinned or floating panel |
 | [Clip tooltip](editing/clip-tooltip.md) | The one-line description shown when hovering a clip |
+| [Text search](editing/text-search.md) | Finding where words are said, and jumping from one occurrence to the next |
 
 ## 4. Finishing
 

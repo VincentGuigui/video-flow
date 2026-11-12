@@ -50,6 +50,7 @@ import { useEditor } from "../store";
 import { cutKey, cuts, transitionAt, TRANSITION_LABELS } from "../transitions";
 import { keyframeOffsets } from "../keyframes";
 import { clipTip } from "../clipTip";
+import { hitMarks, useSearch } from "../search";
 import { useAnalyses } from "./useAnalysis";
 import { Waveform } from "./Waveform";
 
@@ -88,6 +89,9 @@ export function Flow() {
     [base, project?.assets],
   );
   const analyses = useAnalyses(sources);
+  // Occurrences of the text search (docs/features/editing/text-search.md).
+  const hits = useSearch((s) => s.hits);
+  const marks = useMemo(() => hitMarks(document, hits), [document, hits]);
   const { scale: px, scroll: sharedScroll, set: setTimeline } = useTimeline();
   useTimelineWheel(scroll);
   useEffect(() => {
@@ -299,7 +303,7 @@ export function Flow() {
                 data-testid={`clip-${kind}`}
                 data-clip-id={c.id}
                 title={clipTip(c, analyses[c.assetId ?? ""])}
-                className={`clip-card ${kind} ${isSelected ? "selected" : ""}`}
+                className={`clip-card ${kind} ${isSelected ? "selected" : ""} ${marks.has(c.id) ? "search-hit" : ""}`}
                 style={{
                   left: 56 + c.start * px,
                   top: y,
@@ -393,6 +397,13 @@ export function Flow() {
                       }}
                     />
                   ))}
+                {marks.get(c.id)?.map((offset, i) => (
+                  <span
+                    key={`hit-${i}`}
+                    className="flow-search-mark"
+                    style={{ left: offset * px }}
+                  />
+                ))}
                 {kind === "video" &&
                   keyframeOffsets(c).map(({ frame: k, offset }) => (
                     <span

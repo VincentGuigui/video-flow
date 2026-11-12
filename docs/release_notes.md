@@ -11,6 +11,10 @@ Format (checked by the release workflow, `scripts/release_artifacts.py`):
   - `FIX`: a bug fixed;
   - `DEV`: infrastructure or technical work only (left out of GitHub release notes).
 
+## 0.36.0 — 2026-11-12
+
+- FEATURE: Search what is said in the edit (Ctrl + F): matching clips and occurrences are marked in the clip flow, and Enter or the arrows move the cursor from one occurrence to the next.
+
 ## 0.35.0 — 2026-11-12
 
 - IMPROVEMENT: Imported videos are usable at once: the preview shows one picture per second with the real sound until the smooth preview video is ready.

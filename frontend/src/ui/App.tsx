@@ -83,6 +83,7 @@ import { PropertiesDock } from "./PropertiesDock";
 import { addKeyframe, removeKeyframe } from "../keyframes";
 import { loadLayout, storeLayout } from "../panel";
 import { usePreviews } from "../previews";
+import { SearchBox } from "./SearchBox";
 
 const RESOLUTIONS = [
   [1920, 1080, "16:9 · Landscape"],
@@ -486,6 +487,7 @@ export function App() {
           {busy ? "Saving…" : "All changes saved"}
         </span>
         <div className="header-actions">
+          <SearchBox />
           <button
             className="icon-button"
             aria-label="Settings"
@@ -764,6 +766,10 @@ export function App() {
               ["Delete · preserve time", "Delete"],
               ["Ripple delete", "Backspace"],
               ["Select all in the clicked zone", "Ctrl + A"],
+              [
+                "Search what is said · next / previous",
+                "Ctrl + F · Enter / Shift + Enter",
+              ],
               ["Remove selected media and its clips", "Delete (media)"],
               ["Undo / redo", "Ctrl + Z / Ctrl + Shift + Z"],
               ["Zoom around pointer", "Ctrl + wheel"],
