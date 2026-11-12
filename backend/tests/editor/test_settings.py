@@ -49,12 +49,15 @@ def test_settings_persist_qwen_choice_without_downloading(local_root):
         assert payload["directory"] == str(local_root / "models")
         assert all(m["state"] == "missing" for m in payload["models"])
         chosen = {**payload["preferences"], "summaryEngine": "qwen", "asrEngine": "faster-whisper"}
+        previews = app.state.imports.previews
         response = client.put("/api/settings", json=chosen)
         assert response.status_code == 200, response.text
         qwen = next(m for m in response.json()["models"] if m["purpose"] == "summary")
         assert qwen["required"] and qwen["state"] == "missing"
         assert not (local_root / "models").exists()  # status/selection never downloads
         assert client.post("/api/models/unknown/download").status_code == 422
+        # The new import queue keeps the project's single preview queue.
+        assert app.state.imports.previews is previews
     assert preferences.load_preferences().summary_engine == "qwen"
     assert "faster-whisper-tiny" in required_models(preferences.load_preferences())
 

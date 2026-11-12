@@ -359,7 +359,9 @@ def create_app(
             await asyncio.to_thread(save_preferences, payload)
             await imports.close()
             preferences = payload
-            imports = Imports(bundle, preferences=preferences, require_models=True)
+            imports = Imports(
+                bundle, preferences=preferences, require_models=True, previews=previews
+            )
             app.state.imports = imports
             return {
                 "preferences": preferences.dump(),
@@ -389,7 +391,9 @@ def create_app(
             ):
                 raise HTTPException(409, "Finish or cancel imports before removing a model")
             await imports.close()
-            imports = Imports(bundle, preferences=preferences, require_models=True)
+            imports = Imports(
+                bundle, preferences=preferences, require_models=True, previews=previews
+            )
             app.state.imports = imports
             try:
                 await asyncio.to_thread(downloads.remove, key)
