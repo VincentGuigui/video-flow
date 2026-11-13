@@ -4,7 +4,7 @@ A desktop video editor for footage recorded with many retakes: tutorials, talks,
 
 Windows 11 x64 and Linux x64. The editor, the analysis, the MP4 render and the exports work end to end; tuning on real rushes and hardware qualification are in progress ([roadmap](docs/roadmap.md)). Everything runs locally: no account, no upload, your original files are never copied or modified.
 
-![The editor: project media, preview, transcript of the selected clip, and the clip flow with two retakes stacked over the first takes](docs/images/overview.png)
+![The editor: project media, preview, transcript of the selected clip, and the clip flow with the retakes stacked over the first takes (the picked takes are enabled)](docs/images/overview.png)
 
 ## The idea
 
