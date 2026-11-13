@@ -287,8 +287,7 @@ export function Flow() {
               />
             ))}
           {base.clips.filter(visible).map((c) => {
-            const linked = !!c.linkId,
-              kind = c.kind;
+            const kind = c.kind;
             const y =
               48 + (layers - 1 - c.layer) * 112 + (kind === "audio" ? 53 : 0);
             const w = Math.max(18, duration(c) * px - 5),
@@ -367,20 +366,6 @@ export function Flow() {
                   <div className="clip-detail">
                     Black / silence · {timecode(duration(c), rate)}
                   </div>
-                )}
-                {linked && kind === "video" && (
-                  <button
-                    className="chain-button"
-                    title="Detach audio and video"
-                    aria-label={`Detach ${c.name}`}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      apply(detach(document, c.id));
-                    }}
-                  >
-                    <Link2 size={13} />
-                  </button>
                 )}
                 {isSelected &&
                   kind === "audio" &&
@@ -476,6 +461,31 @@ export function Flow() {
                 </button>
               );
             })}
+          {/* The link of a video and its audio: in the middle of the pair, above both
+              cards so it stays clickable. */}
+          {base.clips
+            .filter((c) => visible(c) && c.kind === "video" && c.linkId)
+            .map((c) => (
+              <button
+                key={`link-${c.id}`}
+                className="chain-button"
+                title="Detach audio and video"
+                aria-label={`Detach ${c.name}`}
+                style={{
+                  left:
+                    56 + c.start * px + Math.max(18, duration(c) * px - 5) / 2,
+                  top: 48 + (layers - 1 - c.layer) * 112 + 41,
+                  opacity: c.enabled && actualIds.has(c.id) ? 1 : 0.42,
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  apply(detach(document, c.id));
+                }}
+              >
+                <Link2 size={13} />
+              </button>
+            ))}
           {!doc.clips.length && (
             <div className="flow-empty">
               <div className="empty-node">

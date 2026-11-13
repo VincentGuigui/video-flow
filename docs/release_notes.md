@@ -14,6 +14,7 @@ Format (checked by the release workflow, `scripts/release_artifacts.py`):
 ## 0.37.0 — 2026-11-12
 
 - FEATURE: Video-Flow offers new versions at start and updates itself from GitHub, keeping your models, FFmpeg and settings; a version can be skipped, and Settings checks on request.
+- IMPROVEMENT: The link button of a video and its audio sits in the middle of the pair instead of floating before it.
 - FIX: Changing settings or removing a model no longer starts a second preview queue.
 - FIX: Settings → Cache names its content preview media instead of proxies.
 

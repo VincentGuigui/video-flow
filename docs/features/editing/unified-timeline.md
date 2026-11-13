@@ -4,7 +4,7 @@ The bottom of the window holds the edit: one ruler with the cursor and the range
 
 ## Clips and lanes
 
-- A **video** clip and its **audio** sit together, the audio just below; they are *linked* and move, split and trim together. The chain button between them detaches them ([audio tracks](audio-tracks.md)).
+- A **video** clip and its **audio** sit together, the audio just below; they are *linked* and move, split and trim together. The chain button in the middle of the pair, between them, detaches them ([audio tracks](audio-tracks.md)).
 - Lanes stack: the highest lane is on top in the picture. Retakes of the same sentences are stacked on parallel lanes when imported ([retake grouping](../import-analysis/retake-grouping.md)), so you can [compare them](compare-takes.md) and keep one.
 - The box on each clip enables or disables it. Only enabled clips play, render and export. Several stacked takes may be enabled at the same time.
 - The edit has no unwanted holes: time that no clip covers is closed up. An **empty clip** keeps its time on purpose (black and silence).

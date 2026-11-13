@@ -1222,10 +1222,14 @@ kbd {
   opacity: 0.3;
   pointer-events: none;
 }
+/* The link between a video clip and its audio: centred on the gap between them. */
 .chain-button {
   position: absolute;
-  left: -25px;
-  top: 38px;
+  left: 50%;
+  top: 41px;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
   color: #5d9577;
   background: #f2f6ec;
   border: 1px solid #d3dfc9;
@@ -1233,16 +1237,7 @@ kbd {
   height: 21px;
   padding: 0;
   border-radius: 4px;
-  z-index: 10;
-}
-.chain-button:after {
-  content: "";
-  height: 22px;
-  position: absolute;
-  left: 9px;
-  top: -22px;
-  border-left: 1px solid #a8c29c;
-  pointer-events: none;
+  z-index: 9;
 }
 .detached-label {
   position: absolute;
