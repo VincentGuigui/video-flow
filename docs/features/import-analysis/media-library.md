@@ -17,6 +17,10 @@ Analyses the medium again, in the same window as an import, with the same progre
 
 The clips already in the edit stay. If the new analysis shows that the medium is a retake of another clip, and the medium has a single clip (or one linked picture and audio) not already stacked over that retake, the clip moves onto a new lane over it — one undo step. With several clips of the medium, the edit is left as it is.
 
+## Offline media
+
+When a file was moved, renamed or is on a drive that is not connected, its card shows **Offline** and its clips stay in the edit. In the desktop app, click **Relink original** on the card and pick the file: Video-Flow checks that it is the same content (its fingerprint, not its name) and uses it again, keeping every edit. A different file is refused.
+
 ## Technical notes
 
 Endpoints and rules: [editor behaviour](../../architecture/editor-behaviour.md#project-media-menu). Tests: [validation record](../../validation/2026-11-12-manual-pages.md#project-media-menu).

@@ -36,7 +36,7 @@ Typical session: create a project in the folder of the day's rushes, drop 40 cli
 | Page | What it covers |
 |------|----------------|
 | [Importing media](import-analysis/importing.md) | Adding files, analyse or import only, progress and cancel, preview media, analysis files |
-| [Project media](import-analysis/media-library.md) | The media list, Info and Analyse again |
+| [Project media](import-analysis/media-library.md) | The media list, Info, Analyse again, relinking offline media |
 | [Still images and freeze frames](import-analysis/still-images.md) | Pictures as clips of any length, and freezing the frame at the cursor |
 | [Transcript panel](import-analysis/transcript-panel.md) | Summary, topics and words of a clip; editing words; selecting a range from the text |
 | [Retake grouping](import-analysis/retake-grouping.md) | How retakes of the same sentences are stacked on import |

@@ -8,7 +8,8 @@ Start with the [project README](../README.md) for what Video-Flow does and how t
 | [features/](features/README.md) | The user manual: the end-to-end workflow, then one page per built feature in one subfolder per stage. They describe the current behaviour |
 | [architecture/](architecture/) | How it is built: [overview](architecture/overview.md), [desktop shell](architecture/desktop-shell.md), [data model](architecture/data-model.md), [analysis pipeline](architecture/analysis-pipeline.md), [render and export](architecture/render-export.md), [transitions, effects, titles, keyframes and still clips](architecture/effects-and-titles.md), [editor behaviour](architecture/editor-behaviour.md), [projects, cache, FFmpeg and updates](architecture/projects-and-setup.md) |
 | [decisions/](decisions/) | Dated decision records, numbered in order. Kept as history |
-| [reference/](reference/) | [Dependencies](reference/dependencies.md) (versions, licences, accelerators), [desktop runtime](reference/desktop-runtime.md), [workspace layout](reference/workspace-layout.md), [automated releases](reference/github-releases.md) |
+| [reference/](reference/) | [Development](reference/development.md) (install from source, run, test, package), [command line](reference/command-line.md), [dependencies](reference/dependencies.md) (versions, licences, accelerators), [desktop runtime](reference/desktop-runtime.md), [workspace layout](reference/workspace-layout.md), [automated releases](reference/github-releases.md) |
+| [images/](images/) | Screenshots used by the README |
 | [validation/](validation/) | Dated validation records: tests and checks, on real hardware where noted |
 
 ## User manual

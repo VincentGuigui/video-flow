@@ -15,6 +15,7 @@ Format (checked by the release workflow, `scripts/release_artifacts.py`):
 
 - FEATURE: Video-Flow offers new versions at start and updates itself from GitHub, keeping your models, FFmpeg and settings; a version can be skipped, and Settings checks on request.
 - FIX: Changing settings or removing a model no longer starts a second preview queue.
+- FIX: Settings → Cache names its content preview media instead of proxies.
 
 ## 0.36.0 — 2026-11-12
 
