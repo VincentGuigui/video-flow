@@ -22,7 +22,7 @@ export const formatSize = (bytes: number) =>
       ? `${(bytes / 1024 ** 2).toFixed(1)} MB`
       : `${(bytes / 1024 ** 3).toFixed(2)} GB`;
 
-// The application cache: one rebuildable folder per project (proxies, thumbnails, waveforms).
+// The application cache: one rebuildable folder per project (preview media, thumbnails, waveforms).
 export function CacheSettings() {
   const { set } = useEditor();
   const [usage, setUsage] = useState<CacheUsage | null>(null),
@@ -57,7 +57,7 @@ export function CacheSettings() {
         Cache size: <strong>{usage ? formatSize(usage.size) : "…"}</strong>
         <span className="muted">
           {" "}
-          · proxies, thumbnails and waveforms, rebuilt when needed
+          · preview media, thumbnails and waveforms, rebuilt when needed
         </span>
       </p>
       <ul className="cache-projects">
