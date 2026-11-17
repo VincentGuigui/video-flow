@@ -1,37 +1,20 @@
 // A newer Video-Flow on GitHub: shown at start before the FFmpeg and model windows, and
 // from Settings (docs/features/getting-started/updates.md).
-import { useEffect, useState } from "react";
 import { Download, RotateCw, X } from "lucide-react";
 import { api, useEditor } from "../store";
 import { native } from "../desktop";
 import { formatSize } from "./CacheSettings";
-import type { UpdateState } from "../updates";
+import { useUpdate, type UpdateState } from "../updates";
 
-export function UpdateDialog({
-  initial,
-  onClose,
-}: {
-  initial: UpdateState;
-  onClose: () => void;
-}) {
+export function UpdateDialog() {
   const { set } = useEditor();
-  const [data, setData] = useState(initial);
-  const running = data.job?.state === "running";
-  const ready = data.job?.state === "ready";
-  useEffect(() => {
-    if (!running) return;
-    const timer = setInterval(
-      () =>
-        void api<UpdateState>("/update")
-          .then(setData)
-          .catch((e) => set({ error: String(e) })),
-      750,
-    );
-    return () => clearInterval(timer);
-  }, [running, set]);
+  const { state: data, set: setUpdate } = useUpdate();
+  const close = () => setUpdate({ open: false });
+  const running = data?.job?.state === "running";
+  const ready = data?.job?.state === "ready";
   const post = (path: string) =>
     api<UpdateState>(path, { method: "POST" })
-      .then(setData)
+      .then((state) => setUpdate({ state }))
       .catch((e) => set({ error: String(e) }));
   async function restart() {
     try {
@@ -41,8 +24,8 @@ export function UpdateDialog({
       set({ error: String(e) });
     }
   }
-  const release = data.release;
-  if (!release) return null;
+  const release = data?.release;
+  if (!data || !release) return null;
   return (
     <div className="modal-backdrop settings-backdrop">
       <section
@@ -53,15 +36,15 @@ export function UpdateDialog({
       >
         <div className="modal-heading">
           <h2>Video-Flow {release.version} is available</h2>
-          <button
-            aria-label="Close update"
-            disabled={running}
-            onClick={onClose}
-          >
+          <button aria-label="Close update" onClick={close}>
             <X size={20} />
           </button>
         </div>
-        <p className="muted">You have version {data.current}.</p>
+        <p className="muted">
+          You have version {data.current}.{" "}
+          <a href={release.page}>Release notes on GitHub</a>
+          {release.size > 0 && <> · download {formatSize(release.size)}</>}
+        </p>
         {release.notes.length > 0 && (
           <>
             <h3>What's new</h3>
@@ -74,9 +57,10 @@ export function UpdateDialog({
         )}
         {data.installable && native() ? (
           <p className="muted">
-            The update ({formatSize(release.size)}) is downloaded from GitHub
-            and checked against its SHA-256. Video-Flow then restarts in the new
-            version; your projects, models, FFmpeg and settings are kept.
+            The update is downloaded from GitHub and checked against its
+            SHA-256; you can keep working while it downloads. Video-Flow then
+            restarts in the new version; your projects, models, FFmpeg and
+            settings are kept.
           </p>
         ) : (
           <p className="settings-notice">
@@ -118,14 +102,14 @@ export function UpdateDialog({
               </button>
             )
           )}
-          <button className="button" disabled={running} onClick={onClose}>
-            Later
+          <button className="button" onClick={close}>
+            {running ? "Continue in the background" : "Later"}
           </button>
           {!ready && !data.skipped && (
             <button
               className="text-button"
               disabled={running}
-              onClick={() => void post("/update/skip").then(onClose)}
+              onClick={() => void post("/update/skip").then(close)}
             >
               Skip this version
             </button>

@@ -85,7 +85,12 @@ import { loadLayout, storeLayout } from "../panel";
 import { usePreviews } from "../previews";
 import { SearchBox } from "./SearchBox";
 import { UpdateDialog } from "./UpdateDialog";
-import { offerAtStart, type UpdateState } from "../updates";
+import {
+  offerAtStart,
+  updateProgress,
+  useUpdate,
+  type UpdateState,
+} from "../updates";
 
 const RESOLUTIONS = [
   [1920, 1080, "16:9 · Landscape"],
@@ -130,7 +135,6 @@ export function App() {
     [modelPrompt, setModelPrompt] = useState(false),
     [ffmpegPrompt, setFfmpegPrompt] = useState(false),
     // A newer version is offered first, before the FFmpeg and model windows.
-    [update, setUpdate] = useState<UpdateState | null>(null),
     [updateChecked, setUpdateChecked] = useState(false),
     [help, setHelp] = useState(false),
     [drag, setDrag] = useState(false),
@@ -157,6 +161,22 @@ export function App() {
       ? `${project.name} — Video-Flow`
       : "Video-Flow";
   }, [project?.name]);
+  const updateState = useUpdate((s) => s.state),
+    update = useUpdate((s) => s.open),
+    setUpdate = useUpdate((s) => s.set);
+  const updateRunning = updateState?.job?.state === "running";
+  // A download goes on while its window is closed: follow it here.
+  useEffect(() => {
+    if (!updateRunning) return;
+    const timer = setInterval(
+      () =>
+        void api<UpdateState>("/update")
+          .then((state) => setUpdate({ state }))
+          .catch(() => undefined),
+      750,
+    );
+    return () => clearInterval(timer);
+  }, [updateRunning, setUpdate]);
   const assetKey = project?.assets.map((a) => a.id).join(",") ?? "";
   useEffect(() => {
     if (assetKey) void usePreviews.getState().refresh();
@@ -164,7 +184,7 @@ export function App() {
   useEffect(() => {
     void load().then(reportReady);
     void api<UpdateState>("/update?start=true")
-      .then((state) => offerAtStart(state) && setUpdate(state))
+      .then((state) => setUpdate({ state, open: offerAtStart(state) }))
       .catch(() => undefined) // offline: no update offer
       .finally(() => setUpdateChecked(true));
     void api<ComponentState>("/components")
@@ -506,6 +526,7 @@ export function App() {
           {busy ? "Saving…" : "All changes saved"}
         </span>
         <div className="header-actions">
+          <UpdateChip />
           <SearchBox />
           <button
             className="icon-button"
@@ -746,9 +767,7 @@ export function App() {
       )}
       {state.compare && <Compare clipId={state.compare} />}
       {settings && <Settings onClose={() => setSettings(false)} />}
-      {update && (
-        <UpdateDialog initial={update} onClose={() => setUpdate(null)} />
-      )}
+      {update && <UpdateDialog />}
       {ffmpegPrompt && updateChecked && !update && (
         <FfmpegSetup requested onClose={() => setFfmpegPrompt(false)} />
       )}
@@ -1253,5 +1272,24 @@ function PreviewStatus({ assetId }: { assetId: string }) {
         ? `Preview ${Math.round(preview.progress * 100)}%`
         : "Preview queued"}
     </span>
+  );
+}
+
+/** A download in progress, or an update ready to restart into, while its window is
+ * closed (docs/features/getting-started/updates.md). */
+function UpdateChip() {
+  const state = useUpdate((s) => s.state),
+    open = useUpdate((s) => s.open),
+    set = useUpdate((s) => s.set);
+  const progress = updateProgress(state);
+  if (!progress || open) return null;
+  return (
+    <button
+      className={`update-chip ${progress.ready ? "ready" : ""}`}
+      title={`Video-Flow ${state?.release?.version}: click for details`}
+      onClick={() => set({ open: true })}
+    >
+      {progress.label}
+    </button>
   );
 }

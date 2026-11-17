@@ -4,8 +4,7 @@ import { api, useEditor } from "../store";
 import { CacheSettings } from "./CacheSettings";
 import { ManageModels } from "./ManageModels";
 import { FfmpegSetup } from "./FfmpegSetup";
-import { UpdateDialog } from "./UpdateDialog";
-import type { UpdateState } from "../updates";
+import { useUpdate, type UpdateState } from "../updates";
 
 export interface Preferences {
   summaryEngine: "deterministic" | "qwen";
@@ -48,7 +47,6 @@ export function Settings({ onClose }: { onClose: () => void }) {
     [message, setMessage] = useState(""),
     [models, setModels] = useState(false),
     [ffmpeg, setFfmpeg] = useState(false),
-    [update, setUpdate] = useState<UpdateState | null>(null),
     [updateMessage, setUpdateMessage] = useState("");
   const { set } = useEditor();
   useEffect(() => {
@@ -272,7 +270,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
                       .then((state) => {
                         if (state.newer) {
                           setUpdateMessage("");
-                          setUpdate(state);
+                          useUpdate.getState().set({ state, open: true });
                         } else
                           setUpdateMessage(
                             `Video-Flow ${state.current} is the latest version.`,
@@ -290,9 +288,6 @@ export function Settings({ onClose }: { onClose: () => void }) {
           </>
         )}
       </section>
-      {update && (
-        <UpdateDialog initial={update} onClose={() => setUpdate(null)} />
-      )}
       {models && <ManageModels onClose={() => setModels(false)} />}
       {ffmpeg && <FfmpegSetup onClose={() => setFfmpeg(false)} />}
     </div>

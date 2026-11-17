@@ -6,8 +6,9 @@ Video-Flow can update itself from its releases on GitHub. Your projects, AI mode
 
 When Video-Flow starts, it asks GitHub for the latest release. If it is newer than yours, a window opens before any other (before the FFmpeg and AI models windows):
 
-- **Video-Flow 0.37.0 is available**, the version you have, and what is new.
+- **Video-Flow 0.37.0 is available**, the version you have, the size of the download, a link to the release notes on GitHub, and what is new.
 - **Update now**: downloads the version for your system (Windows or Linux) and checks it against its SHA-256. The progress is shown; **Cancel** stops it.
+- **Continue in the background** (or the × button), while it downloads: the window closes and you keep working. The header shows **Updating 42%**, then **Restart to update**; click it to open the window again.
 - **Restart and update**, once downloaded: Video-Flow closes, replaces its own files with the new version and opens again, on your last project. Finish or cancel imports and renders first.
 - **Later**: closes the window; it opens again at the next start.
 - **Skip this version**: not offered again at start; a newer version will be.

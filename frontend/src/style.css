@@ -3135,3 +3135,23 @@ button.timecode:hover {
 .update-dialog h3 {
   margin: 8px 0 6px;
 }
+.update-chip {
+  height: 29px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: #2f6b4f;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.update-chip.ready {
+  background: #2f6b4f;
+  border-color: #2f6b4f;
+  color: #fff;
+}
+.update-dialog a {
+  color: #2f6b4f;
+}
