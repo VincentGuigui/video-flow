@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Plain equivalent of the justfile: scripts/dev.sh {test|smoke|lint|serve|build|package} [args...]
+# Plain equivalent of the justfile: scripts/dev.sh {test|smoke|lint|serve|build|package|screenshots} [args...]
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cmd="${1:-}"
@@ -21,6 +21,12 @@ case "$cmd" in
     exec uv run --project backend --inexact --extra desktop --group packaging \
       python scripts/package_release.py "$@"
     ;;
+  screenshots)
+    # Retakes the README pictures in docs/images/; Playwright is fetched on the fly.
+    build_frontend
+    cd "$ROOT"
+    exec uv run --project backend --inexact --with playwright python scripts/make_screenshots.py "$@"
+    ;;
 esac
 cd "$ROOT/backend"
 case "$cmd" in
@@ -32,5 +38,5 @@ case "$cmd" in
     exec uv run mypy
     ;;
   serve) exec uv run videoflow serve "$@" ;;
-  *) echo "usage: scripts/dev.sh {test|smoke|lint|serve|build|package} [args...]" >&2; exit 2 ;;
+  *) echo "usage: scripts/dev.sh {test|smoke|lint|serve|build|package|screenshots} [args...]" >&2; exit 2 ;;
 esac

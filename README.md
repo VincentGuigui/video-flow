@@ -109,4 +109,4 @@ Every dependency with its version and licence: [dependencies](docs/reference/dep
 - [Documentation index](docs/README.md): specification, architecture, decisions, references
 - [AGENTS.md](AGENTS.md): conventions for contributors and coding agents
 
-The demo project in the screenshots is made of synthetic slides with a synthetic voice; its transcripts, summaries and stacking come from the real analysis.
+The demo project in the screenshots is made of synthetic slides with a synthetic voice; its transcripts, summaries and stacking come from the real analysis. `scripts/dev.sh screenshots` retakes them ([development](docs/reference/development.md)).

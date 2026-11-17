@@ -37,13 +37,15 @@ See [desktop runtime and platform checks](desktop-runtime.md) and the [desktop s
 ## Develop
 
 ```bash
-just test | smoke | lint | serve | build | package   # or scripts/dev.sh … (scripts\2-dev.bat or dev.ps1 on Windows)
+just test | smoke | lint | serve | build | package | screenshots   # or scripts/dev.sh … (scripts\2-dev.bat or dev.ps1 on Windows)
 ```
 
 - `test` runs the unit tier (CPU, synthetic media, no network; tests that need the `ml` extra are skipped without it).
 - `smoke` runs the tests marked `smoke` (small CPU models, downloads them; needs an inference extra such as `cpu`/`smoke`, and `whisper` for the faster-whisper test). Synthetic samples are generated with FFmpeg (needs the `flite` filter) and cached under `VIDEOFLOW_SAMPLES_CACHE`.
 - `build` (`scripts\4-build.bat`) rebuilds the editor interface (`frontend/dist`): run it after pulling frontend changes, since `scripts/run.*` serves the built files.
 - `package` (`scripts\5-package.bat`) builds the interface, then the standalone desktop app with PyInstaller into `releases/Video-Flow/`. It replaces only the application files (the executable and `_internal/`), so the models, FFmpeg and settings beside the executable are kept. When no Python code or package changed, it only updates the interface in seconds (`--full` forces a complete rebuild).
+
+- `screenshots` retakes the README pictures in `docs/images/` (`scripts/make_screenshots.py`): it generates eight synthetic rushes (slides with a synthetic voice, retakes of three steps), runs the application on a temporary project, really imports and analyses them, and drives the interface with Playwright (fetched on the fly with `uv run --with playwright`; no project dependency). It needs the analysis models downloaded, FFmpeg with the `flite` and `drawtext` filters, and Chromium: `playwright install chromium`, or `PLAYWRIGHT_CHROMIUM_EXECUTABLE` pointing to a Chromium. Options: `--out DIR`, `--work DIR` (reuse the demo files), `--keep`. Run it when the interface shown in the README changes, and commit the images.
 
 The checks run before every commit are listed in [AGENTS.md](../../AGENTS.md#checks); conventions (commits, versions, documentation) are there too.
 

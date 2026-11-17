@@ -25,3 +25,7 @@ build:
 # Frontend, then the one-folder desktop app in releases/Video-Flow
 package *args: build
     uv run --project backend --inexact --extra desktop --group packaging python scripts/package_release.py {{args}}
+
+# Retake the README pictures (docs/images/) from a generated demo project
+screenshots *args: build
+    uv run --project backend --inexact --with playwright python scripts/make_screenshots.py {{args}}

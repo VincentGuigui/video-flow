@@ -1,4 +1,4 @@
-# Plain equivalent of the justfile: scripts/dev.ps1 {test|smoke|lint|serve|build|package} [args...]
+# Plain equivalent of the justfile: scripts/dev.ps1 {test|smoke|lint|serve|build|package|screenshots} [args...]
 param(
     [Parameter(Position = 0)][string]$Command = '',
     [Parameter(ValueFromRemainingArguments = $true)][string[]]$Rest = @()
@@ -31,6 +31,17 @@ if ($Command -eq 'package') {
         Pop-Location
     }
 }
+if ($Command -eq 'screenshots') {
+    # Retakes the README pictures in docs/images/; Playwright is fetched on the fly.
+    Build-Frontend
+    Push-Location $Root
+    try {
+        uv run --project backend --inexact --with playwright python scripts/make_screenshots.py @Rest
+        exit $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+}
 
 Push-Location (Join-Path $Root 'backend')
 try {
@@ -43,7 +54,7 @@ try {
             if ($LASTEXITCODE -eq 0) { uv run mypy }
         }
         'serve' { uv run videoflow serve @Rest }
-        default { Write-Error 'usage: scripts/dev.ps1 {test|smoke|lint|serve|build|package} [args...]'; exit 2 }
+        default { Write-Error 'usage: scripts/dev.ps1 {test|smoke|lint|serve|build|package|screenshots} [args...]'; exit 2 }
     }
     exit $LASTEXITCODE
 } finally {

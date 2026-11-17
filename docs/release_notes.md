@@ -11,6 +11,10 @@ Format (checked by the release workflow, `scripts/release_artifacts.py`):
   - `FIX`: a bug fixed;
   - `DEV`: infrastructure or technical work only (left out of GitHub release notes).
 
+## 0.40.0 — 2026-11-17
+
+- DEV: A script retakes the README screenshots from a generated demo project (`scripts/dev.sh screenshots`).
+
 ## 0.39.0 — 2026-11-17
 
 - IMPROVEMENT: The update window shows the download size and links to the release notes; the download can go on in the background, with its progress in the header.

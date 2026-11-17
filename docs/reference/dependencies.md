@@ -37,6 +37,8 @@ Bundled font: Inter 4.0 Regular and Bold (`assets/fonts/`, SIL Open Font License
 
 `desktop`: PySide6 6.12 (including Qt WebEngine and Shiboken), LGPL-3.0/GPL/commercial terms by component; hosts React and supplies native dialogs, file drops, WebChannel and application lifecycle. Installed by the normal installer; includes the `qwen` extra below (runtimes only, no model weights). The tested Windows x64 wheel lacks H.264 decoding; the editor plays generated VP9/Opus WebM previews. See [desktop runtime notices](desktop-runtime.md).
 
+The README screenshots are retaken by `scripts/dev.sh screenshots`, which fetches Playwright for Python (Apache-2.0) on the fly with `uv run --with playwright`, outside the lock file, and drives a Chromium that Playwright installs (`playwright install chromium`) or that `PLAYWRIGHT_CHROMIUM_EXECUTABLE` names (BSD-3-Clause, with its own third-party notices). It is a development tool, never part of a release.
+
 The `packaging` dependency group adds PyInstaller 6.22 (GPL-2.0 with the bootloader exception) for one-folder builds; it is not required at runtime. Frontend dependencies are recorded in `frontend/package.json` and `package-lock.json`: React 19, Zustand 5, Lucide, Vite 8, TypeScript 6, Vitest and Prettier (MIT licences; see each package's notices).
 
 `ml` (model tooling, no inference runtime; pulled in by every accelerator extra):
