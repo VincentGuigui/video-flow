@@ -15,7 +15,7 @@ A window with the file size (or "Offline"), duration, picture size, and whether 
 
 Analyses the medium again, in the same window as an import, with the same progress, cancel and missing-model prompt. **Analyse** transcribes it again and writes a new summary, keywords and topics, **replacing** its analysis file (the one next to the medium, and the project's copy). It is refused while the medium is offline.
 
-The clips already in the edit stay. If the new analysis shows that the medium is a retake of another clip, and the medium has a single clip (or one linked picture and audio) not already stacked over that retake, the clip moves onto a new lane over it — one undo step. With several clips of the medium, the edit is left as it is.
+The clips already in the edit stay. If the new analysis shows that the medium is a retake of another clip, and the medium has a single clip (or one linked picture and audio) not already stacked over that retake, the clip moves onto the first free lane over it — one undo step. With several clips of the medium, the edit is left as it is.
 
 ## Offline media
 

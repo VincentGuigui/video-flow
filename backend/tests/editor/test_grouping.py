@@ -123,7 +123,7 @@ def test_import_stacks_a_retake_over_its_take(tmp_path, monkeypatch):
     names = {a.id: Path(a.path).name for a in bundle.project.assets}
     placed = {names[c.asset_id]: (c.start, c.layer) for c in document_for(bundle.project).clips}
     assert placed["take0.wav"][1] == 0 and placed["take1.wav"][1] == 0
-    assert placed["take2.wav"] == (placed["take0.wav"][0], 1)
+    assert placed["take2.wav"] == (placed["take0.wav"][0], 1)  # first free lane above the take
 
 
 def test_reanalysed_clip_moves_over_its_retake_once(tmp_path):
@@ -162,3 +162,25 @@ def test_reanalysed_clip_moves_over_its_retake_once(tmp_path):
     split = document_for(bundle.project).clips + [clip("b2", "b", 300)]
     bundle.commit(bundle.project.revision, [SetEditor(document=EditorDocument(clips=split))])
     assert imports._restack("b", "a") == []  # several clips of b: ambiguous, left alone
+
+
+def test_retakes_share_the_first_free_lane():
+    from videoflow.editor.imports import free_layer
+    from videoflow.editor.models import EditorClip
+
+    def clip(id, start, layer, length=100):
+        return EditorClip(
+            id=id, kind="video", asset_id="a", name=id, start=start,
+            source_in=0, source_out=length, layer=layer,
+        )  # fmt: skip
+
+    clips = [clip("t1", 0, 0), clip("t2", 100, 0), clip("r1", 0, 1)]
+    # A retake of the second take fits beside the first retake, on the same lane.
+    assert free_layer(clips, 0, 100, 100) == 1
+    # A second retake of the first take does not: it goes one lane up.
+    assert free_layer(clips, 0, 0, 100) == 2
+    # Partial overlap counts; touching ends do not.
+    assert free_layer(clips, 0, 50, 100) == 2
+    assert free_layer(clips, 0, 100, 100, ignore={"r1"}) == 1
+    # Lanes are searched above the matched clip's lane.
+    assert free_layer([clip("m", 0, 3)], 3, 0, 100) == 4

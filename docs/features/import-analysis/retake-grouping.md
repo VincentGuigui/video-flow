@@ -1,6 +1,6 @@
 # Retake grouping
 
-When you import an analysed file ([importing media](importing.md)), Video-Flow looks for an earlier clip in which the **same sentences** are said, and stacks the new clip over it on a new lane, at the same position. The takes then appear in [Compare takes](../editing/compare-takes.md). If nothing matches, the clip is added at the end.
+When you import an analysed file ([importing media](importing.md)), Video-Flow looks for an earlier clip in which the **same sentences** are said, and stacks the new clip over it, at the same position, on the first lane above it that is free there. Retakes of different takes therefore share a lane, and a second retake of the same take goes one lane higher. The takes then appear in [Compare takes](../editing/compare-takes.md). If nothing matches, the clip is added at the end.
 
 ## How it decides
 

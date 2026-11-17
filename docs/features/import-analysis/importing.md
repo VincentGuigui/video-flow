@@ -15,7 +15,7 @@ The import window offers two choices for the batch:
 
 Files are processed one at a time. The window shows each file's name and progress, and which file of the batch is running. **Cancel this file** skips the file being processed, including its transcription; cancelling the batch stops that file and the ones after it. A file that fails does not stop the others, and files already imported stay in the project.
 
-Each imported file is added to the edit at once: after the last clip, or stacked on a new lane over the retake it matches ([retake grouping](retake-grouping.md)). Stacking is a suggestion: move the clip if it is wrong. Files without speech import normally, with an empty transcript.
+Each imported file is added to the edit at once: after the last clip, or stacked on the first free lane over the retake it matches ([retake grouping](retake-grouping.md)). Stacking is a suggestion: move the clip if it is wrong. Files without speech import normally, with an empty transcript.
 
 The first analysed import may need AI models: the import then waits, and the models window opens so you can download them ([AI models and components](../getting-started/ai-models.md)).
 

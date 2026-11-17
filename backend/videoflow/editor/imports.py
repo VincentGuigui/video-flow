@@ -54,6 +54,27 @@ class ImportJob(CamelModel):
     inverses: list[dict[str, Any]] = Field(default_factory=list)
 
 
+def free_layer(
+    clips: list[EditorClip], above: int, start: int, frames_: int, ignore: set[str] | None = None
+) -> int:
+    """First lane above `above` with nothing in `[start, start + frames_)`.
+
+    A retake is stacked on the lowest lane that is free over its length, so retakes of
+    different takes share a lane instead of each opening a new one.
+    """
+    end = start + frames_
+    layer = above + 1
+    while any(
+        c.layer == layer
+        and c.id not in (ignore or set())
+        and c.start < end
+        and start < c.start + c.duration
+        for c in clips
+    ):
+        layer += 1
+    return layer
+
+
 class Imports:
     def __init__(
         self,
@@ -304,7 +325,13 @@ class Imports:
             for c in mine
         ):
             return []  # already over (or beside) its retake
-        layer = max((c.layer for c in document.clips), default=0) + 1
+        layer = free_layer(
+            document.clips,
+            matched.layer,
+            matched.start,
+            max(c.duration for c in mine),
+            {c.id for c in mine},
+        )
         moved = EditorDocument(
             clips=[
                 c.model_copy(update={"start": matched.start, "layer": layer})
@@ -326,9 +353,6 @@ class Imports:
             (c for c in document.clips if c.asset_id == match and c.kind == "video"),
             next((c for c in document.clips if c.asset_id == match), None),
         )
-        if matched is not None:
-            start = matched.start
-            layer = max((c.layer for c in document.clips), default=0) + 1
         rate = project.settings.frame_rate
         still = asset.probe.still
         # A still image starts as a 3 s clip (docs/features/import-analysis/still-images.md).
@@ -339,6 +363,9 @@ class Imports:
         )
         if count < 1:
             raise ValueError("Media is shorter than one project frame")
+        if matched is not None:
+            start = matched.start
+            layer = free_layer(document.clips, matched.layer, start, count)
         link = new_id("lnk") if asset.probe.video and asset.probe.has_audio else None
         video = asset.probe.video
         transform = fit_transform(project.settings, video)

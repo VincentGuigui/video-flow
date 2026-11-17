@@ -11,6 +11,10 @@ Format (checked by the release workflow, `scripts/release_artifacts.py`):
   - `FIX`: a bug fixed;
   - `DEV`: infrastructure or technical work only (left out of GitHub release notes).
 
+## 0.38.0 — 2026-11-17
+
+- IMPROVEMENT: Retakes are stacked on the first free lane over their take, so retakes of different takes share a lane and the clip flow stays compact.
+
 ## 0.37.0 — 2026-11-12
 
 - FEATURE: Video-Flow offers new versions at start and updates itself from GitHub, keeping your models, FFmpeg and settings; a version can be skipped, and Settings checks on request.
